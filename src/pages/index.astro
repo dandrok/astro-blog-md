@@ -1,49 +1,86 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
+import TerminalLayout from '../layouts/TerminalLayout.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This
-				template serves as a lightweight, minimally-styled starting point for anyone looking to build
-				a personal website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
-		</main>
-		<Footer />
-	</body>
-</html>
+<TerminalLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <Header />
+  <main>
+    <div class="blog-content">
+      <h1>./welcome.sh</h1>
+      <span class="terminal-cursor"></span>
+
+      <div class="terminal-dim" style="margin: 2rem 0;">
+        <p>$ ./system-status</p>
+        <p>✓ Matrix Terminal Interface: ACTIVE</p>
+        <p>✓ Retro CRT Effects: ENABLED</p>
+        <p>✓ Dual-Mode System: ONLINE</p>
+        <p>✓ Blog Content: LOADED</p>
+      </div>
+
+      <h2>System Overview</h2>
+      <p>
+        Welcome to this <strong>retro terminal blog</strong> built with Astro.
+        This project demonstrates a fully immersive Matrix-style terminal experience
+        with dual-mode functionality.
+      </p>
+
+      <h2>Core Features</h2>
+      <ul>
+        <li><strong>Terminal Theme:</strong> Authentic green-on-black Matrix aesthetic with CRT effects</li>
+        <li><strong>Dual-Mode System:</strong> Switch between blog view and interactive terminal mode</li>
+        <li><strong>Command Line Interface:</strong> Full terminal emulation with file system navigation</li>
+        <li><strong>Modern Stack:</strong> Astro + React + TypeScript + Tailwind CSS</li>
+        <li><strong>Type Safety:</strong> Complete TypeScript implementation with Zod validation</li>
+      </ul>
+
+      <h2>Terminal Commands</h2>
+      <p>
+        Access terminal mode using the <strong>[BLOG]</strong> button in the top-right corner.
+        Once in terminal mode, you can use these commands:
+      </p>
+
+      <pre><code>$ help          # Show available commands
+$ ls -la        # List files and directories
+$ cd posts      # Navigate to blog posts directory
+$ cat file.md   # Display file contents
+$ clear         # Clear terminal screen
+$ exit          # Return to blog view</code></pre>
+
+      <h2>Quick Navigation</h2>
+      <p>
+        <strong>Blog Posts:</strong> <a href="/blog">Browse articles</a><br>
+        <strong>About:</strong> <a href="/about">Learn more about this project</a><br>
+        <strong>Terminal Mode:</strong> Click <strong>[BLOG]</strong> → <strong>[TERMINAL]</strong> to enter command-line interface
+      </p>
+
+      <blockquote>
+        <p><strong>Developer Note:</strong> This project showcases modern web development through a retro terminal interface. The entire experience is themed to look like a genuine green-screen CRT monitor from the Matrix era.</p>
+      </blockquote>
+
+      <h2>System Information</h2>
+      <pre><code>$ neofetch --terminal-style
+      ⠄⠄⠄⠄⠄⣠⣾⡿⠟⠋⠁⠄⢀⣀⡀⠤⣦⢰⣤⣶⢶⣤⣤⣈⣆
+      ⠄⠄⠄⠄⢰⠟⠁⠄⢀⣤⣶⣿⡿⠿⣿⣿⣊⡘⠲⣶⣷⣶⠶⠶⠶⠦⠤
+      ⠄⠔⠊⠁⠁⠄⠄⢾⡿⣟⡯⣖⠯⠽⠿⠛⠛⠭⠽⠊⣲⣬⠽⠟⠛⠛⠭⢵⣂
+      ⡎⠄⠄⠄⠄⠄⠄⠄⢙⡷⠋⣴⡆⠄⠐⠂⢸⣿⣿⡶⢱⣶⡇⠄⠐⠂⢹⣷⣶⠆
+      ⡇⠄⠄⠄⠄⣀⣀⡀⠄⣿⡓⠮⣅⣀⣀⣐⣈⣭⠤⢖⣮⣭⣥⣀⣤⣤⣭⡵
+      ⣤⡀⢠⣾⣿⣿⣿⣿⣷⢻⣿⣿⣶⣶⡶⢖⣢⣴⣿⣿⣟⣛⠿⠿⠟⣛⠉
+      ⣿⡗⣼⣿⣿⣿⣿⡿⢋⡘⠿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷
+      ⣿⠱⢿⣿⣿⠿⢛⠰⣞⡛⠷⣬⣙⡛⠻⠿⠿⠿⣿⣿⣿⣿⣿⣿⣿⠿⠛⣓⡀
+      ⢡⣾⣷⢠⣶⣿⣿⣷⣌⡛⠷⣦⣍⣛⠻⠿⢿⣶⣶⣶⣦⣤⣴⣶⡶⠾⠿⠟⠁
+      ⣿⡟⣡⣿⣿⣿⣿⣿⣿⣿⣷⣦⣭⣙⡛⠓⠒⠶⠶⠶⠶⠶⠶⠶⠶⠿
+      ⠿⡐⢬⣛⡻⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡶⠟⠃ 
+      OS: Matrix Terminal v1.0
+      Shell: zsh 5.9
+      Terminal: xterm.js
+      Theme: Matrix Green (#00FF41)
+      Font: Source Code Pro
+      Resolution: Dynamic
+      Uptime: Since deployment</code></pre>
+    </div>
+  </main>
+  <Footer />
+</TerminalLayout>

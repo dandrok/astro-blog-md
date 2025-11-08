@@ -1,48 +1,66 @@
-# Astro Starter Kit: Blog
+# Terminal Blog - A Retro Terminal-Inspired Astro Blog
 
-```sh
-npm create astro@latest -- --template blog
-```
+A dual-mode blog built with Astro that features a retro green-on-black terminal aesthetic with an interactive terminal emulator.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## ✨ Features
 
-Features:
-
-- ✅ Minimal styling (make it your own!)
-- ✅ 100/100 Lighthouse performance
-- ✅ SEO-friendly with canonical URLs and OpenGraph data
-- ✅ Sitemap support
-- ✅ RSS Feed support
-- ✅ Markdown & MDX support
+- **Dual-Mode Experience**: Switch between traditional blog view and interactive terminal mode
+- **Retro Terminal Aesthetic**: Green-on-black matrix-style theme with CRT effects
+- **Interactive Terminal**: Fully functional command-line interface with file system navigation
+- **Modern Stack**: Built with Astro, React, TypeScript, and Tailwind CSS
+- **Type-Safe**: Full TypeScript support with Zod validation
+- **Performance Optimized**: Fast static site generation with partial hydration
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
 
 ## 🚀 Project Structure
 
-Inside of your Astro project, you'll see the following folders and files:
-
 ```text
-├── public/
+├── public/                     # Static assets
 ├── src/
-│   ├── components/
-│   ├── content/
-│   ├── layouts/
-│   └── pages/
+│   ├── components/
+│   │   ├── common/            # Reusable components
+│   │   └── features/
+│   │       └── terminal/      # Terminal functionality
+│   │           ├── Terminal.tsx
+│   │           └── types/
+│   │               └── terminal.ts
+│   ├── content/
+│   │   └── blog/              # Blog posts (Markdown/MDX)
+│   ├── layouts/
+│   │   ├── BlogPost.astro
+│   │   └── TerminalLayout.astro
+│   ├── pages/
+│   │   ├── index.astro
+│   │   └── blog/
+│   ├── styles/
+│   │   └── global.css         # Terminal-themed styling
+│   └── types/
 ├── astro.config.mjs
-├── README.md
 ├── package.json
 └── tsconfig.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## 🎮 Terminal Commands
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+When in terminal mode, you can use these commands:
 
-The `src/content/` directory contains "collections" of related Markdown and MDX documents. Use `getCollection()` to retrieve posts from `src/content/blog/`, and type-check your frontmatter using an optional schema. See [Astro's Content Collections docs](https://docs.astro.build/en/guides/content-collections/) to learn more.
+- `help` - Show all available commands
+- `ls [-la]` - List files and directories in current location
+- `cd [dir]` - Change directory (supports `..` for parent)
+- `cat [file]` - Display file contents
+- `clear` - Clear the terminal screen
+- `exit` - Return to blog view
 
-Any static assets, like images, can be placed in the `public/` directory.
+## 🛠️ Tech Stack
+
+- **Framework**: Astro 5.15+ with Content Collections
+- **UI**: React 19+ with TypeScript
+- **Styling**: Tailwind CSS 4+ with custom terminal theme
+- **Terminal**: xterm.js with fit addon
+- **Validation**: Zod for type safety
+- **Build**: Vite with modern tooling
 
 ## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
 
 | Command                   | Action                                           |
 | :------------------------ | :----------------------------------------------- |
@@ -53,10 +71,52 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
-## 👀 Want to learn more?
+## 🎨 Customization
 
-Check out [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+### Terminal Theme
+Edit `src/styles/global.css` to customize:
+- Terminal colors (background, text, links)
+- CRT effects intensity
+- Font styling
+- Animation speeds
 
-## Credit
+### Virtual File System
+The terminal's file system is generated from your blog content in `TerminalLayout.astro`. Modify the `virtualFileSystem` object to add custom files or directories.
 
-This theme is based off of the lovely [Bear Blog](https://github.com/HermanMartinus/bearblog/).
+### Commands
+Add new terminal commands by extending the `createCommandHandlers` function in `src/components/features/terminal/Terminal.tsx`.
+
+## 📝 Adding Blog Posts
+
+1. Create new Markdown files in `src/content/blog/`
+2. Add frontmatter with title, description, and pubDate
+3. The terminal will automatically include them in the virtual file system
+
+Example:
+```markdown
+---
+title: "My New Post"
+description: "A brief description"
+pubDate: 2025-11-08
+---
+
+# My New Post
+
+Content goes here...
+```
+
+## 🚀 Deployment
+
+This project is ready for deployment on:
+
+- **Netlify**: Connect your GitHub repository and enable auto-deploys
+- **Vercel**: Import your repository for continuous deployment
+- **GitHub Pages**: Use the provided workflow in `.github/workflows/`
+- **Any static host**: Build with `npm run build` and deploy `./dist/`
+
+## 🌟 Acknowledgments
+
+- Built on the Astro Blog template
+- Terminal powered by xterm.js
+- Inspired by retro terminal aesthetics
+- Following Astro + React best practices
