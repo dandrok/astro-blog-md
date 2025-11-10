@@ -4,6 +4,11 @@ import TerminalLayout from '../../layouts/TerminalLayout.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
+import Prose from '../../components/common/Prose.astro';
+import TerminalTitle from '../../components/common/TerminalTitle.astro';
+import TerminalCommand from '../../components/common/TerminalCommand.astro';
+import TerminalTip from '../../components/common/TerminalTip.astro';
+import TerminalText from '../../components/common/TerminalText.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
@@ -13,66 +18,96 @@ const posts = (await getCollection('blog')).sort(
 
 <TerminalLayout title={`${SITE_TITLE} - Blog`} description={SITE_DESCRIPTION}>
   <Header />
-  <main>
-    <div class="blog-content">
-      <h1>./blog/</h1>
-      <span class="terminal-cursor"></span>
+  <main class="max-w-4xl mx-auto px-6 py-8 pb-16 relative z-[2]">
+    <Prose>
+      <TerminalTitle title="~/blog ❯" level={1} />
+      <TerminalCommand command="ls -la ./posts/" />
 
-      <div class="terminal-dim" style="margin: 2rem 0;">
-        <p>$ ls -la ./posts/</p>
+      <!-- File listing with better spacing -->
+      <div class="bg-black/50 border border-green-400/30 rounded p-4 my-6 font-mono text-sm">
         {posts.map((post) => (
-          <p key={post.id}>-rw-r--r-- 1 user user {post.data.pubDate.toLocaleDateString()} {post.slug}.md</p>
+          <div key={post.id} class="text-green-500 leading-relaxed">
+            -rw-r--r-- 1 dandrok users {post.data.pubDate.toLocaleDateString()} {post.data.title}.md
+          </div>
         ))}
-        {posts.length === 0 && <p>total 0</p>}
+        {posts.length === 0 && <div class="text-green-500">total 0</div>}
       </div>
 
-      <h2>Available Articles</h2>
-      <p>Select an article to read, or use <strong>terminal mode</strong> to navigate like a file system:</p>
+      <TerminalTitle title="Available Articles" level={2} showCursor={false} />
+      <TerminalText content="Select an article to read, or use terminal mode to navigate like a file system:" strongWords={["terminal mode"]} />
 
-      <ul class="blog-list">
+      <!-- Article cards with improved spacing and consistency -->
+      <div class="space-y-6 my-8">
         {posts.map((post) => (
-          <li key={post.id}>
-            <a href={`/blog/${post.id}/`}>
-              <h2>{post.data.title}</h2>
-              <p><strong>Posted:</strong> <FormattedDate date={post.data.pubDate} /></p>
-              {post.data.description && (
-                <p class="terminal-dim">{post.data.description}</p>
-              )}
-            </a>
-          </li>
+          <article
+            key={post.id}
+            class="border border-green-400/30 bg-black/30 p-6 rounded hover:bg-green-400/10 hover:border-green-400/60 transition-all duration-300 ease-in-out focus-within:border-green-400 focus-within:ring-2 focus-within:ring-green-400/50 group"
+          >
+            <header class="mb-4">
+              <h3 class="m-0 mb-3">
+                <a
+                  href={`/blog/${post.id}/`}
+                  class="text-xl no-underline text-green-300 hover:text-green-200 focus:text-green-200 transition-colors duration-200 group-hover:underline"
+                >
+                  {post.data.title}
+                </a>
+              </h3>
+              <div class="text-green-500 text-sm space-y-1">
+                <time datetime={post.data.pubDate.toISOString()}>
+                  Posted: <FormattedDate date={post.data.pubDate} />
+                </time>
+                {post.data.description && (
+                  <p class="text-green-400/80 mt-2">{post.data.description}</p>
+                )}
+              </div>
+            </header>
+
+            <!-- Read more link -->
+            <footer class="mt-4">
+              <a
+                href={`/blog/${post.id}/`}
+                class="inline-flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors text-sm"
+              >
+                [ Read More ]
+                <span class="text-green-500">→</span>
+              </a>
+            </footer>
+          </article>
         ))}
-      </ul>
+      </div>
 
       {posts.length === 0 && (
-        <div style="text-align: center; padding: 3rem 0;">
-          <h3>No Posts Found</h3>
-          <p class="terminal-dim">The posts directory appears to be empty.</p>
-          <p>
-            Try switching to <strong>terminal mode</strong> and exploring the file system,
+        <div class="text-center py-12">
+          <h3 class="text-[1.25rem] my-4 text-green-400 font-semibold">No Posts Found</h3>
+          <p class="text-green-600">The posts directory appears to be empty.</p>
+          <p class="my-6 leading-relaxed text-green-400">
+            Try switching to <strong class="text-green-300 font-semibold">terminal mode</strong> and exploring the file system,
             or check back later for new content.
           </p>
-          <pre style="margin: 2rem auto; text-align: left; max-width: 400px;"><code>$ ls posts/
+          <pre class="my-8 p-6 bg-black border border-green-400/30 rounded overflow-x-auto text-sm font-mono leading-relaxed text-green-400 mx-auto max-w-md"><code>$ ls posts/
 total 0
 $ echo "No posts available yet"
 No posts available yet</code></pre>
         </div>
       )}
 
-      <h2>Terminal Access</h2>
-      <p>
-        For an authentic terminal experience, click the <strong>[BLOG]</strong> button above and navigate:
+      <TerminalTitle title="Terminal Access" level={2} showCursor={false} />
+      <p class="my-6 leading-relaxed text-green-400">
+        For an authentic terminal experience, click the <strong class="text-green-300 font-semibold">[BLOG]</strong> button above and navigate:
       </p>
 
-      <pre><code>$ cd posts
+      <pre class="my-8 p-6 bg-black border border-green-400/30 rounded overflow-x-auto text-sm font-mono leading-relaxed text-green-400"><code>$ cd posts
 $ ls -la
 $ cat article-name.md
 $ cd ..
 $ exit</code></pre>
 
-      <blockquote>
-        <p><strong>Pro Tip:</strong> In terminal mode, you can navigate this blog like a real file system. Each article is a markdown file that you can read using the <code>cat</code> command.</p>
-      </blockquote>
-    </div>
+      <TerminalTip
+        title="PRO TIP"
+        content="In terminal mode, you can navigate this blog like a real file system. Each article is a markdown file that you can read using the cat command."
+        type="pro"
+      />
+    </Prose>
   </main>
   <Footer />
 </TerminalLayout>

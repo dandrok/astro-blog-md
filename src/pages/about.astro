@@ -2,19 +2,19 @@
 import TerminalLayout from '../layouts/TerminalLayout.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import Prose from '../components/common/Prose.astro';
+import TerminalTitle from '../components/common/TerminalTitle.astro';
+import TerminalCommand from '../components/common/TerminalCommand.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
 <TerminalLayout title={`${SITE_TITLE} - About`} description={SITE_DESCRIPTION}>
   <Header />
-  <main>
-    <div class="blog-content">
-      <h1>./about.md</h1>
-      <span class="terminal-cursor"></span>
+  <main class="max-w-4xl mx-auto px-8 pb-16 relative z-[2]">
+    <Prose>
+      <TerminalTitle title="~/about.md ❯" level={1} />
 
-      <div class="terminal-dim" style="margin: 2rem 0;">
-        <p>$ cat about.md</p>
-      </div>
+      <TerminalCommand command="cat about.md" />
 
       <h2>System Information</h2>
       <pre><code>$ neofetch --about
@@ -181,7 +181,7 @@ Nov 08 12:00:00 matrix-blog[1234]: ✓ Server started on port 4321
 Nov 08 12:00:01 matrix-blog[1234]: ✓ Terminal interface loaded
 Nov 08 12:00:02 matrix-blog[1234]: ✓ Dual-mode system operational
 Nov 08 12:00:03 matrix-blog[1234]: ✓ All systems ready</code></pre>
-    </div>
+    </Prose>
   </main>
   <Footer />
 </TerminalLayout>

@@ -1,0 +1,20 @@
+---
+type Props = {
+  command: string;
+  output?: string;
+  showPrompt?: boolean;
+  class?: string;
+};
+
+const { command, output, showPrompt = true, class: className = '' } = Astro.props;
+---
+
+<!-- Terminal command with consistent spacing and better styling -->
+<div class={`my-8 ${className}`}>
+  <p class="text-green-500 font-mono leading-relaxed">
+    {showPrompt && <span class="text-green-400">$ </span>}{command}
+  </p>
+  {output && (
+    <pre class="mt-4 p-4 bg-black/70 border border-green-400/30 rounded overflow-x-auto text-sm font-mono leading-relaxed text-green-400"><code>{output}</code></pre>
+  )}
+</div>

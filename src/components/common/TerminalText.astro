@@ -1,0 +1,38 @@
+---
+import TerminalEmphasis from './TerminalEmphasis.astro';
+
+type Props = {
+  content: string;
+  variant?: 'primary' | 'secondary' | 'dim';
+  class?: string;
+  strongWords?: string[];
+};
+
+const { content, variant = 'primary', strongWords = [], class: className = '' } = Astro.props;
+
+// Map variants to terminal-appropriate semantic styles
+const variantStyles = {
+  primary: 'text-green-400', // Standard terminal text
+  secondary: 'text-green-500', // Secondary information
+  dim: 'text-green-600' // Dimmed/less important text
+};
+
+const sizeClass = variantStyles[variant];
+
+// Process content to highlight strong words with semantic styling
+function processContent(text: string, words: string[]) {
+  if (words.length === 0) return text;
+
+  let processed = text;
+  words.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'g');
+    processed = processed.replace(regex, `<strong class="text-green-200">${word}</strong>`);
+  });
+  return processed;
+}
+
+const processedContent = processContent(content, strongWords);
+---
+
+<!-- Terminal text content with consistent spacing and semantic styling -->
+<p class={`my-6 leading-relaxed ${sizeClass} ${className}`} set:html={processedContent} />

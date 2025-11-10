@@ -5,6 +5,8 @@ import TerminalLayout from './TerminalLayout.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import Prose from '../components/common/Prose.astro';
+import TerminalTitle from '../components/common/TerminalTitle.astro';
 
 type Props = CollectionEntry<'blog'>['data'];
 
@@ -13,39 +15,42 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 
 <TerminalLayout title={title} description={description}>
   <Header />
-  <main class="max-w-4xl mx-auto px-4 py-8 relative z-10">
-    <article class="blog-post">
-      <div class="hero-image mb-8">
-        {heroImage && (
+  <main class="max-w-4xl mx-auto px-6 py-8 pb-16 relative z-[2]">
+    <article class="space-y-8">
+      <!-- Hero image with consistent spacing -->
+      {heroImage && (
+        <div class="mb-8">
           <Image
             width={1020}
             height={510}
             src={heroImage}
             alt=""
-            class="w-full rounded-lg"
+            class="w-full max-w-full h-auto border-2 border-green-400/30 rounded shadow-lg shadow-green-400/10"
           />
-        )}
-      </div>
+        </div>
+      )}
 
-      <div class="prose">
-        <div class="title mb-8">
-          <div class="blog-post-meta text-lg mb-4">
-            <FormattedDate date={pubDate} />
-            {updatedDate && (
-              <div class="last-updated-on italic">
-                Last updated on <FormattedDate date={updatedDate} />
-              </div>
-            )}
-          </div>
-          <h1 class="text-4xl font-normal mb-4 terminal-glow-strong">
-            {title}<span class="terminal-cursor"></span>
-          </h1>
-          <hr class="border-[rgba(0,255,0,0.3)]" />
+      <!-- Article header with improved typography -->
+      <header class="space-y-4 pb-8 border-b border-green-400/30">
+        <div class="text-green-400 text-sm space-y-2">
+          <time datetime={pubDate.toISOString()} class="block">
+            Published: <FormattedDate date={pubDate} />
+          </time>
+          {updatedDate && (
+            <time dateTime={updatedDate.toISOString()} class="block text-green-500">
+              Last updated: <FormattedDate date={updatedDate} />
+            </time>
+          )}
         </div>
 
-        <div class="prose-content text-lg leading-relaxed">
+        <TerminalTitle title={title} level={1} />
+      </header>
+
+      <!-- Article content with terminal-themed prose styling -->
+      <div class="prose-wrapper">
+        <Prose>
           <slot />
-        </div>
+        </Prose>
       </div>
     </article>
   </main>

@@ -1,90 +1,29 @@
 ---
+import PulseCursor from "./common/PulseCursor.astro";
+
 const today = new Date();
 ---
 
-<!-- Minimalist terminal footer -->
-<footer class="terminal-footer">
-  <div class="terminal-footer-content">
-    <!-- Line 1: Social links -->
-    <div class="terminal-footer-social">
-      <a href="https://m.webtoo.ls/@astro" target="_blank" rel="me" class="terminal-footer-link">[Mastodon]</a>
-      <a href="https://twitter.com/astrodotbuild" target="_blank" class="terminal-footer-link">[Twitter]</a>
-      <a href="https://github.com/withastro/astro" target="_blank" class="terminal-footer-link">[GitHub]</a>
-    </div>
+<!-- Terminal footer with consistent spacing -->
+<footer class="bg-green-400/5 border-t border-green-400/30 mt-16 py-8 px-6 text-terminal-text-primary" role="contentinfo">
+  <div class="max-w-4xl mx-auto text-center flex flex-col gap-4">
+    <!-- Social links with proper spacing -->
+    <nav class="flex gap-3 justify-center items-center flex-wrap" aria-label="Social links">
+      <a
+        href="https://github.com/dandrok"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-terminal-text-muted text-sm font-mono transition-all duration-200 ease-in-out no-underline inline-flex items-center justify-center hover:text-terminal-text-secondary hover:border-terminal-border hover:shadow-[0_0_3px_rgba(0,255,65,1)] focus:outline-none focus:ring-2 focus:ring-terminal-border rounded"
+        aria-label="Visit GitHub profile (opens in new tab)"
+      >
+        [ GitHub ]
+      </a>
+    </nav>
 
-    <!-- Line 2: Creator/Copyright -->
-    <div class="terminal-footer-copyright">
-      <span class="terminal-dim">Made by dandrok © {today.getFullYear()}</span>
+    <!-- Creator/Copyright with consistent spacing -->
+    <div class="flex justify-center items-center gap-2" role="contentinfo">
+      <span class="text-terminal-text-muted">Made with passion by dandrok © {today.getFullYear()}</span>
+      <PulseCursor/>
     </div>
   </div>
 </footer>
-
-<style>
-  .terminal-footer {
-    background: var(--terminal-bg-code);
-    border-top: 1px solid var(--terminal-border);
-    margin-top: 4rem;
-    padding: 1.5rem 1rem; /* Reduced padding for minimalist design */
-    color: var(--terminal-text);
-  }
-
-  .terminal-footer-content {
-    max-width: 900px;
-    margin: 0 auto;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem; /* Clean spacing between the two lines */
-  }
-
-  .terminal-footer-social {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .terminal-footer-copyright {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .terminal-footer-link {
-    padding: 0.25rem 0.75rem;
-    background: transparent;
-    border: 1px solid var(--terminal-border);
-    color: var(--terminal-text-dim);
-    font-family: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-  }
-
-  .terminal-footer-link:hover {
-    color: var(--terminal-text-bright);
-    border-color: var(--terminal-link);
-    text-shadow: 0 0 3px var(--terminal-link);
-  }
-
-  @media (max-width: 768px) {
-    .terminal-footer {
-      padding: 1rem 0.75rem; /* Compact on mobile */
-    }
-
-    .terminal-footer-content {
-      gap: 0.5rem;
-    }
-
-    .terminal-footer-social {
-      gap: 0.25rem;
-    }
-
-    .terminal-footer-link {
-      padding: 0.2rem 0.5rem;
-      font-size: 0.7rem;
-    }
-  }
-</style>

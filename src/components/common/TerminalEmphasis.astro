@@ -1,0 +1,29 @@
+---
+type Props = {
+  children: string;
+  type?: 'strong' | 'em' | 'highlight';
+  class?: string;
+};
+
+const { children, type = 'strong', class: className = '' } = Astro.props;
+
+// Map types to terminal-appropriate styles
+const emphasisStyles = {
+  strong: 'text-green-300 font-semibold',
+  em: 'text-green-400 italic',
+  highlight: 'text-green-500'
+};
+
+const styleClass = emphasisStyles[type];
+---
+
+<!-- Terminal-style emphasis with type support -->
+{type === 'strong' && (
+  <strong class={`${styleClass} ${className}`}>{children}</strong>
+)}
+{type === 'em' && (
+  <em class={`${styleClass} ${className}`}>{children}</em>
+)}
+{type === 'highlight' && (
+  <span class={`${styleClass} ${className}`}>{children}</span>
+)}

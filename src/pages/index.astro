@@ -2,85 +2,61 @@
 import TerminalLayout from '../layouts/TerminalLayout.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import Prose from '../components/common/Prose.astro';
+import TerminalTitle from '../components/common/TerminalTitle.astro';
+import TerminalCommand from '../components/common/TerminalCommand.astro';
+import TerminalTip from '../components/common/TerminalTip.astro';
+import TerminalText from '../components/common/TerminalText.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
 <TerminalLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <Header />
-  <main>
-    <div class="blog-content">
-      <h1>./welcome.sh</h1>
-      <span class="terminal-cursor"></span>
+  <main class="max-w-4xl mx-auto px-6 py-8 pb-16 relative z-[2]">
+    <Prose>
+      <TerminalTitle title="~/welcome ❯" level={1} />
+      <TerminalTitle title="Introduction" level={2} showCursor={false} />
+      <TerminalText content="the .file this is the space where I publish my thoughts, ideas, and projects" strongWords={["the .file"]} />
 
-      <div class="terminal-dim" style="margin: 2rem 0;">
-        <p>$ ./system-status</p>
-        <p>✓ Matrix Terminal Interface: ACTIVE</p>
-        <p>✓ Retro CRT Effects: ENABLED</p>
-        <p>✓ Dual-Mode System: ONLINE</p>
-        <p>✓ Blog Content: LOADED</p>
+      <TerminalTitle title="Terminal Commands" level={2} showCursor={false} />
+      <TerminalText content="Access terminal mode using the TERMINAL button in the header. Once in terminal mode, you can use these commands:" strongWords={["TERMINAL"]} />
+
+      <!-- Terminal command examples with better spacing -->
+      <div class="bg-black/50 border border-green-400/30 rounded p-6 my-8">
+        <pre class="text-green-400 font-mono text-sm leading-relaxed overflow-x-auto"><code>$ help      # Show available commands
+$ ls -la    # List files and directories
+$ cd posts  # Navigate to blog posts directory
+$ cat file.md # Display file contents
+$ clear     # Clear terminal screen
+$ exit      # Return to blog view</code></pre>
       </div>
 
-      <h2>System Overview</h2>
-      <p>
-        Welcome to this <strong>retro terminal blog</strong> built with Astro.
-        This project demonstrates a fully immersive Matrix-style terminal experience
-        with dual-mode functionality.
-      </p>
+      <TerminalTitle title="Quick Navigation" level={2} showCursor={false} />
 
-      <h2>Core Features</h2>
-      <ul>
-        <li><strong>Terminal Theme:</strong> Authentic green-on-black Matrix aesthetic with CRT effects</li>
-        <li><strong>Dual-Mode System:</strong> Switch between blog view and interactive terminal mode</li>
-        <li><strong>Command Line Interface:</strong> Full terminal emulation with file system navigation</li>
-        <li><strong>Modern Stack:</strong> Astro + React + TypeScript + Tailwind CSS</li>
-        <li><strong>Type Safety:</strong> Complete TypeScript implementation with Zod validation</li>
-      </ul>
+      <!-- Navigation links with consistent spacing -->
+      <div class="space-y-4 my-8">
+        <div class="flex items-center gap-4 p-4 border border-green-400/20 rounded hover:border-green-400/40 transition-colors">
+          <span class="text-green-300 font-semibold min-w-[100px]">Blog Posts:</span>
+          <a href="/blog" class="text-green-400 no-underline hover:text-green-300 transition-colors underline-dotted">Browse all articles</a>
+        </div>
 
-      <h2>Terminal Commands</h2>
-      <p>
-        Access terminal mode using the <strong>[BLOG]</strong> button in the top-right corner.
-        Once in terminal mode, you can use these commands:
-      </p>
+        <div class="flex items-center gap-4 p-4 border border-green-400/20 rounded hover:border-green-400/40 transition-colors">
+          <span class="text-green-300 font-semibold min-w-[100px]">About:</span>
+          <a href="/about" class="text-green-400 no-underline hover:text-green-300 transition-colors underline-dotted">Learn more about this project</a>
+        </div>
 
-      <pre><code>$ help          # Show available commands
-$ ls -la        # List files and directories
-$ cd posts      # Navigate to blog posts directory
-$ cat file.md   # Display file contents
-$ clear         # Clear terminal screen
-$ exit          # Return to blog view</code></pre>
+        <div class="flex items-center gap-4 p-4 border border-green-400/20 rounded hover:border-green-400/40 transition-colors">
+          <span class="text-green-300 font-semibold min-w-[100px]">Terminal:</span>
+          <span>Click <strong class="text-green-200">[TERMINAL]</strong> to enter command-line interface</span>
+        </div>
+      </div>
 
-      <h2>Quick Navigation</h2>
-      <p>
-        <strong>Blog Posts:</strong> <a href="/blog">Browse articles</a><br>
-        <strong>About:</strong> <a href="/about">Learn more about this project</a><br>
-        <strong>Terminal Mode:</strong> Click <strong>[BLOG]</strong> → <strong>[TERMINAL]</strong> to enter command-line interface
-      </p>
-
-      <blockquote>
-        <p><strong>Developer Note:</strong> This project showcases modern web development through a retro terminal interface. The entire experience is themed to look like a genuine green-screen CRT monitor from the Matrix era.</p>
-      </blockquote>
-
-      <h2>System Information</h2>
-      <pre><code>$ neofetch --terminal-style
-      ⠄⠄⠄⠄⠄⣠⣾⡿⠟⠋⠁⠄⢀⣀⡀⠤⣦⢰⣤⣶⢶⣤⣤⣈⣆
-      ⠄⠄⠄⠄⢰⠟⠁⠄⢀⣤⣶⣿⡿⠿⣿⣿⣊⡘⠲⣶⣷⣶⠶⠶⠶⠦⠤
-      ⠄⠔⠊⠁⠁⠄⠄⢾⡿⣟⡯⣖⠯⠽⠿⠛⠛⠭⠽⠊⣲⣬⠽⠟⠛⠛⠭⢵⣂
-      ⡎⠄⠄⠄⠄⠄⠄⠄⢙⡷⠋⣴⡆⠄⠐⠂⢸⣿⣿⡶⢱⣶⡇⠄⠐⠂⢹⣷⣶⠆
-      ⡇⠄⠄⠄⠄⣀⣀⡀⠄⣿⡓⠮⣅⣀⣀⣐⣈⣭⠤⢖⣮⣭⣥⣀⣤⣤⣭⡵
-      ⣤⡀⢠⣾⣿⣿⣿⣿⣷⢻⣿⣿⣶⣶⡶⢖⣢⣴⣿⣿⣟⣛⠿⠿⠟⣛⠉
-      ⣿⡗⣼⣿⣿⣿⣿⡿⢋⡘⠿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷
-      ⣿⠱⢿⣿⣿⠿⢛⠰⣞⡛⠷⣬⣙⡛⠻⠿⠿⠿⣿⣿⣿⣿⣿⣿⣿⠿⠛⣓⡀
-      ⢡⣾⣷⢠⣶⣿⣿⣷⣌⡛⠷⣦⣍⣛⠻⠿⢿⣶⣶⣶⣦⣤⣴⣶⡶⠾⠿⠟⠁
-      ⣿⡟⣡⣿⣿⣿⣿⣿⣿⣿⣷⣦⣭⣙⡛⠓⠒⠶⠶⠶⠶⠶⠶⠶⠶⠿
-      ⠿⡐⢬⣛⡻⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⡶⠟⠃ 
-      OS: Matrix Terminal v1.0
-      Shell: zsh 5.9
-      Terminal: xterm.js
-      Theme: Matrix Green (#00FF41)
-      Font: Source Code Pro
-      Resolution: Dynamic
-      Uptime: Since deployment</code></pre>
-    </div>
+      <TerminalTip
+        title="DEVELOPER NOTE"
+        content="This project showcases modern web development through a retro terminal interface. The entire experience is themed to look like a genuine green-screen CRT monitor from the Matrix era."
+        type="note"
+      />
+    </Prose>
   </main>
   <Footer />
 </TerminalLayout>

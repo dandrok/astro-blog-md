@@ -152,7 +152,7 @@ function toggleMode() {
 
   if (body.classList.contains('interactive-mode')) {
     body.classList.remove('interactive-mode');
-    button.textContent = '[BLOG]';
+    button.textContent = '[ TERMINAL ]';
     button.setAttribute('data-mode', 'blog');
   } else {
     body.classList.add('interactive-mode');

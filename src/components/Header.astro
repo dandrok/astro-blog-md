@@ -2,88 +2,64 @@
 import { SITE_TITLE } from '../consts';
 ---
 
-<!-- Terminal-style navigation -->
-<nav class="terminal-nav">
-  <div class="terminal-nav-left">
-    <span class="terminal-prompt"></span>
-    <span class="terminal-bright">./{SITE_TITLE}</span>
+<!-- Navigation with consistent spacing and accessibility improvements -->
+<nav
+  class="flex flex-col md:flex-row md:items-center md:justify-between items-stretch gap-6 p-6 bg-green-400/5 border-b border-green-400/30 mb-8 mt-0"
+  role="navigation"
+  aria-label="Main navigation"
+>
+  <!-- Site title/brand -->
+  <div class="flex items-center">
+    <span
+      class="text-green-300 font-normal text-xl before:content-['$'] before:text-green-400 before:mr-2"
+      role="heading"
+      aria-level="1"
+    >
+      ./{SITE_TITLE}
+    </span>
   </div>
 
-  <div class="terminal-nav-right">
-    <a href="/" class="terminal-nav-item">[Home]</a>
-    <a href="/blog" class="terminal-nav-item">[Blog]</a>
-    <a href="/about" class="terminal-nav-item">[About]</a>
-    <button
-      class="mode-toggle terminal-nav-item"
-      data-mode="blog"
-      onclick="toggleMode()"
-      aria-label="Toggle terminal mode"
+  <!-- Navigation menu with consistent button spacing -->
+  <div
+    class="flex flex-wrap items-center gap-3"
+    role="menubar"
+    aria-label="Site navigation menu"
+  >
+    <a
+      href="/"
+      class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-green-400 text-sm font-mono transition-all duration-200 ease-in-out no-underline inline-flex items-center justify-center hover:bg-green-400/10 hover:border-green-400 hover:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-black rounded"
+      role="menuitem"
+      aria-label="Navigate to home page"
     >
-      [BLOG]
+      [ Home ]
+    </a>
+    <a
+      href="/blog"
+      class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-green-400 text-sm font-mono transition-all duration-200 ease-in-out no-underline inline-flex items-center justify-center hover:bg-green-400/10 hover:border-green-400 hover:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-black rounded"
+      role="menuitem"
+      aria-label="Navigate to blog posts"
+    >
+      [ Blog ]
+    </a>
+    <a
+      href="/about"
+      class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-green-400 text-sm font-mono transition-all duration-200 ease-in-out no-underline inline-flex items-center justify-center hover:bg-green-400/10 hover:border-green-400 hover:text-green-300 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-black rounded"
+      role="menuitem"
+      aria-label="Navigate to about page"
+    >
+      [ About ]
+    </a>
+    <button
+      class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-green-300 text-sm font-mono transition-all duration-300 ease-in-out no-underline inline-flex items-center justify-center hover:bg-green-400/10 hover:border-green-400 hover:text-green-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-black rounded font-semibold"
+      onclick="showTerminal(); this.setAttribute('aria-expanded', 'true');"
+      onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showTerminal(); this.setAttribute('aria-expanded', 'true'); }"
+      aria-label="Open terminal emulator"
+      aria-expanded="false"
+      aria-controls="terminal-container"
+      role="menuitem"
+      type="button"
+    >
+      [ Terminal ]
     </button>
   </div>
 </nav>
-
-<style>
-  .terminal-nav {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem;
-    background: var(--terminal-bg-code);
-    border-bottom: 1px solid var(--terminal-border);
-    margin-bottom: 2rem;
-    margin-top: 0;
-  }
-
-  .terminal-nav-left {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .terminal-nav-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .terminal-nav-item {
-    padding: 0.5rem 1rem;
-    background: transparent;
-    border: 1px solid var(--terminal-border);
-    color: var(--terminal-text);
-    font-family: inherit;
-    font-size: 0.9rem;
-    line-height: 1.2;
-    min-height: 32px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .terminal-nav-item:hover,
-  .terminal-nav-item.active {
-    background: var(--terminal-bg-hover);
-    border-color: var(--terminal-link);
-    color: var(--terminal-text-bright);
-    text-shadow: 0 0 4px var(--terminal-link);
-  }
-
-  @media (max-width: 768px) {
-    .terminal-nav {
-      flex-direction: column;
-      gap: 0.5rem;
-      align-items: stretch;
-    }
-
-    .terminal-nav-left,
-    .terminal-nav-right {
-      justify-content: center;
-    }
-  }
-</style>
