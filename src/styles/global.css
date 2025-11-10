@@ -327,20 +327,20 @@
 
 .terminal-content ul li {
   list-style-type: none;
-  padding-left: var(--spacing-3); /* 12px */
-  position: relative;
+  /* padding-left: var(--spacing-1); /* 4px */
+  position: relative; 
 }
 
 .terminal-content ul li::before {
   content: "*";
-  position: absolute;
-  left: -var(--spacing-1); /* -4px */
+ /* position: absolute; */
+   left: -var(--spacing-1); /* -4px */
   color: var(--terminal-text-bright);
 }
 
 .terminal-content ol li {
   list-style-type: decimal;
-  padding-left: var(--spacing-1); /* 4px */
+  /*padding-left: var(--spacing-1); /* 4px */
 }
 
 /* Terminal horizontal rule - authentic terminal line with proper spacing */

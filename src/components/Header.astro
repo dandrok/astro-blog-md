@@ -4,7 +4,7 @@ import { SITE_TITLE } from '../consts';
 
 <!-- Navigation with consistent spacing and accessibility improvements -->
 <nav
-  class="flex flex-col md:flex-row md:items-center md:justify-between items-stretch gap-6 p-6 bg-green-400/5 border-b border-green-400/30 mb-8 mt-0"
+  class="flex flex-col md:flex-row md:items-center md:justify-between items-stretch gap-4 p-6 bg-green-400/5 border-b border-green-400/30 mb-8 mt-0"
   role="navigation"
   aria-label="Main navigation"
 >
@@ -15,7 +15,7 @@ import { SITE_TITLE } from '../consts';
       role="heading"
       aria-level="1"
     >
-      ./{SITE_TITLE}
+      ~/{SITE_TITLE}
     </span>
   </div>
 
@@ -49,7 +49,7 @@ import { SITE_TITLE } from '../consts';
     >
       [ About ]
     </a>
-    <button
+      <!--<button
       class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-green-300 text-sm font-mono transition-all duration-300 ease-in-out no-underline inline-flex items-center justify-center hover:bg-green-400/10 hover:border-green-400 hover:text-green-200 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2 focus:ring-offset-black rounded font-semibold"
       onclick="showTerminal(); this.setAttribute('aria-expanded', 'true');"
       onkeydown="if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); showTerminal(); this.setAttribute('aria-expanded', 'true'); }"
@@ -60,6 +60,6 @@ import { SITE_TITLE } from '../consts';
       type="button"
     >
       [ Terminal ]
-    </button>
+    </button>-->
   </div>
 </nav>

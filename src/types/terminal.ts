@@ -1,8 +1,8 @@
 // Terminal types following CLAUDE.md principles
 
 export type FileSystemNode =
-  | { type: 'file'; content: string }
-  | { type: 'dir'; children: Record<string, FileSystemNode> };
+  | { type: 'file'; content: string; permissions?: string; size?: number }
+  | { type: 'dir'; children: Record<string, FileSystemNode>; permissions?: string };
 
 export type VirtualFileSystem = Record<string, FileSystemNode>;
 
@@ -11,6 +11,8 @@ export type TerminalState = {
   fileSystem: VirtualFileSystem;
   commandHistory: string[];
   historyIndex: number;
+  user: string;
+  hostname: string;
 };
 
 export type TerminalCommand = {
@@ -29,10 +31,29 @@ export type CommandHandlers = {
   cat: TerminalCommand;
   clear: TerminalCommand;
   exit: TerminalCommand;
+  tree: TerminalCommand;
+  pwd: TerminalCommand;
+  whoami: TerminalCommand;
+  echo: TerminalCommand;
+  mkdir: TerminalCommand;
+  touch: TerminalCommand;
+  rm: TerminalCommand;
+};
+
+export type VirtualFileContent = {
+  content: string;
+  permissions?: string;
+  size?: number;
+  modified?: Date;
 };
 
 // Terminal component props type
 export type TerminalProps = {
-  fileSystem: VirtualFileSystem;
   onExit: () => void;
+};
+
+export type CommandResult = {
+  output: string;
+  prompt: string;
+  shouldExit?: boolean;
 };
