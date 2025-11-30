@@ -1,0 +1,32 @@
+---
+type Props = {
+  currentPage: number;
+  lastPage: number;
+  prevUrl?: string;
+  nextUrl?: string;
+};
+
+const { currentPage, lastPage, prevUrl, nextUrl } = Astro.props;
+---
+
+<nav class="flex justify-between mt-16 text-green-500">
+  {prevUrl ? (
+    <a href={prevUrl} class="hover:text-green-400 transition-colors">
+      &lt; prev
+    </a>
+  ) : (
+    <span class="text-green-900">&lt; prev</span>
+  )}
+  
+  <span class="text-green-700">
+    {currentPage} / {lastPage}
+  </span>
+
+  {nextUrl ? (
+    <a href={nextUrl} class="hover:text-green-400 transition-colors">
+      next &gt;
+    </a>
+  ) : (
+    <span class="text-green-900">next &gt;</span>
+  )}
+</nav>

@@ -1,0 +1,27 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import FormattedDate from '../../FormattedDate.astro';
+
+type Props = {
+  post: CollectionEntry<'blog'>;
+  showDescription?: boolean;
+};
+
+const { post, showDescription = true } = Astro.props;
+---
+
+<li>
+  <a href={`/blog/${post.id}/`} class="block group no-underline">
+    <h2 class="text-xl text-green-300 font-semibold mb-2 group-hover:text-green-200 transition-colors">
+      > {post.data.title}
+    </h2>
+    <p class="text-green-500 text-sm mb-1 pl-4">
+      <FormattedDate date={post.data.pubDate} />
+    </p>
+    {showDescription && post.data.description && (
+      <p class="text-green-500 text-base pl-4 group-hover:text-green-400 transition-colors leading-relaxed">
+        {post.data.description}
+      </p>
+    )}
+  </a>
+</li>

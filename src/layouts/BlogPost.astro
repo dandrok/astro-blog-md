@@ -1,53 +1,69 @@
 ---
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
 import TerminalLayout from './TerminalLayout.astro';
-import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
-import Header from '../components/Header.astro';
+import Prose from '../components/common/Prose.astro';
+import TerminalTitle from '../components/common/TerminalTitle.astro';
+import PageHeader from '../components/common/PageHeader.astro';
+import TableOfContents from '../components/features/blog/TableOfContents.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & {
+  headings?: MarkdownHeading[];
+};
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, headings = [] } = Astro.props;
 ---
 
 <TerminalLayout title={title} description={description}>
-  <Header />
-  <main class="max-w-4xl mx-auto px-4 py-8 relative z-10">
-    <article class="blog-post">
-      <div class="hero-image mb-8">
-        {heroImage && (
-          <Image
-            width={1020}
-            height={510}
-            src={heroImage}
-            alt=""
-            class="w-full rounded-lg"
-          />
-        )}
-      </div>
+  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 relative z-[2]">
+    
+    <PageHeader showBackButton={true} />
 
-      <div class="prose">
-        <div class="title mb-8">
-          <div class="blog-post-meta text-lg mb-4">
-            <FormattedDate date={pubDate} />
+    <div class="lg:grid lg:grid-cols-[1fr_250px] lg:gap-12">
+      <article class="space-y-8 min-w-0">
+        <!-- Hero image with consistent spacing -->
+        {heroImage && (
+          <div class="mb-8">
+            <Image
+              width={1020}
+              height={510}
+              src={heroImage}
+              alt=""
+              class="w-full max-w-full h-auto border-2 border-green-400/30 rounded shadow-lg shadow-green-400/10"
+            />
+          </div>
+        )}
+
+        <!-- Article header with improved typography -->
+        <header class="space-y-4 pb-8 border-b border-green-400/30">
+          <div class="text-green-400 text-sm space-y-2">
+            <time datetime={pubDate.toISOString()} class="block">
+              Published: <FormattedDate date={pubDate} />
+            </time>
             {updatedDate && (
-              <div class="last-updated-on italic">
-                Last updated on <FormattedDate date={updatedDate} />
-              </div>
+              <time datetime={updatedDate.toISOString()} class="block text-green-500">
+                Last updated: <FormattedDate date={updatedDate} />
+              </time>
             )}
           </div>
-          <h1 class="text-4xl font-normal mb-4 terminal-glow-strong">
-            {title}<span class="terminal-cursor"></span>
-          </h1>
-          <hr class="border-[rgba(0,255,0,0.3)]" />
-        </div>
 
-        <div class="prose-content text-lg leading-relaxed">
-          <slot />
+          <TerminalTitle title={title} level={1} />
+        </header>
+
+        <!-- Article content with terminal-themed prose styling -->
+        <div class="prose-wrapper">
+          <Prose>
+            <slot />
+          </Prose>
         </div>
-      </div>
-    </article>
+      </article>
+
+      {/* Table of Contents Sidebar */}
+      <aside class="hidden lg:block relative">
+        <TableOfContents headings={headings} />
+      </aside>
+    </div>
   </main>
-  <Footer />
 </TerminalLayout>

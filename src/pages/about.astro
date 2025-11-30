@@ -1,22 +1,30 @@
 ---
 import TerminalLayout from '../layouts/TerminalLayout.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
+import Prose from '../components/common/Prose.astro';
+import PageHeader from '../components/common/PageHeader.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
 <TerminalLayout title={`${SITE_TITLE} - About`} description={SITE_DESCRIPTION}>
-  <Header />
-  <main>
-    <div class="blog-content">
-      <h1>./about.md</h1>
-      <span class="terminal-cursor"></span>
+  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
+    
+    <PageHeader showBackButton={true} />
 
-      <div class="terminal-dim" style="margin: 2rem 0;">
-        <p>$ cat about.md</p>
-      </div>
+    <div class="space-y-8">
+      <section class="mb-16">
+        <Prose>
+          <h1 class="text-4xl text-green-300 font-semibold mb-4">
+            > ~/about
+          </h1>
+          <p class="text-green-500 text-lg">
+            System information and project overview
+          </p>
+        </Prose>
+      </section>
 
-      <h2>System Information</h2>
+      <section>
+        <Prose>
+          <h2>System Information</h2>
       <pre><code>$ neofetch --about
 
       ⠄⠄⠄⠄⠄⣠⣾⡿⠟⠋⠁⠄⢀⣀⡀⠤⣦⢰⣤⣶⢶⣤⣤⣈⣆
@@ -181,7 +189,8 @@ Nov 08 12:00:00 matrix-blog[1234]: ✓ Server started on port 4321
 Nov 08 12:00:01 matrix-blog[1234]: ✓ Terminal interface loaded
 Nov 08 12:00:02 matrix-blog[1234]: ✓ Dual-mode system operational
 Nov 08 12:00:03 matrix-blog[1234]: ✓ All systems ready</code></pre>
+        </Prose>
+      </section>
     </div>
   </main>
-  <Footer />
 </TerminalLayout>

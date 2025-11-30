@@ -4,13 +4,6 @@ description: "A comprehensive guide to creating an immersive retro terminal blog
 pubDate: 2025-11-08
 ---
 
-# ./build-matrix-terminal-blog.sh
-
-```bash
-$ ./init-project.sh --template=astro-blog --theme=matrix-terminal
-$ npm run development
-```
-
 ## Overview
 
 This article documents the complete development process of creating a retro Matrix-style terminal blog with dual-mode functionality. The project transforms a standard Astro blog into an immersive terminal experience with authentic green-screen aesthetics and full command-line interface capabilities.
@@ -152,7 +145,7 @@ function toggleMode() {
 
   if (body.classList.contains('interactive-mode')) {
     body.classList.remove('interactive-mode');
-    button.textContent = '[BLOG]';
+    button.textContent = '[ TERMINAL ]';
     button.setAttribute('data-mode', 'blog');
   } else {
     body.classList.add('interactive-mode');

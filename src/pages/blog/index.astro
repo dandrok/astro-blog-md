@@ -1,9 +1,9 @@
 ---
 import { getCollection } from 'astro:content';
 import TerminalLayout from '../../layouts/TerminalLayout.astro';
-import Footer from '../../components/Footer.astro';
-import Header from '../../components/Header.astro';
-import FormattedDate from '../../components/FormattedDate.astro';
+import Prose from '../../components/common/Prose.astro';
+import PageHeader from '../../components/common/PageHeader.astro';
+import BlogList from '../../components/features/blog/BlogList.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
@@ -12,67 +12,38 @@ const posts = (await getCollection('blog')).sort(
 ---
 
 <TerminalLayout title={`${SITE_TITLE} - Blog`} description={SITE_DESCRIPTION}>
-  <Header />
-  <main>
-    <div class="blog-content">
-      <h1>./blog/</h1>
-      <span class="terminal-cursor"></span>
+  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
+    
+    <PageHeader showBackButton={true} />
 
-      <div class="terminal-dim" style="margin: 2rem 0;">
-        <p>$ ls -la ./posts/</p>
-        {posts.map((post) => (
-          <p key={post.id}>-rw-r--r-- 1 user user {post.data.pubDate.toLocaleDateString()} {post.slug}.md</p>
-        ))}
-        {posts.length === 0 && <p>total 0</p>}
-      </div>
-
-      <h2>Available Articles</h2>
-      <p>Select an article to read, or use <strong>terminal mode</strong> to navigate like a file system:</p>
-
-      <ul class="blog-list">
-        {posts.map((post) => (
-          <li key={post.id}>
-            <a href={`/blog/${post.id}/`}>
-              <h2>{post.data.title}</h2>
-              <p><strong>Posted:</strong> <FormattedDate date={post.data.pubDate} /></p>
-              {post.data.description && (
-                <p class="terminal-dim">{post.data.description}</p>
-              )}
-            </a>
-          </li>
-        ))}
-      </ul>
-
-      {posts.length === 0 && (
-        <div style="text-align: center; padding: 3rem 0;">
-          <h3>No Posts Found</h3>
-          <p class="terminal-dim">The posts directory appears to be empty.</p>
-          <p>
-            Try switching to <strong>terminal mode</strong> and exploring the file system,
-            or check back later for new content.
+    <div class="space-y-8">
+      {/* Blog Title */}
+      <section class="mb-16">
+        <Prose>
+          <h1 class="text-4xl text-green-300 font-semibold mb-4">
+            > ~/blog
+          </h1>
+          <p class="text-green-500 text-lg">
+            All posts and articles
           </p>
-          <pre style="margin: 2rem auto; text-align: left; max-width: 400px;"><code>$ ls posts/
-total 0
-$ echo "No posts available yet"
-No posts available yet</code></pre>
-        </div>
+        </Prose>
+      </section>
+
+      {/* Blog List */}
+      {posts.length > 0 ? (
+        <BlogList posts={posts} />
+      ) : (
+        <section class="text-center py-12">
+          <Prose>
+            <h2 class="text-2xl text-green-300 font-semibold mb-4">No Posts Found</h2>
+            <p class="text-green-500">The posts directory appears to be empty.</p>
+            <p class="text-green-400 mt-4">
+              Try switching to terminal mode and exploring the file system, or check back later for new content.
+            </p>
+          </Prose>
+        </section>
       )}
-
-      <h2>Terminal Access</h2>
-      <p>
-        For an authentic terminal experience, click the <strong>[BLOG]</strong> button above and navigate:
-      </p>
-
-      <pre><code>$ cd posts
-$ ls -la
-$ cat article-name.md
-$ cd ..
-$ exit</code></pre>
-
-      <blockquote>
-        <p><strong>Pro Tip:</strong> In terminal mode, you can navigate this blog like a real file system. Each article is a markdown file that you can read using the <code>cat</code> command.</p>
-      </blockquote>
     </div>
+
   </main>
-  <Footer />
 </TerminalLayout>

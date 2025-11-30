@@ -1,0 +1,12 @@
+---
+type Props = {
+  class?: string;
+};
+
+const { class: className = '' } = Astro.props;
+---
+
+<!-- Pure terminal content styling -->
+<div class={`terminal-content ${className}`}>
+  <slot />
+</div>

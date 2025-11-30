@@ -1,0 +1,19 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BlogPostPreview from './BlogPostPreview.astro';
+
+type Props = {
+  posts: CollectionEntry<'blog'>[];
+  showDescription?: boolean;
+};
+
+const { posts, showDescription = true } = Astro.props;
+---
+
+<section>
+  <ul class="list-none p-0 m-0 space-y-10">
+    {posts.map((post) => (
+      <BlogPostPreview post={post} showDescription={showDescription} />
+    ))}
+  </ul>
+</section>

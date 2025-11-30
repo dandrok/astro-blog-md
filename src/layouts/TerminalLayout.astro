@@ -1,60 +1,8 @@
 ---
-import { getCollection } from 'astro:content';
-import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
-import Terminal from '../components/features/terminal/Terminal';
-
-// Get all blog posts for the virtual file system
-const blogPosts = await getCollection('blog');
-
-// Generate virtual file system from blog content
-const virtualFileSystem = {
-  'about.md': {
-    type: 'file',
-    content: `# About This Terminal Blog
-
-Welcome to the terminal interface of my blog!
-
-## Available Commands:
-- help - Show all available commands
-- ls - List files and directories
-- cd [dir] - Change directory
-- cat [file] - Display file contents
-- clear - Clear the terminal screen
-- exit - Return to blog view
-
-## Navigation:
-This virtual file system contains all my blog posts. Navigate through the 'posts' directory to read different articles.
-
-## Technology:
-This blog is built with Astro, React, and TypeScript. The terminal mode uses jquery.terminal for an authentic command-line experience.
-
-Enjoy exploring!
-`
-  },
-  'posts': {
-    type: 'dir',
-    children: {}
-  }
-};
-
-// Add all blog posts to the virtual file system
-blogPosts.forEach(post => {
-  const postContent = `# ${post.data.title}
-
-**Published:** ${post.data.pubDate.toLocaleDateString()}
-**Description:** ${post.data.description}
-
-${post.body}
-
----
-*Generated from ${post.slug}*`;
-
-  virtualFileSystem['posts'].children[`${post.slug}.md`] = {
-    type: 'file',
-    content: postContent
-  };
-});
+import { Terminal } from '../components/features/Terminal';
+import ScrollToTop from '../components/common/ScrollToTop.astro';
+import Footer from '../components/Footer.astro';
 
 // Props interface
 type Props = {
@@ -69,150 +17,144 @@ const { title, description } = Astro.props;
 <html lang="en">
   <head>
     <BaseHead title={title} description={description} />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/css@5.5.0/xterm.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
     <style>
-      :global(body) {
-        margin: 0;
-        padding: 0;
-        font-family: 'VT323', monospace;
-        background-color: var(--terminal-bg);
-        color: var(--terminal-text);
-        text-shadow: 0 0 3px var(--terminal-text);
-        overflow-x: hidden;
-      }
-
-      /* Prevent body scrolling when in terminal mode */
-      :global(body.interactive-mode) {
-        overflow: hidden;
-        width: 100%;
-        height: 100vh;
+      /* Terminal container styles */
+      .terminal-container {
         position: fixed;
         top: 0;
         left: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgb(5 10 5 / 1); /* #050a05 - very dark green-gray */
+        z-index: -1000;
+        visibility: hidden;
+        opacity: 0;
+        transition-property: opacity;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 200ms;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
       }
 
-      /* Override xterm default colors to match our terminal theme */
-      :global(.xterm) {
-        background-color: var(--terminal-bg) !important;
-        color: var(--terminal-text) !important;
-        font-family: 'VT323', monospace !important;
+      .terminal-container.active {
+        z-index: 9999;
+        visibility: visible;
+        opacity: 1;
       }
 
-      :global(.xterm-viewport) {
-        background-color: var(--terminal-bg) !important;
+      /* Make sure xterm takes full container space */
+      .terminal-container.active :global(.xterm) {
+        width: 100%;
+        height: 100%;
       }
 
-      :global(.xterm-screen) {
-        background-color: var(--terminal-bg) !important;
+      /* Hide all xterm scrollbars */
+      .terminal-container.active :global(.xterm-screen) {
+        overflow: hidden !important;
       }
 
-      :global(.xterm-selection) {
-        background-color: rgba(0, 255, 0, 0.3) !important;
+      .terminal-container.active :global(.xterm-viewport) {
+        overflow: hidden !important;
+      }
+
+      .terminal-container.active :global(.xterm) {
+        overflow: hidden !important;
       }
     </style>
   </head>
-  <body class="blog-mode">
-    <!-- Blog Content (default mode) -->
-    <div class="blog-content">
-      <slot />
-    </div>
+  <body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-gray-900 text-white px-4 py-2 rounded border border-green-400 z-50">
+      Skip to main content
+    </a>
 
-    <!-- Terminal Container (hidden by default) -->
-    <div class="terminal-container" id="terminal-container" style="display: none !important;">
+    <!-- Skip to terminal link for accessibility -->
+    <a href="#terminal-container" class="sr-only focus:not-sr-only focus:absolute focus:top-16 focus:left-4 bg-gray-900 text-white px-4 py-2 rounded border border-green-400 z-50">
+      Skip to terminal
+    </a>
+
+    <!-- Blog Content (main content when terminal is hidden) -->
+    <slot />
+
+    <Footer />
+
+    <!-- Terminal (hidden by default) -->
+    <div id="terminal-container" class="terminal-container" role="application" aria-label="Terminal emulator">
       <Terminal
         client:only="react"
-        key="terminal-component"
-        fileSystem={virtualFileSystem}
         onExit={() => {
-          // Simple page reload to exit terminal
-          window.location.reload();
+          // Hide terminal without page reload
+          window.hideTerminal();
         }}
       />
     </div>
 
-    <!-- Mode Toggle Script -->
+    <ScrollToTop />
+
+    <!-- Terminal Control Script -->
     <script is:inline>
-      // Make the function globally available
-      window.toggleMode = function() {
-        console.log('Toggle mode called'); // Debug log
-        const body = document.body;
+      // Make functions globally available
+      window.showTerminal = function() {
         const terminal = document.getElementById('terminal-container');
-        const toggleButton = document.querySelector('.mode-toggle');
+        const body = document.body;
 
-        console.log('Elements found:', { body: !!body, terminal: !!terminal, button: !!toggleButton });
-
-        if (!body || !terminal || !toggleButton) {
-          console.error('Required elements not found');
+        if (!terminal || !body) {
           return;
         }
 
-        if (body.classList.contains('interactive-mode')) {
-          console.log('Switching to blog mode'); // Debug log
-          // Exit terminal mode - return to blog
-          body.classList.remove('interactive-mode');
-          body.classList.add('blog-mode');
-          terminal.style.display = 'none';
-          toggleButton.textContent = '[BLOG]';
-          toggleButton.setAttribute('data-mode', 'blog');
-        } else {
-          console.log('Switching to terminal mode'); // Debug log
-          // Enter terminal mode
-          body.classList.remove('blog-mode');
-          body.classList.add('interactive-mode');
-          terminal.style.display = 'block';
-          toggleButton.textContent = '[TERMINAL]';
-          toggleButton.setAttribute('data-mode', 'terminal');
+        // Show terminal
+        body.classList.add('terminal-active');
+        terminal.classList.add('active');
 
-          // Focus terminal input after a short delay to ensure it's rendered
-          setTimeout(() => {
-            const terminalInput = terminal.querySelector('input');
-            if (terminalInput) {
-              terminalInput.focus();
-              console.log('Terminal input focused'); // Debug log
-            }
-          }, 100);
-        }
+        // Focus terminal after it's rendered
+        setTimeout(() => {
+          const terminalInput = terminal.querySelector('textarea, input');
+          if (terminalInput) {
+            terminalInput.focus();
+          }
+        }, 100);
       };
 
-      // Initialize the proper mode on page load
-      function initializePage() {
-        console.log('Initializing page mode'); // Debug log
-
-        // Ensure we start in blog mode, not terminal mode
-        const body = document.body;
+      window.hideTerminal = function() {
         const terminal = document.getElementById('terminal-container');
-        const toggleButton = document.querySelector('.mode-toggle');
+        const body = document.body;
+        const terminalButton = document.querySelector('[aria-controls="terminal-container"]');
 
-        // Force blog mode on page load - remove any terminal classes
-        if (body) {
-          body.classList.remove('interactive-mode');
-          body.classList.add('blog-mode');
-          console.log('Body classes:', body.className); // Debug log
-        }
-        if (terminal) {
-          terminal.style.display = 'none';
-          console.log('Terminal hidden'); // Debug log
-        }
-        if (toggleButton) {
-          toggleButton.textContent = '[BLOG]';
-          toggleButton.setAttribute('data-mode', 'blog');
-          console.log('Button set to [BLOG]'); // Debug log
+        if (!terminal || !body) {
+          return;
         }
 
-        console.log('Page initialized to blog mode'); // Debug log
-      }
+        // Hide terminal
+        body.classList.remove('terminal-active');
+        terminal.classList.remove('active');
 
-      // Wait for DOM to be ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializePage);
-      } else {
-        // DOM already loaded
-        initializePage();
-      }
+        // Reset aria-expanded state
+        if (terminalButton) {
+          terminalButton.setAttribute('aria-expanded', 'false');
+        }
 
-      // Also initialize after a short delay to ensure everything is loaded
-      setTimeout(initializePage, 100);
+        // Return focus to terminal button for accessibility
+        setTimeout(() => {
+          if (terminalButton) {
+            terminalButton.focus();
+          }
+        }, 100);
+      };
 
-          </script>
+      // Add keyboard listener for Escape key to exit terminal
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          const terminal = document.getElementById('terminal-container');
+          const body = document.body;
+
+          // Only exit if terminal is currently active
+          if (terminal && body && terminal.classList.contains('active')) {
+            window.hideTerminal();
+          }
+        }
+      });
+    </script>
   </body>
 </html>
