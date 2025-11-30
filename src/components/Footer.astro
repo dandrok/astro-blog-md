@@ -1,29 +1,7 @@
 ---
-import PulseCursor from "./common/PulseCursor.astro";
-
-const today = new Date();
 ---
-
-<!-- Terminal footer with consistent spacing -->
-<footer class="bg-green-400/5 border-t border-green-400/30 mt-16 py-8 px-6 text-terminal-text-primary" role="contentinfo">
-  <div class="max-w-4xl mx-auto text-center flex flex-col gap-4">
-    <!-- Social links with proper spacing -->
-    <nav class="flex gap-3 justify-center items-center flex-wrap" aria-label="Social links">
-      <a
-        href="https://github.com/dandrok"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="px-4 py-2 min-w-[44px] min-h-[44px] bg-transparent border border-green-400/30 text-terminal-text-muted text-sm font-mono transition-all duration-200 ease-in-out no-underline inline-flex items-center justify-center hover:text-terminal-text-secondary hover:border-terminal-border hover:shadow-[0_0_3px_rgba(0,255,65,1)] focus:outline-none focus:ring-2 focus:ring-terminal-border rounded"
-        aria-label="Visit GitHub profile (opens in new tab)"
-      >
-        [ GitHub ]
-      </a>
-    </nav>
-
-    <!-- Creator/Copyright with consistent spacing -->
-    <div class="flex justify-center items-center gap-2" role="contentinfo">
-      <span class="text-terminal-text-muted">Made with passion by dandrok © {today.getFullYear()}</span>
-      <PulseCursor/>
-    </div>
+<footer class="max-w-6xl mx-auto px-6 py-12 mt-auto text-center font-mono text-sm">
+  <div class="text-green-500/60">
+    <span class="text-green-500 font-bold">$</span> connect --user=dandrok <a href="https://github.com/dandrok" target="_blank" rel="noopener noreferrer" class="text-green-400 hover:text-green-300 transition-colors border-b border-dashed border-green-500/40 hover:border-solid hover:border-green-400 pb-0.5">github.com/dandrok</a>
   </div>
 </footer>

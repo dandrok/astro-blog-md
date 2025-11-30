@@ -1,0 +1,51 @@
+---
+import { getCollection } from 'astro:content';
+import TerminalLayout from '../layouts/TerminalLayout.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import Prose from '../components/common/Prose.astro';
+import PageHeader from '../components/common/PageHeader.astro';
+import BlogList from '../components/features/blog/BlogList.astro';
+import Pagination from '../components/features/blog/Pagination.astro';
+import type { GetStaticPaths } from 'astro';
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = (await getCollection('blog')).sort(
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+  );
+  return paginate(posts, { pageSize: 5 });
+}) satisfies GetStaticPaths;
+
+const { page } = Astro.props;
+---
+
+<TerminalLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
+    
+    <PageHeader />
+
+    <div class="space-y-8">
+      {/* Intro - Only show on first page */}
+      {page.currentPage === 1 && (
+        <section class="mb-16">
+          <Prose>
+            <p>
+              Hi, I am dandrok, a software engineer. I like to explore code, systems, and retro aesthetics.
+            </p>
+          </Prose>
+        </section>
+      )}
+
+      {/* Blog List */}
+      <BlogList posts={page.data} />
+
+      {/* Pagination */}
+      <Pagination 
+        currentPage={page.currentPage}
+        lastPage={page.lastPage}
+        prevUrl={page.url.prev}
+        nextUrl={page.url.next}
+      />
+    </div>
+
+  </main>
+</TerminalLayout>

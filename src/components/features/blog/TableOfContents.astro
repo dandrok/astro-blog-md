@@ -1,0 +1,205 @@
+---
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings: MarkdownHeading[];
+}
+
+const { headings } = Astro.props;
+
+type TocItem = MarkdownHeading & {
+  children: TocItem[];
+};
+
+// Build nested TOC structure
+function buildToc(headings: MarkdownHeading[]) {
+  const toc: TocItem[] = [];
+  const parentStack: TocItem[] = [];
+
+  headings.forEach((h) => {
+    const item: TocItem = { ...h, children: [] };
+
+    if (parentStack.length === 0 || h.depth <= parentStack[parentStack.length - 1].depth) {
+       // Pop items from stack until we find a parent with lower depth
+      while (parentStack.length > 0 && h.depth <= parentStack[parentStack.length - 1].depth) {
+        parentStack.pop();
+      }
+    }
+
+    if (parentStack.length > 0) {
+      // Add as child to current parent
+      parentStack[parentStack.length - 1].children.push(item);
+    } else {
+      // Add as root item
+      toc.push(item);
+    }
+    
+    // Push current item as potential parent for next items
+    parentStack.push(item);
+  });
+
+  return toc;
+}
+
+// Filter and build tree
+const filteredHeadings = headings.filter((h) => h.depth > 1 && h.depth < 4);
+const tocTree = buildToc(filteredHeadings);
+---
+
+<nav class="sticky top-[100px] w-[250px] max-h-[calc(100vh_-_150px)] overflow-y-auto font-mono hidden lg:block toc-scrollbar">
+  <div class="toc-content">
+    <h2 class="text-green-500 text-sm font-bold uppercase mb-4 border-b border-green-500/30 pb-2">
+      // Contents
+    </h2>
+    <ul class="toc-root text-sm space-y-1">
+      {tocTree.map((heading) => (
+        <li class="toc-item group">
+          <a
+            href={`#${heading.slug}`}
+            class="toc-link text-green-400/60 hover:text-green-400 transition-colors block border-l-2 border-transparent pl-3 py-1 relative"
+            data-slug={heading.slug}
+          >
+            {heading.text}
+          </a>
+          {heading.children.length > 0 && (
+            <ul class="toc-sublist ml-2 mt-1 space-y-1 hidden">
+              {heading.children.map((subHeading) => (
+                <li class="toc-item">
+                   <a
+                    href={`#${subHeading.slug}`}
+                    class="toc-link text-green-400/60 hover:text-green-400 transition-colors block border-l-2 border-transparent pl-3 py-1 relative text-xs"
+                    data-slug={subHeading.slug}
+                  >
+                    {subHeading.text}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </div>
+</nav>
+
+<script>
+  const observerOptions = {
+    root: null,
+    rootMargin: '0px 0px -50% 0px', // Trigger when elements enter/exit the top half
+    threshold: 0
+  };
+
+  let isManualScroll = false;
+  let manualScrollTimeout;
+
+  function updateActiveLink(id) {
+    const tocLink = document.querySelector(`.toc-link[data-slug="${id}"]`);
+    if (!tocLink) return;
+
+    // 1. Reset all links to inactive state
+    document.querySelectorAll('.toc-link').forEach((link) => {
+      link.classList.remove('active', 'text-green-300', 'border-green-500');
+      link.classList.add('text-green-400/60', 'border-transparent');
+    });
+
+    // 2. Reset all sublists to hidden
+    document.querySelectorAll('.toc-sublist').forEach((list) => {
+       list.classList.add('hidden');
+    });
+
+    // 3. Highlight current link
+    tocLink.classList.add('active', 'text-green-300', 'border-green-500');
+    tocLink.classList.remove('text-green-400/60', 'border-transparent');
+
+    // 4. Expand parent lists
+    let current = tocLink.parentElement;
+    while(current && !current.classList.contains('toc-root')) {
+        if (current.tagName === 'LI') {
+             const sublist = current.querySelector('.toc-sublist');
+             if (sublist) sublist.classList.remove('hidden');
+        }
+        if (current.tagName === 'UL' && current.classList.contains('toc-sublist')) {
+            current.classList.remove('hidden');
+        }
+        current = current.parentElement;
+    }
+  }
+
+  const observer = new IntersectionObserver(() => {
+    if (isManualScroll) return;
+
+    const headings = Array.from(document.querySelectorAll('h2, h3'));
+    let activeHeadingId = headings[0]?.id;
+
+    // 1. Check if we are at the bottom of the page
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10) {
+      activeHeadingId = headings[headings.length - 1]?.id;
+    } else {
+      // 2. Standard scan: find last heading above threshold
+      // Threshold is 100px (approx 80px header + 20px buffer)
+      for (const heading of headings) {
+        const top = heading.getBoundingClientRect().top;
+        if (top < 100) {
+          activeHeadingId = heading.id;
+        } else {
+          break;
+        }
+      }
+    }
+
+    if (activeHeadingId) {
+      updateActiveLink(activeHeadingId);
+    }
+  }, observerOptions);
+
+  // Observe all headings
+  document.querySelectorAll('h2, h3').forEach((heading) => {
+    observer.observe(heading);
+  });
+
+  // Handle click events
+  document.querySelectorAll('.toc-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      const id = link.getAttribute('data-slug');
+      
+      // Disable observer temporarily
+      isManualScroll = true;
+      clearTimeout(manualScrollTimeout);
+      
+      // Update UI immediately
+      updateActiveLink(id);
+
+      // Re-enable observer after scroll animation (approx 1s)
+      manualScrollTimeout = setTimeout(() => {
+        isManualScroll = false;
+      }, 1000);
+    });
+  });
+</script>
+
+<style>
+  /* Custom scrollbar for the TOC */
+  .toc-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .toc-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 255, 65, 0.05);
+  }
+
+  .toc-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 255, 65, 0.2);
+  }
+
+  .toc-link::before {
+    content: '>';
+    position: absolute;
+    left: -12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .toc-link.active::before {
+    opacity: 1;
+  }
+</style>

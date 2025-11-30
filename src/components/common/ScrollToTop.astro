@@ -1,0 +1,62 @@
+---
+---
+<button
+  id="scroll-to-top"
+  aria-label="Scroll to top"
+  class="fixed bottom-8 z-50 hidden p-2 font-mono text-green-500 bg-black border border-green-500 hover:bg-green-500/10 hover:text-green-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-green-500/50 group opacity-80 hover:opacity-100"
+>
+  <span class="sr-only">Scroll to top</span>
+  <span class="text-lg font-bold group-hover:-translate-y-1 transition-transform block">^</span>
+</button>
+
+<script>
+  const scrollBtn = document.getElementById('scroll-to-top');
+  const mainContent = document.getElementById('main-content'); // Assuming main-content ID is set in layout
+
+  function setButtonPosition() {
+    if (scrollBtn && mainContent) {
+      if (window.innerWidth < 1024) {
+        // Mobile/Tablet: Standard fixed positioning
+        scrollBtn.style.right = '1.5rem';
+        scrollBtn.style.left = 'auto';
+      } else {
+        // Desktop: Gutter positioning
+        const mainRect = mainContent.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        
+        // Calculate how much space is on the right of the main content
+        const rightOffset = (viewportWidth - mainRect.right) + 32; 
+        
+        scrollBtn.style.right = `${rightOffset}px`;
+        scrollBtn.style.left = 'auto';
+      }
+    }
+  }
+
+  if (scrollBtn && mainContent) {
+    // Initial position setup
+    setButtonPosition();
+
+    // Recalculate position on window resize
+    window.addEventListener('resize', setButtonPosition);
+
+    // Toggle visibility based on scroll position
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 300) {
+        scrollBtn.classList.remove('hidden');
+        scrollBtn.classList.add('block');
+      } else {
+        scrollBtn.classList.add('hidden');
+        scrollBtn.classList.remove('block');
+      }
+    });
+
+    // Smooth scroll to top
+    scrollBtn.addEventListener('click', () => {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  }
+</script>

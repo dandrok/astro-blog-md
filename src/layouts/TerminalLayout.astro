@@ -1,6 +1,8 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
 import { Terminal } from '../components/features/Terminal';
+import ScrollToTop from '../components/common/ScrollToTop.astro';
+import Footer from '../components/Footer.astro';
 
 // Props interface
 type Props = {
@@ -74,24 +76,25 @@ const { title, description } = Astro.props;
     </a>
 
     <!-- Blog Content (main content when terminal is hidden) -->
-    <main id="main-content" role="main">
-      <slot />
-    </main>
+    <slot />
+
+    <Footer />
 
     <!-- Terminal (hidden by default) -->
     <div id="terminal-container" class="terminal-container" role="application" aria-label="Terminal emulator">
       <Terminal
         client:only="react"
-        key="terminal-component"
         onExit={() => {
           // Hide terminal without page reload
           window.hideTerminal();
         }}
       />
-    </main>
+    </div>
+
+    <ScrollToTop />
 
     <!-- Terminal Control Script -->
-    <script>
+    <script is:inline>
       // Make functions globally available
       window.showTerminal = function() {
         const terminal = document.getElementById('terminal-container');
