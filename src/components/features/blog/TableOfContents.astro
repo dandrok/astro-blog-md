@@ -90,9 +90,9 @@ const tocTree = buildToc(filteredHeadings);
   };
 
   let isManualScroll = false;
-  let manualScrollTimeout;
+  let manualScrollTimeout: ReturnType<typeof setTimeout> | undefined;
 
-  function updateActiveLink(id) {
+  function updateActiveLink(id: string | null | undefined) {
     const tocLink = document.querySelector(`.toc-link[data-slug="${id}"]`);
     if (!tocLink) return;
 
@@ -159,7 +159,7 @@ const tocTree = buildToc(filteredHeadings);
 
   // Handle click events
   document.querySelectorAll('.toc-link').forEach((link) => {
-    link.addEventListener('click', (e) => {
+    link.addEventListener('click', () => {
       const id = link.getAttribute('data-slug');
       
       // Disable observer temporarily

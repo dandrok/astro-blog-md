@@ -20,7 +20,7 @@
     return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
   }
 
-  function renderTheme(theme) {
+  function renderTheme(theme: 'light' | 'dark') {
     if (!button) return;
     const isLight = theme === 'light';
     button.textContent = isLight ? 'theme=light' : 'theme=night';
@@ -28,7 +28,7 @@
     button.setAttribute('aria-label', isLight ? 'Switch to night theme' : 'Switch to light theme');
   }
 
-  function applyTheme(theme) {
+  function applyTheme(theme: 'light' | 'dark') {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(storageKey, theme);
     renderTheme(theme);

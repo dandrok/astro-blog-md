@@ -11,7 +11,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "type-check": "tsc --noEmit",
+    "type-check": "astro check",
     "lint": "echo 'Linting not configured yet'"
   },
   "dependencies": {
@@ -24,7 +24,9 @@
     "tailwindcss": "^4.1.16"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.8",
     "@vitest/ui": "^4.0.14",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.14"
   }
 }
