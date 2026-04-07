@@ -1,0 +1,42 @@
+---
+---
+<button
+  type="button"
+  id="theme-toggle"
+  class="theme-toggle"
+  aria-label="Toggle color theme"
+  aria-pressed="false"
+>
+  theme=night
+</button>
+
+<script>
+  const storageKey = 'theme';
+  const button = document.getElementById('theme-toggle');
+
+  function getTheme() {
+    const saved = localStorage.getItem(storageKey);
+    if (saved === 'light' || saved === 'dark') return saved;
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
+  function renderTheme(theme) {
+    if (!button) return;
+    const isLight = theme === 'light';
+    button.textContent = isLight ? 'theme=light' : 'theme=night';
+    button.setAttribute('aria-pressed', String(isLight));
+    button.setAttribute('aria-label', isLight ? 'Switch to night theme' : 'Switch to light theme');
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(storageKey, theme);
+    renderTheme(theme);
+  }
+
+  renderTheme(getTheme());
+
+  button?.addEventListener('click', () => {
+    applyTheme(getTheme() === 'light' ? 'dark' : 'light');
+  });
+</script>

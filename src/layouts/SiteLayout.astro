@@ -1,0 +1,56 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import ScrollToTop from '../components/common/ScrollToTop.astro';
+import Footer from '../components/Footer.astro';
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead title={title} description={description} />
+    <script is:inline>
+      (() => {
+        const storageKey = 'theme';
+        const saved = localStorage.getItem(storageKey);
+        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        const theme = saved === 'light' || saved === 'dark'
+          ? saved
+          : (prefersLight ? 'light' : 'dark');
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+   
+
+    <slot />
+
+    <Footer />
+    <ScrollToTop />
+
+    <script is:inline>
+      console.log(
+        '%c$ cd%c ~/.file',
+        'color:#00ff41;font-weight:bold;font-size:16px;',
+        'color:#d1fae5;font-size:16px;'
+      );
+
+      console.log(
+        '%cLoaded personal site config.%c\n%cIf you want to connect or talk about code, tools, or ideas:%c\n%chttps://github.com/dandrok%c',
+        'color:#4ade80;font-size:14px;',
+        'color:inherit;',
+        'color:#4ade80;font-size:13px;',
+        'color:inherit;',
+        'color:#d1fae5;font-size:13px;text-decoration:underline;',
+        'color:inherit;'
+      );
+    </script>
+  </body>
+</html>

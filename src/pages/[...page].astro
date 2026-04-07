@@ -1,11 +1,10 @@
 ---
 import { getCollection } from 'astro:content';
-import TerminalLayout from '../layouts/TerminalLayout.astro';
+import SiteLayout from '../layouts/SiteLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import Prose from '../components/common/Prose.astro';
 import PageHeader from '../components/common/PageHeader.astro';
-import BlogList from '../components/features/blog/BlogList.astro';
-import Pagination from '../components/features/blog/Pagination.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import type { GetStaticPaths } from 'astro';
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -16,36 +15,102 @@ export const getStaticPaths = (async ({ paginate }) => {
 }) satisfies GetStaticPaths;
 
 const { page } = Astro.props;
+const recentPosts = page.data.slice(0, 4);
 ---
 
-<TerminalLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+<SiteLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
     
     <PageHeader />
 
-    <div class="space-y-8">
-      {/* Intro - Only show on first page */}
-      {page.currentPage === 1 && (
-        <section class="mb-16">
-          <Prose>
-            <p>
-              Hi, I am dandrok, a software engineer. I like to explore code, systems, and retro aesthetics.
+    {page.currentPage === 1 ? (
+      <div class="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 xl:gap-20 items-start">
+        <aside
+          aria-labelledby="home-profile-title"
+          class="space-y-8 lg:sticky lg:top-8"
+        >
+          <section class="border border-green-400/30 bg-black/20 shadow-[0_0_0_1px_rgba(0,255,65,0.06)] overflow-hidden">
+            <div class="flex items-center justify-between gap-4 px-5 py-3 border-b border-green-400/20 bg-black/25 text-sm uppercase tracking-[0.25em] text-green-500">
+              <span>~/.file/profile</span>
+              <span class="text-green-300">online</span>
+            </div>
+
+            <div class="p-6 space-y-4">
+              <h1 id="home-profile-title" class="sr-only">Profile</h1>
+              <p class="text-green-500">$ cat ~/.file/profile</p>
+              <pre class="m-0 overflow-x-auto border border-green-400/15 bg-black/10 p-4 text-green-300"><code>name=dandrok
+role=software engineer
+focus=cli,tui,systems,astro
+interests=retro-ui,small-tools,writing
+location=internet</code></pre>
+
+              <p class="text-green-500">$ cat ~/.file/README</p>
+              <p class="text-green-400 leading-relaxed">
+                Personal notes, experiments, and project write-ups arranged like a small config directory instead of a traditional portfolio.
+              </p>
+            </div>
+          </section>
+
+          <section class="border border-green-400/20 bg-black/15 p-6">
+            <p class="text-green-500 mb-3">$ tail -f ~/.file/current-focus</p>
+            <ul class="list-none m-0 p-0 space-y-3 text-green-400 leading-relaxed">
+              <li>Building practical CLI and TUI tools.</li>
+              <li>Keeping the site simple, readable, and maintainable.</li>
+              <li>Mixing terminal aesthetics with modern Astro pages.</li>
+            </ul>
+          </section>
+        </aside>
+
+        <section aria-labelledby="recent-posts-title" class="mt-12 lg:mt-0">
+          <header class="mb-10 pb-5 border-b border-green-400/20">
+            <p class="text-green-500 text-sm uppercase tracking-[0.3em] mb-3">
+              ~/writing/recent
             </p>
-          </Prose>
+            <h2 id="recent-posts-title" class="text-3xl text-green-200 uppercase tracking-wide">
+              Recent Files
+            </h2>
+          </header>
+
+          <ol class="list-none m-0 p-0 space-y-8">
+            {recentPosts.map((post, index) => (
+              <li class="border border-green-400/20 bg-black/15 hover:bg-black/25 transition-colors">
+                <a href={`/blog/${post.id}/`} class="block p-6 no-underline group focus:outline-none focus:ring-2 focus:ring-green-400/50">
+                  <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div class="min-w-0">
+                      <p class="text-green-500 text-sm uppercase tracking-[0.3em] mb-3">
+                        File {(index + 1).toString().padStart(2, '0')}
+                      </p>
+                      <h3 class="text-2xl text-green-200 group-hover:text-green-100 transition-colors leading-tight">
+                        {post.data.title}
+                      </h3>
+                    </div>
+                    <p class="text-green-500 text-sm md:pl-6 md:whitespace-nowrap">
+                      <FormattedDate date={post.data.pubDate} />
+                    </p>
+                  </div>
+
+                  {post.data.description && (
+                    <p class="mt-5 text-green-400 leading-relaxed max-w-3xl group-hover:text-green-300 transition-colors">
+                      {post.data.description}
+                    </p>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ol>
+
+          <div class="mt-10 flex justify-end">
+            <a
+              href="/blog/"
+              class="inline-flex items-center gap-3 border border-green-400/30 bg-black/20 px-5 py-3 text-green-300 no-underline hover:text-green-100 hover:bg-black/30 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400/50"
+            >
+              cd ~/writing/archive
+              <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </section>
-      )}
-
-      {/* Blog List */}
-      <BlogList posts={page.data} />
-
-      {/* Pagination */}
-      <Pagination 
-        currentPage={page.currentPage}
-        lastPage={page.lastPage}
-        prevUrl={page.url.prev}
-        nextUrl={page.url.next}
-      />
-    </div>
+      </div>
+    ) : null}
 
   </main>
-</TerminalLayout>
+</SiteLayout>

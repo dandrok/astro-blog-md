@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import type { MarkdownHeading } from 'astro';
-import TerminalLayout from './TerminalLayout.astro';
+import SiteLayout from './SiteLayout.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Prose from '../components/common/Prose.astro';
 import TerminalTitle from '../components/common/TerminalTitle.astro';
@@ -16,7 +16,7 @@ type Props = CollectionEntry<'blog'>['data'] & {
 const { title, description, pubDate, updatedDate, heroImage, headings = [] } = Astro.props;
 ---
 
-<TerminalLayout title={title} description={description}>
+<SiteLayout title={title} description={description}>
   <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 relative z-[2]">
     
     <PageHeader showBackButton={true} />
@@ -39,6 +39,7 @@ const { title, description, pubDate, updatedDate, heroImage, headings = [] } = A
         <!-- Article header with improved typography -->
         <header class="space-y-4 pb-8 border-b border-green-400/30">
           <div class="text-green-400 text-sm space-y-2">
+            <p>~/blog/{Astro.params?.slug || title.toLowerCase().replace(/\s+/g, '-')}</p>
             <time datetime={pubDate.toISOString()} class="block">
               Published: <FormattedDate date={pubDate} />
             </time>
@@ -66,4 +67,4 @@ const { title, description, pubDate, updatedDate, heroImage, headings = [] } = A
       </aside>
     </div>
   </main>
-</TerminalLayout>
+</SiteLayout>

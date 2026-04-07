@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import TerminalLayout from '../../layouts/TerminalLayout.astro';
+import SiteLayout from '../../layouts/SiteLayout.astro';
 import Prose from '../../components/common/Prose.astro';
 import PageHeader from '../../components/common/PageHeader.astro';
 import BlogList from '../../components/features/blog/BlogList.astro';
@@ -11,7 +11,7 @@ const posts = (await getCollection('blog')).sort(
 );
 ---
 
-<TerminalLayout title={`${SITE_TITLE} - Blog`} description={SITE_DESCRIPTION}>
+<SiteLayout title={`${SITE_TITLE} - Blog`} description={SITE_DESCRIPTION}>
   <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
     
     <PageHeader showBackButton={true} />
@@ -24,7 +24,7 @@ const posts = (await getCollection('blog')).sort(
             > ~/blog
           </h1>
           <p class="text-green-500 text-lg">
-            All posts and articles
+            All posts and articles, collected in one place.
           </p>
         </Prose>
       </section>
@@ -38,7 +38,7 @@ const posts = (await getCollection('blog')).sort(
             <h2 class="text-2xl text-green-300 font-semibold mb-4">No Posts Found</h2>
             <p class="text-green-500">The posts directory appears to be empty.</p>
             <p class="text-green-400 mt-4">
-              Try switching to terminal mode and exploring the file system, or check back later for new content.
+              Check back later for new content.
             </p>
           </Prose>
         </section>
@@ -46,4 +46,4 @@ const posts = (await getCollection('blog')).sort(
     </div>
 
   </main>
-</TerminalLayout>
+</SiteLayout>
