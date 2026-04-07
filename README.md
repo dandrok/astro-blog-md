@@ -1,122 +1,116 @@
-# Terminal Blog - A Retro Terminal-Inspired Astro Blog
+# .file
 
-A dual-mode blog built with Astro that features a retro green-on-black terminal aesthetic with an interactive terminal emulator.
+Personal notes, projects, and write-ups presented like a Unix home directory.
 
-## ✨ Features
+This repository powers [thedotfile.com](https://thedotfile.com/), an Astro-based blog with a dotfile-inspired interface, terminal-flavored typography, and light/night theme support.
 
-- **Dual-Mode Experience**: Switch between traditional blog view and interactive terminal mode
-- **Retro Terminal Aesthetic**: Green-on-black matrix-style theme with CRT effects
-- **Interactive Terminal**: Fully functional command-line interface with file system navigation
-- **Modern Stack**: Built with Astro, React, TypeScript, and Tailwind CSS
-- **Type-Safe**: Full TypeScript support with Zod validation
-- **Performance Optimized**: Fast static site generation with partial hydration
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+## Features
 
-## 🚀 Project Structure
+- Dotfile-style branding built around `~/.file`
+- Markdown and MDX blog posts with Astro Content Collections
+- Reusable layouts for homepage, blog archive, and post pages
+- Terminal-inspired visual language without a real terminal emulator
+- Theme toggle with `light` and `night` modes
+- Default theme follows system color preference until the user picks one
+- RSS feed and sitemap generation
+
+## Project Structure
 
 ```text
-├── public/                     # Static assets
-├── src/
-│   ├── components/
-│   │   ├── common/            # Reusable components
-│   │   └── features/
-│   │       └── terminal/      # Terminal functionality
-│   │           ├── Terminal.tsx
-│   │           └── types/
-│   │               └── terminal.ts
-│   ├── content/
-│   │   └── blog/              # Blog posts (Markdown/MDX)
-│   ├── layouts/
-│   │   ├── BlogPost.astro
-│   │   └── TerminalLayout.astro
-│   ├── pages/
-│   │   ├── index.astro
-│   │   └── blog/
-│   ├── styles/
-│   │   └── global.css         # Terminal-themed styling
-│   └── types/
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+src/
+├── components/
+│   ├── common/
+│   └── features/blog/
+├── content/blog/
+├── layouts/
+│   ├── BlogPost.astro
+│   └── SiteLayout.astro
+├── pages/
+│   ├── [...page].astro
+│   ├── about.astro
+│   └── blog/
+├── styles/
+│   └── global.css
+└── content.config.ts
 ```
 
-## 🎮 Terminal Commands
+## Tech Stack
 
-When in terminal mode, you can use these commands:
+- Astro
+- Markdown / MDX
+- Tailwind CSS 4
+- Vite
+- Astro Content Collections
+- Vitest
 
-- `help` - Show all available commands
-- `ls [-la]` - List files and directories in current location
-- `cd [dir]` - Change directory (supports `..` for parent)
-- `cat [file]` - Display file contents
-- `clear` - Clear the terminal screen
-- `exit` - Return to blog view
+## Development
 
-## 🛠️ Tech Stack
+```bash
+npm install
+npm run dev
+```
 
-- **Framework**: Astro 5.15+ with Content Collections
-- **UI**: React 19+ with TypeScript
-- **Styling**: Tailwind CSS 4+ with custom terminal theme
-- **Terminal**: xterm.js with fit addon
-- **Validation**: Zod for type safety
-- **Build**: Vite with modern tooling
+The local dev server runs at `http://localhost:4321`.
 
-## 🧞 Commands
+## Available Commands
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+| Command | Action |
+| :-- | :-- |
+| `npm run dev` | Start the local Astro dev server |
+| `npm run build` | Build the production site into `dist/` |
+| `npm run preview` | Preview the production build locally |
+| `npm run test:run` | Run tests once with Vitest |
+| `npm run type-check` | Run TypeScript checks |
 
-## 🎨 Customization
+## Writing Posts
 
-### Terminal Theme
-Edit `src/styles/global.css` to customize:
-- Terminal colors (background, text, links)
-- CRT effects intensity
-- Font styling
-- Animation speeds
-
-### Virtual File System
-The terminal's file system is generated from your blog content in `TerminalLayout.astro`. Modify the `virtualFileSystem` object to add custom files or directories.
-
-### Commands
-Add new terminal commands by extending the `createCommandHandlers` function in `src/components/features/terminal/Terminal.tsx`.
-
-## 📝 Adding Blog Posts
-
-1. Create new Markdown files in `src/content/blog/`
-2. Add frontmatter with title, description, and pubDate
-3. The terminal will automatically include them in the virtual file system
+Add new posts in `src/content/blog/` as `.md` or `.mdx` files.
 
 Example:
+
 ```markdown
 ---
 title: "My New Post"
-description: "A brief description"
-pubDate: 2025-11-08
+description: "Short summary of the post"
+pubDate: 2026-04-07
 ---
 
-# My New Post
+## Overview
 
-Content goes here...
+Post content goes here.
 ```
 
-## 🚀 Deployment
+Supported frontmatter fields:
 
-This project is ready for deployment on:
+- `title`
+- `description`
+- `pubDate`
+- `updatedDate` (optional)
+- `heroImage` (optional)
 
-- **Netlify**: Connect your GitHub repository and enable auto-deploys
-- **Vercel**: Import your repository for continuous deployment
-- **GitHub Pages**: Use the provided workflow in `.github/workflows/`
-- **Any static host**: Build with `npm run build` and deploy `./dist/`
+## Theme
 
-## 🌟 Acknowledgments
+The site supports:
 
-- Built on the Astro Blog template
-- Terminal powered by xterm.js
-- Inspired by retro terminal aesthetics
-- Following Astro + React best practices
+- `night`
+- `light`
+
+The default theme follows the user's system preference through `prefers-color-scheme`.  
+Once a user toggles the theme manually, the choice is stored in `localStorage`.
+
+The main theme logic lives in:
+
+- `src/layouts/SiteLayout.astro`
+- `src/components/common/ThemeToggle.astro`
+- `src/styles/global.css`
+
+## Content and Layout
+
+- `src/pages/[...page].astro` is the homepage
+- `src/pages/blog/index.astro` is the archive page
+- `src/pages/about.astro` is the about page
+- `src/layouts/BlogPost.astro` handles blog post pages
+
+## Notes
+
+This project used to include a more literal terminal-mode concept. The current version is intentionally simpler: it keeps the dotfile and terminal feel, but focuses on readable static pages and maintainable content.
