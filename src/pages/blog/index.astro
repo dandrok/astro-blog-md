@@ -11,7 +11,7 @@ const posts = (await getCollection('blog')).sort(
 );
 ---
 
-<SiteLayout title={`${SITE_TITLE} - Blog`} description={SITE_DESCRIPTION}>
+<SiteLayout title="Blog" description={SITE_DESCRIPTION}>
   <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
     
     <PageHeader showBackButton={true} />
@@ -24,7 +24,6 @@ const posts = (await getCollection('blog')).sort(
             > ~/blog
           </h1>
           <p class="text-green-500 text-lg">
-            All posts and articles, collected in one place.
           </p>
         </Prose>
       </section>

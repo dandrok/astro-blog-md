@@ -5,7 +5,7 @@ import PageHeader from '../components/common/PageHeader.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
-<SiteLayout title={`${SITE_TITLE} - About`} description={SITE_DESCRIPTION}>
+<SiteLayout title="About" description={SITE_DESCRIPTION}>
   <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
     <PageHeader showBackButton={true} />
 
@@ -16,7 +16,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
             > ~/about
           </h1>
           <p class="text-green-500 text-lg">
-            Personal config, not a corporate bio.
           </p>
         </Prose>
       </section>
@@ -26,44 +25,38 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
           <h2>Profile</h2>
           <pre><code>$ cat ~/.file/profile
 
-name=dandrok
-role=software engineer
-focus=cli,tui,systems,astro
-interests=retro-ui,writing,small-tools
+role=fe software engineer
+focus=react,typescript
+interests=retro-ui,small-tools,ai-tooling
 location=internet</code></pre>
 
-          <h2>Shell</h2>
-          <pre><code>$ cat ~/.bashrc
+          <h2>Work</h2>
+          <pre><code>$ cat ~/.config/work/history.ini
 
-alias build="astro build"
-alias write="open editor and keep it simple"
-export THEME="dotfile"
-export STYLE="terminal-inspired"
-export OUTPUT="notes, projects, experiments"</code></pre>
+[stepstone]
+role=software engineer - frontend
+period=2021-present
+work=multi-tenant react applications, auth, onboarding, ai integration
 
-          <h2>Git Config</h2>
-          <pre><code>$ cat ~/.gitconfig
+[promitel]
+role=webmaster / web admin
+period=2019-2021
+work=technical troubleshooting and web administration</code></pre>
 
-[user]
-  name = dandrok
+          <h2>Tooling</h2>
+          <pre><code>$ cat ~/.config/work/tooling.ini
 
-[work]
-  preference = practical over clever
-  bias = simple tools, readable systems
-  notes = ship clean things and keep improving them</code></pre>
+frontend=react,nextjs,redux,tailwind,storybook
+delivery=git,webpack,bamboo,optimizely
+systems=linux,macos,vim,neovim</code></pre>
 
-          <h2>Site Config</h2>
-          <pre><code>$ cat ~/.config/work/profile.ini
+          <h2>AI</h2>
+          <pre><code>$ cat ~/.config/work/ai.ini
 
-[site]
-name=.file
-domain=thedotfile.com
-stack=astro,markdown,tailwind
-theme=dotfiles + terminal
-
-[content]
-posts=projects, write-ups, experiments
-style=short, direct, readable</code></pre>
+interest=high
+focus=coding agents,llm tooling,mcp,local and hosted models,workflow automation
+stack=codex,claude,gemini,deepseek,z-ai,ollama
+usage=code generation,review,automation,research</code></pre>
 
           <h2>Why This Exists</h2>
           <p>
@@ -75,15 +68,16 @@ style=short, direct, readable</code></pre>
 
           <h2>Current Focus</h2>
           <ul>
-            <li>Building practical CLI and TUI tools.</li>
-            <li>Writing about projects in a simple, useful way.</li>
-            <li>Keeping the site lightweight and easy to maintain.</li>
+            <li>Frontend architecture with React and TypeScript.</li>
+            <li>Design systems, SSR interfaces, and multi-tenant product work.</li>
+            <li>AI-assisted developer workflows that improve productivity without adding noise.</li>
           </ul>
 
           <h2>Links</h2>
           <pre><code>$ cat ~/.file/links
 
 github=github.com/dandrok
+email=patryk.stusik@gmail.com
 about=/about/
 writing=/blog/
 rss=/rss.xml</code></pre>
