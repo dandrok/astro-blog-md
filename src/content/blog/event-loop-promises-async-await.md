@@ -122,7 +122,9 @@ getCoffee
 
 - `.then(value => ...)` — runs when the Promise is fulfilled
 - `.catch(err => ...)` — runs when the Promise is rejected
-- `.finally(() => ...)` — always runs, no matter what## Promise Chaining
+- `.finally(() => ...)` — always runs, no matter what
+
+## Promise Chaining
 
 Here's where Promises get really powerful. Each `.then()` returns a **new Promise**, which means you can chain them - passing values from one step to the next.
 
