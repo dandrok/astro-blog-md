@@ -2,7 +2,7 @@
 title: 'Markdown Style Guide'
 description: 'A simple reference for common Markdown patterns used in this Astro blog, with a small note about inline HTML where needed.'
 pubDate: 'Jun 19 2024'
-heroImage: '../../assets/blog-placeholder-1.jpg'
+heroImage: '../../assets/pomo-alert-break-end.png'
 ---
 
 This post is a simple reference for common Markdown patterns that work in this Astro blog.
@@ -39,7 +39,7 @@ This makes basic writing easy. Most blog content is just headings, paragraphs, l
 
 ### Output
 
-![blog placeholder](../../assets/blog-placeholder-about.jpg)
+![blog placeholder](../../assets/pomo-alert-break-end.png)
 
 ## Blockquotes
 
