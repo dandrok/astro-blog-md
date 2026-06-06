@@ -4,7 +4,6 @@
   type="button"
   id="theme-toggle"
   class="theme-toggle"
-  aria-label="Toggle color theme"
   aria-pressed="false"
 >
   theme=night
@@ -25,7 +24,6 @@
     const isLight = theme === 'light';
     button.textContent = isLight ? 'theme=light' : 'theme=night';
     button.setAttribute('aria-pressed', String(isLight));
-    button.setAttribute('aria-label', isLight ? 'Switch to night theme' : 'Switch to light theme');
   }
 
   function applyTheme(theme: 'light' | 'dark') {

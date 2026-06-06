@@ -46,9 +46,9 @@ const filteredHeadings = headings.filter((h) => h.depth > 1 && h.depth < 4);
 const tocTree = buildToc(filteredHeadings);
 ---
 
-<nav class="sticky top-[100px] w-[250px] max-h-[calc(100vh_-_150px)] overflow-y-auto font-mono hidden lg:block toc-scrollbar">
+<nav aria-labelledby="toc-heading" class="sticky top-[100px] w-[250px] max-h-[calc(100vh_-_150px)] overflow-y-auto font-mono hidden lg:block toc-scrollbar">
   <div class="toc-content">
-    <h2 class="text-green-500 text-sm font-bold uppercase mb-4 border-b border-green-500/30 pb-2">
+    <h2 id="toc-heading" class="text-green-500 text-sm font-bold uppercase mb-4 border-b border-green-500/30 pb-2">
       // Contents
     </h2>
     <ul class="toc-root text-sm space-y-1">
@@ -62,7 +62,7 @@ const tocTree = buildToc(filteredHeadings);
             {heading.text}
           </a>
           {heading.children.length > 0 && (
-            <ul class="toc-sublist ml-2 mt-1 space-y-1 hidden">
+            <ul class="toc-sublist ml-2 mt-1 space-y-1 hidden group-focus-within:block">
               {heading.children.map((subHeading) => (
                 <li class="toc-item">
                    <a
@@ -100,6 +100,7 @@ const tocTree = buildToc(filteredHeadings);
     document.querySelectorAll('.toc-link').forEach((link) => {
       link.classList.remove('active', 'text-green-300', 'border-green-500');
       link.classList.add('text-green-400/60', 'border-transparent');
+      link.removeAttribute('aria-current');
     });
 
     // 2. Reset all sublists to hidden
@@ -110,6 +111,7 @@ const tocTree = buildToc(filteredHeadings);
     // 3. Highlight current link
     tocLink.classList.add('active', 'text-green-300', 'border-green-500');
     tocLink.classList.remove('text-green-400/60', 'border-transparent');
+    tocLink.setAttribute('aria-current', 'true');
 
     // 4. Expand parent lists
     let current = tocLink.parentElement;

@@ -145,6 +145,16 @@
     box-sizing: border-box;
   }
 
+  /* Global keyboard focus indicators (WCAG 1.4.1 & 2.4.7) */
+  a:focus-visible, 
+  button:focus-visible,
+  [tabindex="0"]:focus-visible {
+    outline: 2px dashed var(--terminal-text-bright);
+    outline-offset: 4px;
+    background-color: rgba(74, 222, 128, 0.1);
+    border-radius: 2px;
+  }
+
   /* Screen reader only utility */
   .sr-only {
     position: absolute;
@@ -413,12 +423,17 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
   transition: all 0.2s ease;
 }
 
-.terminal-content a:hover,
-.terminal-content a:focus {
+.terminal-content a:hover {
   color: var(--terminal-text-primary);
   background-color: rgba(74, 222, 128, 0.1); /* subtle hover background */
   text-decoration: underline;
-  outline: 2px solid var(--terminal-text-bright);
+}
+
+.terminal-content a:focus-visible {
+  color: var(--terminal-text-primary);
+  background-color: rgba(74, 222, 128, 0.1);
+  text-decoration: underline;
+  outline: 2px dashed var(--terminal-text-bright);
   outline-offset: var(--spacing-1); /* 4px */
 }
 
