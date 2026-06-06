@@ -10,3 +10,107 @@ const { class: className = '' } = Astro.props;
 <div class={`terminal-content ${className}`}>
   <slot />
 </div>
+
+<script>
+  function setupCopyButtons() {
+    const codeBlocks = document.querySelectorAll<HTMLElement>('.terminal-content pre');
+
+    codeBlocks.forEach((block) => {
+      // Avoid adding multiple buttons
+      if (block.querySelector('.copy-button')) return;
+
+      // Ensure pre is relatively positioned
+      const currentPosition = window.getComputedStyle(block).position;
+      if (currentPosition === 'static') {
+        block.style.position = 'relative';
+      }
+
+      const button = document.createElement('button');
+      button.className = 'copy-button';
+      button.type = 'button';
+      button.innerText = 'Copy';
+      button.setAttribute('aria-label', 'Copy code to clipboard');
+
+      button.addEventListener('click', async () => {
+        const code = block.querySelector<HTMLElement>('code');
+        const text = code ? code.innerText : block.innerText;
+
+        try {
+          await navigator.clipboard.writeText(text);
+          button.innerText = 'Copied!';
+          button.classList.add('copied');
+
+          setTimeout(() => {
+            button.innerText = 'Copy';
+            button.classList.remove('copied');
+          }, 2000);
+        } catch (err) {
+          console.error('Failed to copy code: ', err);
+          button.innerText = 'Error';
+        }
+      });
+
+      block.appendChild(button);
+    });
+  }
+
+  setupCopyButtons();
+  document.addEventListener('astro:page-load', setupCopyButtons);
+</script>
+
+<style is:global>
+  .terminal-content pre .copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--terminal-text-muted);
+    background-color: var(--terminal-bg);
+    border: 1px solid var(--terminal-border);
+    border-radius: 4px;
+    opacity: 0;
+    transition:
+      opacity 0.2s ease,
+      color 0.2s ease,
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+    cursor: pointer;
+    z-index: 10;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Show on hover or focus within the pre block */
+  .terminal-content pre:hover .copy-button,
+  .terminal-content pre .copy-button:focus-visible {
+    opacity: 1;
+  }
+
+  .terminal-content pre .copy-button:hover,
+  .terminal-content pre .copy-button:focus-visible {
+    color: var(--terminal-text-primary);
+    background-color: var(--focus-bg);
+    outline: none;
+  }
+
+  .terminal-content pre .copy-button.copied {
+    color: var(--terminal-text-bright);
+    border-color: var(--terminal-primary);
+  }
+
+  /* Regular UI overrides */
+  html[data-ui-mode='regular'] .terminal-content pre .copy-button {
+    font-family: var(--font-regular);
+    border: 1px solid rgba(100, 116, 139, 0.2);
+    border-radius: 6px;
+    background-color: var(--terminal-pre-bg);
+  }
+
+  html[data-ui-mode='regular'] .terminal-content pre .copy-button:hover {
+    background-color: var(--focus-bg);
+    color: var(--terminal-primary);
+    border-color: var(--terminal-primary);
+  }
+</style>

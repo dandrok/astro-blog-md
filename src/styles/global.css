@@ -2,9 +2,12 @@
 
 /* Import authentic terminal font for Matrix experience */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+/* Import Google Fonts for Regular UI */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 /* Import Tailwind v4 */
 @import 'tailwindcss';
+@import './regular-ui.css';
 
 @theme {
   /* Authentic Matrix terminal font */
@@ -480,6 +483,19 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
   border-radius: var(--spacing-1); /* 4px */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
+}
+
+/* Force Shiki to respect data-theme instead of OS preference */
+html[data-theme='light'] .astro-code,
+html[data-theme='light'] .astro-code span {
+  color: var(--shiki-light, var(--terminal-text-primary)) !important;
+  background-color: transparent !important;
+}
+
+html[data-theme='dark'] .astro-code,
+html[data-theme='dark'] .astro-code span {
+  color: var(--shiki-dark, var(--terminal-text-primary)) !important;
+  background-color: transparent !important;
 }
 
 /* Terminal code blocks - authentic terminal output with proper spacing */

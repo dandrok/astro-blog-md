@@ -17,12 +17,21 @@ const { title, description } = Astro.props;
     <BaseHead title={title} description={description} />
     <script is:inline>
       (() => {
-        const storageKey = 'theme';
-        const saved = localStorage.getItem(storageKey);
+        const themeStorageKey = 'theme';
+        const savedTheme = localStorage.getItem(themeStorageKey);
         const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
         const theme =
-          saved === 'light' || saved === 'dark' ? saved : prefersLight ? 'light' : 'dark';
+          savedTheme === 'light' || savedTheme === 'dark'
+            ? savedTheme
+            : prefersLight
+              ? 'light'
+              : 'dark';
         document.documentElement.dataset.theme = theme;
+
+        const uiStorageKey = 'ui-mode';
+        const savedUi = localStorage.getItem(uiStorageKey);
+        const uiMode = savedUi === 'regular' || savedUi === 'terminal' ? savedUi : 'terminal';
+        document.documentElement.dataset.uiMode = uiMode;
       })();
     </script>
   </head>

@@ -1,0 +1,77 @@
+---
+
+---
+
+<button
+  type="button"
+  id="ui-toggle"
+  class="theme-toggle ui-toggle"
+  aria-pressed="false"
+  title="Toggle UI Mode"
+>
+  ui=terminal
+</button>
+
+<script>
+  const storageKey = 'ui-mode';
+  const button = document.getElementById('ui-toggle');
+
+  function getUiMode() {
+    const saved = localStorage.getItem(storageKey);
+    if (saved === 'regular' || saved === 'terminal') return saved;
+    return document.documentElement.dataset.uiMode === 'regular' ? 'regular' : 'terminal';
+  }
+
+  function renderUiMode(mode: string) {
+    if (!button) return;
+    const isRegular = mode === 'regular';
+    button.textContent = isRegular ? 'ui=regular' : 'ui=terminal';
+    button.setAttribute('aria-pressed', String(isRegular));
+  }
+
+  function applyUiMode(mode: string, animate = false) {
+    if (animate) {
+      document.body.classList.remove('glitch-transition', 'smooth-transition');
+
+      // trigger reflow
+      void document.body.offsetWidth;
+
+      if (mode === 'terminal') {
+        document.body.style.setProperty('--scroll-y', `${window.scrollY}px`);
+        document.body.classList.add('glitch-transition');
+
+        setTimeout(() => {
+          document.body.classList.remove('glitch-transition');
+        }, 400);
+      } else {
+        document.body.classList.add('smooth-transition');
+        setTimeout(() => {
+          document.body.classList.remove('smooth-transition');
+        }, 400);
+      }
+    }
+
+    document.documentElement.dataset.uiMode = mode;
+    localStorage.setItem(storageKey, mode);
+    renderUiMode(mode);
+  }
+
+  // Initial render
+  const initialMode = getUiMode();
+  if (button) {
+    document.documentElement.dataset.uiMode = initialMode;
+    localStorage.setItem(storageKey, initialMode);
+    renderUiMode(initialMode);
+  }
+
+  button?.addEventListener('click', () => {
+    applyUiMode(getUiMode() === 'terminal' ? 'regular' : 'terminal', true);
+  });
+</script>
+
+<style>
+  /* Base styles inherited from theme-toggle */
+  .ui-toggle {
+    margin-left: 0.5rem;
+  }
+</style>
