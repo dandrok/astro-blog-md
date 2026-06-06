@@ -8,7 +8,7 @@ describe('Date Formatting', () => {
       month: 'short',
       day: 'numeric',
     });
-    
+
     expect(formatted).toBe('Jan 15, 2024');
   });
 

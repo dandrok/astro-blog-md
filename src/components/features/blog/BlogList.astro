@@ -11,9 +11,7 @@ const { posts, showDescription = true } = Astro.props;
 ---
 
 <section>
-  <ul class="list-none p-0 m-0 space-y-8">
-    {posts.map((post) => (
-      <BlogPostPreview post={post} showDescription={showDescription} />
-    ))}
+  <ul class="m-0 list-none space-y-8 p-0">
+    {posts.map((post) => <BlogPostPreview post={post} showDescription={showDescription} />)}
   </ul>
 </section>

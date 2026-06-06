@@ -11,34 +11,63 @@ type Props = {
 const { title, level = 1, showCursor = true, class: className = '' } = Astro.props;
 ---
 
-<!-- Terminal-style heading with consistent spacing -->
-{level === 1 && (
-  <h1 class={`text-4xl mt-0 mb-6 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h1>
-)}
-{level === 2 && (
-  <h2 class={`text-3xl mt-8 mb-4 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h2>
-)}
-{level === 3 && (
-  <h3 class={`text-2xl mt-8 mb-4 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h3>
-)}
-{level === 4 && (
-  <h4 class={`text-xl mt-6 mb-3 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h4>
-)}
-{level === 5 && (
-  <h5 class={`text-lg mt-6 mb-3 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h5>
-)}
-{level === 6 && (
-  <h6 class={`text-base mt-6 mb-3 font-normal text-green-200 leading-tight uppercase tracking-wide ${className}`}>
-    {title}{showCursor && <PulseCursor />}
-  </h6>
-)}
+<!-- Terminal-style heading with consistent spacing -->{
+  level === 1 && (
+    <h1
+      class={`mt-0 mb-6 text-4xl leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h1>
+  )
+}
+{
+  level === 2 && (
+    <h2
+      class={`mt-8 mb-4 text-3xl leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h2>
+  )
+}
+{
+  level === 3 && (
+    <h3
+      class={`mt-8 mb-4 text-2xl leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h3>
+  )
+}
+{
+  level === 4 && (
+    <h4
+      class={`mt-6 mb-3 text-xl leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h4>
+  )
+}
+{
+  level === 5 && (
+    <h5
+      class={`mt-6 mb-3 text-lg leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h5>
+  )
+}
+{
+  level === 6 && (
+    <h6
+      class={`mt-6 mb-3 text-base leading-tight font-normal tracking-wide text-green-200 uppercase ${className}`}
+    >
+      {title}
+      {showCursor && <PulseCursor />}
+    </h6>
+  )
+}

@@ -1,6 +1,6 @@
 ---
-title: "Building a Terminal-Inspired Blog with Astro"
-description: "A simple look at how this Astro blog uses Markdown content, reusable layouts, and terminal-inspired styling without overcomplicating the setup."
+title: 'Building a Terminal-Inspired Blog with Astro'
+description: 'A simple look at how this Astro blog uses Markdown content, reusable layouts, and terminal-inspired styling without overcomplicating the setup.'
 pubDate: 2025-11-08
 ---
 

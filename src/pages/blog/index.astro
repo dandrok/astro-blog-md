@@ -4,45 +4,39 @@ import SiteLayout from '../../layouts/SiteLayout.astro';
 import Prose from '../../components/common/Prose.astro';
 import PageHeader from '../../components/common/PageHeader.astro';
 import BlogList from '../../components/features/blog/BlogList.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { SITE_DESCRIPTION } from '../../consts';
 
 const posts = (await getCollection('blog')).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 ---
 
 <SiteLayout title="Blog" description={SITE_DESCRIPTION}>
-  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
-    
+  <main id="main-content" class="mx-auto min-h-screen max-w-6xl px-6 py-8 pb-16 font-mono">
     <PageHeader showBackButton={true} />
 
     <div class="space-y-8">
       {/* Blog Title */}
       <section class="mb-16">
         <Prose>
-          <h1 class="text-4xl text-green-300 font-semibold mb-4">
-            > ~/blog
-          </h1>
-          <p class="text-green-500 text-lg">
-          </p>
+          <h1 class="mb-4 text-4xl font-semibold text-green-300">&gt; ~/blog</h1>
         </Prose>
       </section>
 
       {/* Blog List */}
-      {posts.length > 0 ? (
-        <BlogList posts={posts} />
-      ) : (
-        <section class="text-center py-12">
-          <Prose>
-            <h2 class="text-2xl text-green-300 font-semibold mb-4">No Posts Found</h2>
-            <p class="text-green-500">The posts directory appears to be empty.</p>
-            <p class="text-green-400 mt-4">
-              Check back later for new content.
-            </p>
-          </Prose>
-        </section>
-      )}
+      {
+        posts.length > 0 ? (
+          <BlogList posts={posts} />
+        ) : (
+          <section class="py-12 text-center">
+            <Prose>
+              <h2 class="mb-4 text-2xl font-semibold text-green-300">No Posts Found</h2>
+              <p class="text-green-500">The posts directory appears to be empty.</p>
+              <p class="mt-4 text-green-400">Check back later for new content.</p>
+            </Prose>
+          </section>
+        )
+      }
     </div>
-
   </main>
 </SiteLayout>

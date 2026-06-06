@@ -20,7 +20,7 @@ function buildToc(headings: MarkdownHeading[]) {
     const item: TocItem = { ...h, children: [] };
 
     if (parentStack.length === 0 || h.depth <= parentStack[parentStack.length - 1].depth) {
-       // Pop items from stack until we find a parent with lower depth
+      // Pop items from stack until we find a parent with lower depth
       while (parentStack.length > 0 && h.depth <= parentStack[parentStack.length - 1].depth) {
         parentStack.pop();
       }
@@ -33,7 +33,7 @@ function buildToc(headings: MarkdownHeading[]) {
       // Add as root item
       toc.push(item);
     }
-    
+
     // Push current item as potential parent for next items
     parentStack.push(item);
   });
@@ -46,38 +46,46 @@ const filteredHeadings = headings.filter((h) => h.depth > 1 && h.depth < 4);
 const tocTree = buildToc(filteredHeadings);
 ---
 
-<nav class="sticky top-[100px] w-[250px] max-h-[calc(100vh_-_150px)] overflow-y-auto font-mono hidden lg:block toc-scrollbar">
+<nav
+  aria-labelledby="toc-heading"
+  class="toc-scrollbar sticky top-[100px] hidden max-h-[calc(100vh_-_150px)] w-[250px] overflow-y-auto font-mono lg:block"
+>
   <div class="toc-content">
-    <h2 class="text-green-500 text-sm font-bold uppercase mb-4 border-b border-green-500/30 pb-2">
+    <h2
+      id="toc-heading"
+      class="mb-4 border-b border-green-500/30 pb-2 text-sm font-bold text-green-500 uppercase"
+    >
       // Contents
     </h2>
-    <ul class="toc-root text-sm space-y-1">
-      {tocTree.map((heading) => (
-        <li class="toc-item group">
-          <a
-            href={`#${heading.slug}`}
-            class="toc-link text-green-400/60 hover:text-green-400 transition-colors block border-l-2 border-transparent pl-3 py-1 relative"
-            data-slug={heading.slug}
-          >
-            {heading.text}
-          </a>
-          {heading.children.length > 0 && (
-            <ul class="toc-sublist ml-2 mt-1 space-y-1 hidden">
-              {heading.children.map((subHeading) => (
-                <li class="toc-item">
-                   <a
-                    href={`#${subHeading.slug}`}
-                    class="toc-link text-green-400/60 hover:text-green-400 transition-colors block border-l-2 border-transparent pl-3 py-1 relative text-xs"
-                    data-slug={subHeading.slug}
-                  >
-                    {subHeading.text}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </li>
-      ))}
+    <ul class="toc-root space-y-1 text-sm">
+      {
+        tocTree.map((heading) => (
+          <li class="toc-item group">
+            <a
+              href={`#${heading.slug}`}
+              class="toc-link relative block border-l-2 border-transparent py-1 pl-3 text-green-400/60 transition-colors hover:text-green-400"
+              data-slug={heading.slug}
+            >
+              {heading.text}
+            </a>
+            {heading.children.length > 0 && (
+              <ul class="toc-sublist mt-1 ml-2 hidden space-y-1 group-focus-within:block">
+                {heading.children.map((subHeading) => (
+                  <li class="toc-item">
+                    <a
+                      href={`#${subHeading.slug}`}
+                      class="toc-link relative block border-l-2 border-transparent py-1 pl-3 text-xs text-green-400/60 transition-colors hover:text-green-400"
+                      data-slug={subHeading.slug}
+                    >
+                      {subHeading.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))
+      }
     </ul>
   </div>
 </nav>
@@ -86,7 +94,7 @@ const tocTree = buildToc(filteredHeadings);
   const observerOptions = {
     root: null,
     rootMargin: '0px 0px -50% 0px', // Trigger when elements enter/exit the top half
-    threshold: 0
+    threshold: 0,
   };
 
   let isManualScroll = false;
@@ -100,28 +108,30 @@ const tocTree = buildToc(filteredHeadings);
     document.querySelectorAll('.toc-link').forEach((link) => {
       link.classList.remove('active', 'text-green-300', 'border-green-500');
       link.classList.add('text-green-400/60', 'border-transparent');
+      link.removeAttribute('aria-current');
     });
 
     // 2. Reset all sublists to hidden
     document.querySelectorAll('.toc-sublist').forEach((list) => {
-       list.classList.add('hidden');
+      list.classList.add('hidden');
     });
 
     // 3. Highlight current link
     tocLink.classList.add('active', 'text-green-300', 'border-green-500');
     tocLink.classList.remove('text-green-400/60', 'border-transparent');
+    tocLink.setAttribute('aria-current', 'true');
 
     // 4. Expand parent lists
     let current = tocLink.parentElement;
-    while(current && !current.classList.contains('toc-root')) {
-        if (current.tagName === 'LI') {
-             const sublist = current.querySelector('.toc-sublist');
-             if (sublist) sublist.classList.remove('hidden');
-        }
-        if (current.tagName === 'UL' && current.classList.contains('toc-sublist')) {
-            current.classList.remove('hidden');
-        }
-        current = current.parentElement;
+    while (current && !current.classList.contains('toc-root')) {
+      if (current.tagName === 'LI') {
+        const sublist = current.querySelector('.toc-sublist');
+        if (sublist) sublist.classList.remove('hidden');
+      }
+      if (current.tagName === 'UL' && current.classList.contains('toc-sublist')) {
+        current.classList.remove('hidden');
+      }
+      current = current.parentElement;
     }
   }
 
@@ -132,7 +142,7 @@ const tocTree = buildToc(filteredHeadings);
     let activeHeadingId = headings[0]?.id;
 
     // 1. Check if we are at the bottom of the page
-    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10) {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 10) {
       activeHeadingId = headings[headings.length - 1]?.id;
     } else {
       // 2. Standard scan: find last heading above threshold
@@ -161,11 +171,11 @@ const tocTree = buildToc(filteredHeadings);
   document.querySelectorAll('.toc-link').forEach((link) => {
     link.addEventListener('click', () => {
       const id = link.getAttribute('data-slug');
-      
+
       // Disable observer temporarily
       isManualScroll = true;
       clearTimeout(manualScrollTimeout);
-      
+
       // Update UI immediately
       updateActiveLink(id);
 

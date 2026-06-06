@@ -5,10 +5,12 @@ This document outlines the architecture, best practices, and implementation deta
 ## Project Overview
 
 **Core Concept**: A retro terminal-themed blog with dual-mode functionality:
+
 - **Blog View**: Traditional scrollable blog interface with terminal styling
 - **Terminal Mode**: Interactive command-line interface for navigating blog content
 
 **Tech Stack**:
+
 - Astro 5.15+ with Content Collections
 - React 19+ with TypeScript
 - Tailwind CSS 4+ for styling
@@ -18,6 +20,7 @@ This document outlines the architecture, best practices, and implementation deta
 ## MCP Server for Astro Documentation
 
 **Critical:** During development, always use the **Astro MCP Server** with Claude AI to:
+
 - Access real-time Astro documentation and best practices
 - Get accurate, up-to-date guidance on Astro features and APIs
 - Ensure you're following current Astro conventions and patterns
@@ -99,7 +102,7 @@ const blogCollection = defineCollection({
 });
 
 export const collections = {
-  'blog': blogCollection,
+  blog: blogCollection,
 };
 ```
 
@@ -124,7 +127,7 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('blog');
-  return posts.map(post => ({
+  return posts.map((post) => ({
     params: { slug: post.slug },
     props: { post },
   }));
@@ -180,6 +183,7 @@ interface ButtonProps {
 ```
 
 **Use `interface` only when:**
+
 - Extending other interfaces (declaration merging)
 - Defining public API contracts for libraries
 - Working with classes (rare in modern React/Astro)
@@ -234,7 +238,7 @@ type ButtonProps = {
 
 export function Button({ variant, size = 'md', onClick, children }: ButtonProps) {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={`btn-${variant} btn-${size}`}
     >
@@ -275,17 +279,17 @@ The terminal uses a virtual file system generated from Astro content collections
 const virtualFileSystem = {
   'about.md': {
     type: 'file',
-    content: 'About page content...'
+    content: 'About page content...',
   },
-  'posts': {
+  posts: {
     type: 'dir',
     children: {
       'first-post.md': {
         type: 'file',
-        content: 'Blog post content...'
-      }
-    }
-  }
+        content: 'Blog post content...',
+      },
+    },
+  },
 };
 ```
 
@@ -297,7 +301,10 @@ Implemented commands follow a modular pattern:
 type TerminalCommand = {
   name: string;
   description: string;
-  handler: (args: string[], state: TerminalState) => {
+  handler: (
+    args: string[],
+    state: TerminalState,
+  ) => {
     output: string;
     newState?: Partial<TerminalState>;
   };
@@ -305,6 +312,7 @@ type TerminalCommand = {
 ```
 
 **Available Commands**:
+
 - `help` - Shows available commands
 - `ls [-la]` - Lists directory contents
 - `cd [dir]` - Changes directory
@@ -342,7 +350,7 @@ Terminal theme uses CSS variables for consistency:
 
 /* CRT effects */
 body::before {
-  background: linear-gradient(transparent 50%, rgba(0,255,0,0.03) 50%);
+  background: linear-gradient(transparent 50%, rgba(0, 255, 0, 0.03) 50%);
 }
 ```
 
@@ -405,9 +413,9 @@ import { cartItems, cartOpen, toggleCart } from '@stores/cart';
 export function CartButton() {
   const $cartItems = useStore(cartItems);
   const $cartOpen = useStore(cartOpen);
-  
+
   const itemCount = Object.keys($cartItems).length;
-  
+
   return (
     <button onClick={toggleCart}>
       Cart ({itemCount})
@@ -463,7 +471,7 @@ export const preferences = persistentAtom<UserPreferences>(
   {
     encode: JSON.stringify,
     decode: JSON.parse,
-  }
+  },
 );
 ```
 
@@ -491,7 +499,7 @@ type ButtonProps = {
 
 export function Button({ variant, onClick, children }: ButtonProps) {
   return (
-    <button 
+    <button
       onClick={onClick}
       className={`btn-${variant}`}
     >
@@ -529,7 +537,7 @@ export function ContactForm() {
     }
     // Process valid data
   };
-  
+
   // ... rest of component
 }
 ```
@@ -550,6 +558,7 @@ Only hydrate what needs interactivity. Static content stays as HTML.
 ### Refactoring Triggers
 
 Consider splitting when a component:
+
 - Exceeds 150-200 lines
 - Manages state, fetches data, AND renders complex UI
 - Has multiple unrelated concerns
@@ -562,6 +571,7 @@ npm install --save-dev rollup-plugin-visualizer
 ```
 
 Add to `astro.config.mjs`:
+
 ```javascript
 import { visualizer } from 'rollup-plugin-visualizer';
 
@@ -777,7 +787,7 @@ title: 'Getting Started with Astro, React, and TypeScript'
 pubDate: 2025-11-05
 description: 'Learn how to build a modern blog with Astro, React, and TypeScript.'
 author: 'Your Name'
-tags: ["astro", "react", "typescript", "web development"]
+tags: ['astro', 'react', 'typescript', 'web development']
 draft: false
 ---
 
@@ -795,6 +805,7 @@ Welcome to my blog! This site demonstrates the power of combining Astro's static
 ## Key Features
 
 This blog includes:
+
 - Type-safe content collections with Zod schemas
 - Partial hydration for optimal performance
 - Modern tooling with ESLint and Prettier
@@ -808,6 +819,7 @@ Stay tuned for more posts about web development!
 ### Using MCP During Development
 
 When working on your Astro project:
+
 - **Always consult the Astro MCP server** via Claude for questions about Astro APIs, patterns, and best practices
 - **Verify implementation approaches** against the official docs through the MCP server
 - **Check for deprecated features** before implementing new functionality
@@ -908,6 +920,7 @@ When working on your Astro project:
 ## 14. Future Enhancements
 
 ### Potential Features
+
 - File editing with `nano` command
 - File search with `grep` command
 - Command autocompletion with Tab
@@ -917,6 +930,7 @@ When working on your Astro project:
 - Multi-user support with authentication
 
 ### Performance Optimizations
+
 - Lazy loading terminal component
 - Optimized bundle splitting
 - Service worker for offline functionality
