@@ -14,25 +14,25 @@
   --font-family-sans: var(--font-mono);
 
   /* Consistent 8px spacing scale for terminal design */
-  --spacing-1: 0.25rem;  /* 4px */
-  --spacing-2: 0.5rem;   /* 8px */
-  --spacing-3: 0.75rem;  /* 12px */
-  --spacing-4: 1rem;     /* 16px */
-  --spacing-6: 1.5rem;   /* 24px */
-  --spacing-8: 2rem;     /* 32px */
-  --spacing-12: 3rem;    /* 48px */
-  --spacing-16: 4rem;    /* 64px */
-  --spacing-24: 6rem;    /* 96px */
+  --spacing-1: 0.25rem; /* 4px */
+  --spacing-2: 0.5rem; /* 8px */
+  --spacing-3: 0.75rem; /* 12px */
+  --spacing-4: 1rem; /* 16px */
+  --spacing-6: 1.5rem; /* 24px */
+  --spacing-8: 2rem; /* 32px */
+  --spacing-12: 3rem; /* 48px */
+  --spacing-16: 4rem; /* 64px */
+  --spacing-24: 6rem; /* 96px */
 
   /* Typography scale with proper terminal hierarchy */
-  --text-xs: 0.75rem;    /* 12px */
-  --text-sm: 0.875rem;   /* 14px */
-  --text-base: 1rem;     /* 16px */
-  --text-lg: 1.125rem;   /* 18px */
-  --text-xl: 1.25rem;    /* 20px */
-  --text-2xl: 1.5rem;    /* 24px */
-  --text-3xl: 1.875rem;  /* 30px */
-  --text-4xl: 2.25rem;   /* 36px */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem; /* 36px */
 
   /* Line heights for readability */
   --leading-tight: 1.25;
@@ -53,6 +53,8 @@
   --terminal-text-secondary: rgb(163 242 176); /* #a3f2b0 - enhanced secondary contrast */
   --terminal-text-muted: rgb(0 204 51); /* #00cc33 - enhanced muted for 7:1 contrast */
   --terminal-text-bright: rgb(209 250 229); /* #d1fae5 - bright green for emphasis */
+  --focus-bg: rgba(74, 222, 128, 0.1);
+  --radius-sm: 2px;
 }
 
 @layer base {
@@ -93,7 +95,7 @@
 
   /* Authentic CRT scanline effect */
   body::before {
-    content: "";
+    content: '';
     position: fixed;
     top: 0;
     left: 0;
@@ -107,7 +109,7 @@
 
   /* Matrix-style flicker effect */
   body::after {
-    content: "";
+    content: '';
     position: fixed;
     top: 0;
     left: 0;
@@ -146,13 +148,13 @@
   }
 
   /* Global keyboard focus indicators (WCAG 1.4.1 & 2.4.7) */
-  a:focus-visible, 
+  a:focus-visible,
   button:focus-visible,
-  [tabindex="0"]:focus-visible {
+  [tabindex='0']:focus-visible {
     outline: 2px dashed var(--terminal-text-bright);
-    outline-offset: 4px;
-    background-color: rgba(74, 222, 128, 0.1);
-    border-radius: 2px;
+    outline-offset: var(--spacing-1);
+    background-color: var(--focus-bg);
+    border-radius: var(--radius-sm);
   }
 
   /* Screen reader only utility */
@@ -191,7 +193,10 @@
   letter-spacing: 0.08em;
   text-transform: lowercase;
   cursor: pointer;
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .theme-toggle:hover,
@@ -337,9 +342,15 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
 }
 
 @keyframes flicker {
-  0% { opacity: 0.97; }
-  50% { opacity: 1; }
-  100% { opacity: 0.98; }
+  0% {
+    opacity: 0.97;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.98;
+  }
 }
 
 /* Terminal Content Styles - WCAG compliant */
@@ -510,7 +521,7 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
 }
 
 .terminal-content blockquote::before {
-  content: "# ";
+  content: '# ';
   color: var(--terminal-text-muted);
   font-weight: normal;
 }
@@ -539,7 +550,7 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
 }
 
 .terminal-content ul li::before {
-  content: "*";
+  content: '*';
   position: absolute;
   left: 0;
   top: 0;

@@ -7,19 +7,27 @@ type Props = {
   backUrl?: string;
 };
 
-const { showBackButton = false, backText = "cd ..", backUrl = "/" } = Astro.props;
+const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.props;
 ---
 
-<header class="flex items-center justify-between mb-12 h-16">
-  <a href="/" class="text-green-500 font-bold text-xl hover:text-green-400 no-underline transition-colors">
+<header class="mb-12 flex h-16 items-center justify-between">
+  <a
+    href="/"
+    class="text-xl font-bold text-green-500 no-underline transition-colors hover:text-green-400"
+  >
     ~/.file
   </a>
   <div class="flex items-center gap-3">
-    {showBackButton && (
-      <a href={backUrl} class="text-green-500 hover:text-green-400 no-underline transition-colors group flex items-center gap-2">
-        <span class="group-hover:-translate-x-1 transition-transform">←</span> {backText}
-      </a>
-    )}
+    {
+      showBackButton && (
+        <a
+          href={backUrl}
+          class="group flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400"
+        >
+          <span class="transition-transform group-hover:-translate-x-1">←</span> {backText}
+        </a>
+      )
+    }
     <ThemeToggle />
   </div>
 </header>

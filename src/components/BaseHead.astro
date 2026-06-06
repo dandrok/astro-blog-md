@@ -7,9 +7,9 @@ import FallbackImage from '../assets/pomo-alert-break-end.png';
 import { SITE_TITLE } from '../consts';
 
 interface Props {
-	title: string;
-	description: string;
-	image?: ImageMetadata;
+  title: string;
+  description: string;
+  image?: ImageMetadata;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
@@ -24,10 +24,10 @@ const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link
-	rel="alternate"
-	type="application/rss+xml"
-	title={SITE_TITLE}
-	href={new URL('rss.xml', Astro.site)}
+  rel="alternate"
+  type="application/rss+xml"
+  title={SITE_TITLE}
+  href={new URL('rss.xml', Astro.site)}
 />
 <meta name="generator" content={Astro.generator} />
 

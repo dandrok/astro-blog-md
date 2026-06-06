@@ -79,11 +79,11 @@ Blockquotes are useful for notes, quotes, or highlighted callouts.
 
 ### Syntax
 
-````markdown
+```markdown
 | Italics   | Bold     | Code   |
 | --------- | -------- | ------ |
 | _italics_ | **bold** | `code` |
-````
+```
 
 ### Output
 

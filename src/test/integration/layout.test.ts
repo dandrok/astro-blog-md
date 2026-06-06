@@ -19,8 +19,8 @@ describe('Page Layout Integration', () => {
         'footer', // Page footer
         'nav', // Navigation
       ];
-      
-      semanticElements.forEach(element => {
+
+      semanticElements.forEach((element) => {
         expect(element).toBeDefined();
       });
     });
@@ -33,8 +33,8 @@ describe('Page Layout Integration', () => {
         tablet: '768px', // md
         desktop: '1024px', // lg
       };
-      
-      Object.values(breakpoints).forEach(breakpoint => {
+
+      Object.values(breakpoints).forEach((breakpoint) => {
         expect(breakpoint).toMatch(/\d+px/);
       });
     });
@@ -44,8 +44,8 @@ describe('Page Layout Integration', () => {
         'min-h-screen', // Full height on mobile
         'font-mono', // Readable font
       ];
-      
-      mobileFirstClasses.forEach(cls => {
+
+      mobileFirstClasses.forEach((cls) => {
         expect(cls).toBeDefined();
       });
     });
@@ -59,12 +59,12 @@ describe('Page Layout Integration', () => {
         muted: 'text-green-700',
         background: 'bg-black/50',
       };
-      
+
       Object.entries(colors).forEach(([name, value]) => {
         if (name !== 'background') {
           expect(value).toContain('green');
         }
-        expect((colors as any)[name]).toBeDefined();
+        expect(colors[name as keyof typeof colors]).toBeDefined();
       });
     });
 
@@ -75,20 +75,16 @@ describe('Page Layout Integration', () => {
         large: '12', // 3rem
         xlarge: '16', // 4rem
       };
-      
-      Object.values(spacing).forEach(value => {
+
+      Object.values(spacing).forEach((value) => {
         expect(parseInt(value)).toBeGreaterThan(0);
       });
     });
 
     it('should have consistent transitions', () => {
-      const transitions = [
-        'transition-colors',
-        'transition-transform',
-        'duration-200',
-      ];
-      
-      transitions.forEach(transition => {
+      const transitions = ['transition-colors', 'transition-transform', 'duration-200'];
+
+      transitions.forEach((transition) => {
         if (transition.includes('transition')) {
           expect(transition).toContain('transition');
         } else {
@@ -101,34 +97,24 @@ describe('Page Layout Integration', () => {
   describe('Content Structure', () => {
     it('should have proper heading hierarchy', () => {
       const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-      
-      headingLevels.forEach(heading => {
+
+      headingLevels.forEach((heading) => {
         expect(heading).toMatch(/^h[1-6]$/);
       });
     });
 
     it('should have proper link styling', () => {
-      const linkClasses = [
-        'no-underline',
-        'hover:text-green-400',
-        'transition-colors',
-        'group',
-      ];
-      
-      linkClasses.forEach(cls => {
+      const linkClasses = ['no-underline', 'hover:text-green-400', 'transition-colors', 'group'];
+
+      linkClasses.forEach((cls) => {
         expect(cls).toBeDefined();
       });
     });
 
     it('should have proper content sections', () => {
-      const sections = [
-        'blog-list',
-        'pagination',
-        'blog-post',
-        'table-of-contents',
-      ];
-      
-      sections.forEach(section => {
+      const sections = ['blog-list', 'pagination', 'blog-post', 'table-of-contents'];
+
+      sections.forEach((section) => {
         expect(section).toBeDefined();
       });
     });
@@ -141,8 +127,8 @@ describe('Page Layout Integration', () => {
         'component-based', // Reusable components
         'minimal-js', // Astro static generation
       ];
-      
-      efficientPatterns.forEach(pattern => {
+
+      efficientPatterns.forEach((pattern) => {
         expect(pattern).toBeDefined();
       });
     });
@@ -154,8 +140,8 @@ describe('Page Layout Integration', () => {
         'lazy loading',
         'proper alt text',
       ];
-      
-      imageOptimizations.forEach(optimization => {
+
+      imageOptimizations.forEach((optimization) => {
         expect(optimization).toBeDefined();
       });
     });

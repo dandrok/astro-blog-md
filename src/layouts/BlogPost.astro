@@ -13,41 +13,52 @@ type Props = CollectionEntry<'blog'>['data'] & {
   headings?: MarkdownHeading[];
 };
 
-const { title, description, pubDate, updatedDate, heroImage, headings = [] } = Astro.props;
+const {
+  title,
+  description,
+  pubDate,
+  updatedDate,
+  heroImage,
+  heroImageAlt,
+  headings = [],
+} = Astro.props;
 ---
 
 <SiteLayout title={title} description={description}>
-  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 relative z-[2]">
-    
+  <main id="main-content" class="relative z-[2] mx-auto max-w-6xl px-6 py-8 pb-16">
     <PageHeader showBackButton={true} />
 
     <div class="lg:grid lg:grid-cols-[1fr_250px] lg:gap-12">
-      <article class="space-y-8 min-w-0">
+      <article class="min-w-0 space-y-8">
         <!-- Hero image with consistent spacing -->
-        {heroImage && (
-          <div class="mb-8">
-            <Image
-              width={1020}
-              height={510}
-              src={heroImage}
-              alt={title}
-              class="w-full max-w-full h-auto border-2 border-green-400/30 rounded shadow-lg shadow-green-400/10"
-            />
-          </div>
-        )}
+        {
+          heroImage && (
+            <div class="mb-8">
+              <Image
+                width={1020}
+                height={510}
+                src={heroImage}
+                alt={heroImageAlt || title}
+                class="h-auto w-full max-w-full rounded border-2 border-green-400/30 shadow-lg shadow-green-400/10"
+              />
+            </div>
+          )
+        }
 
         <!-- Article header with improved typography -->
-        <header class="space-y-4 pb-8 border-b border-green-400/30">
-          <div class="text-green-400 text-sm space-y-2">
+        <header class="space-y-4 border-b border-green-400/30 pb-8">
+          <div class="space-y-2 text-sm text-green-400">
             <p>~/blog/{Astro.params?.slug || title.toLowerCase().replace(/\s+/g, '-')}</p>
             <time datetime={pubDate.toISOString()} class="block">
               Published: <FormattedDate date={pubDate} />
             </time>
-            {updatedDate && (
-              <time datetime={updatedDate.toISOString()} class="block text-green-500">
-                Last updated: <FormattedDate date={updatedDate} />
-              </time>
-            )}
+            {
+              updatedDate && (
+                <time datetime={updatedDate.toISOString()} class="block text-green-500">
+                  Last updated: <FormattedDate date={updatedDate} />
+                </time>
+              )
+            }
           </div>
 
           <TerminalTitle title={title} level={1} />
@@ -62,7 +73,7 @@ const { title, description, pubDate, updatedDate, heroImage, headings = [] } = A
       </article>
 
       {/* Table of Contents Sidebar */}
-      <aside class="hidden lg:block relative">
+      <aside class="relative hidden lg:block">
         <TableOfContents headings={headings} />
       </aside>
     </div>

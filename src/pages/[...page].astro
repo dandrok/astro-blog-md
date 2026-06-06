@@ -8,7 +8,7 @@ import type { GetStaticPaths } from 'astro';
 
 export const getStaticPaths = (async ({ paginate }) => {
   const posts = (await getCollection('blog')).sort(
-    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+    (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
   );
   return paginate(posts, { pageSize: 5 });
 }) satisfies GetStaticPaths;
@@ -18,96 +18,94 @@ const recentPosts = page.data.slice(0, 4);
 ---
 
 <SiteLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <main id="main-content" class="max-w-6xl mx-auto px-6 py-8 pb-16 min-h-screen font-mono">
-    
+  <main id="main-content" class="mx-auto min-h-screen max-w-6xl px-6 py-8 pb-16 font-mono">
     <PageHeader />
 
-    {page.currentPage === 1 ? (
-      <div class="lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 xl:gap-20 items-start">
-        <aside
-          aria-labelledby="home-profile-title"
-          class="space-y-8 lg:sticky lg:top-8"
-        >
-          <section class="border border-green-400/30 bg-black/20 shadow-[0_0_0_1px_rgba(0,255,65,0.06)] overflow-hidden">
-            <div class="flex items-center justify-between gap-4 px-5 py-3 border-b border-green-400/20 bg-black/25 text-sm uppercase tracking-[0.25em] text-green-500">
-              <span>~/.file/profile</span>
-              <span class="text-green-300">online</span>
-            </div>
+    {
+      page.currentPage === 1 ? (
+        <div class="items-start lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 xl:gap-20">
+          <aside aria-labelledby="home-profile-title" class="space-y-8 lg:sticky lg:top-8">
+            <section class="overflow-hidden border border-green-400/30 bg-black/20 shadow-[0_0_0_1px_rgba(0,255,65,0.06)]">
+              <div class="flex items-center justify-between gap-4 border-b border-green-400/20 bg-black/25 px-5 py-3 text-sm tracking-[0.25em] text-green-500 uppercase">
+                <span>~/.file/profile</span>
+                <span class="text-green-300">online</span>
+              </div>
 
-            <div class="p-6 space-y-4">
-              <h1 id="home-profile-title" class="sr-only">Profile</h1>
-              <p class="text-green-500">$ cat ~/.file/profile</p>
-              <pre class="m-0 overflow-x-auto border border-green-400/15 bg-black/10 p-4 text-green-300"><code>role=fe software engineer
-focus=react,typescript
-location=internet</code></pre>
+              <div class="space-y-4 p-6">
+                <h1 id="home-profile-title" class="sr-only">
+                  Profile
+                </h1>
+                
+                <p class="text-green-500">$ cat ~/.file/README</p>
+                <p class="leading-relaxed text-green-400">
+                  I build scalable frontend applications, TUIs, and
+                  practical developer workflows. This site is where I keep project notes,
+                  experiments, and write-ups in a small dotfile-shaped format.
+                </p>
+              </div>
+            </section>
 
-              <p class="text-green-500">$ cat ~/.file/README</p>
-              <p class="text-green-400 leading-relaxed">
-                I build scalable frontend applications, terminal user interfaces (TUIs), and practical developer workflows. This site is where I keep project notes, experiments, and write-ups in a small dotfile-shaped format.
-              </p>
-            </div>
-          </section>
+            <section class="border border-green-400/20 bg-black/15 p-6">
+              <p class="mb-3 text-green-500">$ tail -f ~/.file/current-focus</p>
+              <ul class="m-0 list-none space-y-3 p-0 leading-relaxed text-green-400">
+                <li>Building React and TypeScript</li>
+                <li>Passionate about LLM and AI tools.</li>
+                <li>Constantly evolving and learning.</li>
+              </ul>
+            </section>
+          </aside>
 
-          <section class="border border-green-400/20 bg-black/15 p-6">
-            <p class="text-green-500 mb-3">$ tail -f ~/.file/current-focus</p>
-            <ul class="list-none m-0 p-0 space-y-3 text-green-400 leading-relaxed">
-              <li>Building React and TypeScript</li>
-              <li>Recently passionate about LLM and AI tools.</li>
-              <li>Constantly evolving and learning.</li>
-            </ul>
-          </section>
-        </aside>
+          <section aria-labelledby="recent-posts-title" class="mt-12 lg:mt-0">
+            <header class="mb-10 border-b border-green-400/20 pb-5">
+              <p class="mb-3 text-sm tracking-[0.3em] text-green-500 uppercase">~/writing/recent</p>
+              <h2 id="recent-posts-title" class="text-3xl tracking-wide text-green-200 uppercase">
+                Recent Files
+              </h2>
+            </header>
 
-        <section aria-labelledby="recent-posts-title" class="mt-12 lg:mt-0">
-          <header class="mb-10 pb-5 border-b border-green-400/20">
-            <p class="text-green-500 text-sm uppercase tracking-[0.3em] mb-3">
-              ~/writing/recent
-            </p>
-            <h2 id="recent-posts-title" class="text-3xl text-green-200 uppercase tracking-wide">
-              Recent Files
-            </h2>
-          </header>
-
-          <ol class="list-none m-0 p-0 space-y-8">
-            {recentPosts.map((post, index) => (
-              <li class="border border-green-400/20 bg-black/15 hover:bg-black/25 transition-colors">
-                <a href={`/blog/${post.id}/`} class="block p-6 no-underline group focus:outline-none focus:ring-2 focus:ring-green-400/50">
-                  <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                    <div class="min-w-0">
-                      <p class="text-green-500 text-sm uppercase tracking-[0.3em] mb-3">
-                        File {(index + 1).toString().padStart(2, '0')}
+            <ol class="m-0 list-none space-y-8 p-0">
+              {recentPosts.map((post, index) => (
+                <li class="border border-green-400/20 bg-black/15 transition-colors hover:bg-black/25">
+                  <a
+                    href={`/blog/${post.id}/`}
+                    class="group block p-6 no-underline focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+                  >
+                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div class="min-w-0">
+                        <p class="mb-3 text-sm tracking-[0.3em] text-green-500 uppercase">
+                          File {(index + 1).toString().padStart(2, '0')}
+                        </p>
+                        <h3 class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100">
+                          {post.data.title}
+                        </h3>
+                      </div>
+                      <p class="text-sm text-green-500 md:pl-6 md:whitespace-nowrap">
+                        <FormattedDate date={post.data.pubDate} />
                       </p>
-                      <h3 class="text-2xl text-green-200 group-hover:text-green-100 transition-colors leading-tight">
-                        {post.data.title}
-                      </h3>
                     </div>
-                    <p class="text-green-500 text-sm md:pl-6 md:whitespace-nowrap">
-                      <FormattedDate date={post.data.pubDate} />
-                    </p>
-                  </div>
 
-                  {post.data.description && (
-                    <p class="mt-5 text-green-400 leading-relaxed max-w-3xl group-hover:text-green-300 transition-colors">
-                      {post.data.description}
-                    </p>
-                  )}
-                </a>
-              </li>
-            ))}
-          </ol>
+                    {post.data.description && (
+                      <p class="mt-5 max-w-3xl leading-relaxed text-green-400 transition-colors group-hover:text-green-300">
+                        {post.data.description}
+                      </p>
+                    )}
+                  </a>
+                </li>
+              ))}
+            </ol>
 
-          <div class="mt-10 flex justify-end">
-            <a
-              href="/blog/"
-              class="inline-flex items-center gap-3 border border-green-400/30 bg-black/20 px-5 py-3 text-green-300 no-underline hover:text-green-100 hover:bg-black/30 transition-colors focus:outline-none focus:ring-2 focus:ring-green-400/50"
-            >
-              cd ~/writing/archive
-              <span aria-hidden="true">→</span>
-            </a>
-          </div>
-        </section>
-      </div>
-    ) : null}
-
+            <div class="mt-10 flex justify-end">
+              <a
+                href="/blog/"
+                class="inline-flex items-center gap-3 border border-green-400/30 bg-black/20 px-5 py-3 text-green-300 no-underline transition-colors hover:bg-black/30 hover:text-green-100 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+              >
+                cd ~/writing/archive
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </section>
+        </div>
+      ) : null
+    }
   </main>
 </SiteLayout>

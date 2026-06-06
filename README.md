@@ -54,13 +54,13 @@ The local dev server runs at `http://localhost:4321`.
 
 ## Available Commands
 
-| Command | Action |
-| :-- | :-- |
-| `npm run dev` | Start the local Astro dev server |
-| `npm run build` | Build the production site into `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run test:run` | Run tests once with Vitest |
-| `npm run type-check` | Run TypeScript checks |
+| Command              | Action                                 |
+| :------------------- | :------------------------------------- |
+| `npm run dev`        | Start the local Astro dev server       |
+| `npm run build`      | Build the production site into `dist/` |
+| `npm run preview`    | Preview the production build locally   |
+| `npm run test:run`   | Run tests once with Vitest             |
+| `npm run type-check` | Run TypeScript checks                  |
 
 ## Writing Posts
 
@@ -70,8 +70,8 @@ Example:
 
 ```markdown
 ---
-title: "My New Post"
-description: "Short summary of the post"
+title: 'My New Post'
+description: 'Short summary of the post'
 pubDate: 2026-04-07
 ---
 
