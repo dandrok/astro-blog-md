@@ -16,8 +16,29 @@
   const storageKey = 'ui-mode';
   const button = document.getElementById('ui-toggle');
 
+  function safeGetItem(key: string): string | null {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function safeSetItem(key: string, value: string): void {
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        // Silently fail if localStorage is not available
+      }
+    }
+  }
+
   function getUiMode() {
-    const saved = localStorage.getItem(storageKey);
+    const saved = safeGetItem(storageKey);
     if (saved === 'regular' || saved === 'terminal') return saved;
     return document.documentElement.dataset.uiMode === 'regular' ? 'regular' : 'terminal';
   }
@@ -52,7 +73,7 @@
     }
 
     document.documentElement.dataset.uiMode = mode;
-    localStorage.setItem(storageKey, mode);
+    safeSetItem(storageKey, mode);
     renderUiMode(mode);
   }
 
@@ -60,7 +81,7 @@
   const initialMode = getUiMode();
   if (button) {
     document.documentElement.dataset.uiMode = initialMode;
-    localStorage.setItem(storageKey, initialMode);
+    safeSetItem(storageKey, initialMode);
     renderUiMode(initialMode);
   }
 
