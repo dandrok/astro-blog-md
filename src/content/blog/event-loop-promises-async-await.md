@@ -2,6 +2,7 @@
 title: 'JavaScript Async Demystified: Event Loop, Promises, and async/await'
 description: 'A practical mental model for async JavaScript, covering the event loop, Promises, Promise utilities, async/await, and error handling.'
 pubDate: 'Apr 27 2026'
+tags: ['javascript', 'async', 'promises']
 ---
 
 > You don't need to fear async JavaScript. You just need the right mental model - and a good cup of coffee. ☕

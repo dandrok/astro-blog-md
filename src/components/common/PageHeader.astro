@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import UiToggle from './UiToggle.astro';
 
 type Props = {
   showBackButton?: boolean;
@@ -10,24 +11,58 @@ type Props = {
 const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.props;
 ---
 
-<header class="mb-12 flex h-16 items-center justify-between">
+<header class={`flex h-16 items-center justify-between ${showBackButton ? 'mb-6' : 'mb-12'}`}>
   <a
     href="/"
     class="text-xl font-bold text-green-500 no-underline transition-colors hover:text-green-400"
   >
     ~/.file
   </a>
-  <div class="flex items-center gap-3">
-    {
-      showBackButton && (
-        <a
-          href={backUrl}
-          class="group flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400"
-        >
-          <span class="transition-transform group-hover:-translate-x-1">←</span> {backText}
-        </a>
-      )
-    }
-    <ThemeToggle />
+  <div class="flex items-center gap-4">
+    <div class="toggle-group">
+      <ThemeToggle />
+      <UiToggle />
+    </div>
   </div>
 </header>
+
+{
+  showBackButton && (
+    <nav aria-label="Breadcrumb" class="mb-10">
+      <a
+        href={backUrl}
+        data-back-btn
+        class="group inline-flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+      >
+        <span class="transition-transform group-hover:-translate-x-1">←</span> {backText}
+      </a>
+    </nav>
+  )
+}
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const backBtn = document.querySelector('a[data-back-btn]');
+    let isInternalReferrer = false;
+
+    if (document.referrer) {
+      try {
+        const referrerUrl = new URL(document.referrer);
+        isInternalReferrer = referrerUrl.host === window.location.host;
+      } catch {
+        // Invalid URL, default to false
+      }
+    }
+
+    if (backBtn && isInternalReferrer) {
+      backBtn.addEventListener('click', (e) => {
+        // Allow standard navigation for modified clicks (cmd+click, etc)
+        const mouseEvent = e as MouseEvent;
+        if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) return;
+
+        e.preventDefault();
+        history.back();
+      });
+    }
+  });
+</script>
