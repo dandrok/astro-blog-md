@@ -1,4 +1,3 @@
-
 @keyframes glitch-anim-1 {
   0% {
     clip-path: inset(0 0 0 0);
@@ -90,10 +89,12 @@ html[data-ui-mode='regular'] {
     'monospace';
 
   /* Dark theme colors for regular mode */
-  --terminal-primary: #3b82f6;
-  --terminal-secondary: #60a5fa;
-  --terminal-accent: #2563eb;
+  --terminal-primary: #60a5fa; /* blue-400 */
+  --terminal-secondary: #3b82f6; /* blue-500 */
+  --terminal-accent: #93c5fd; /* blue-300 */
   --terminal-bg: #0f172a;
+  --surface-bg: #1e293b;
+  --surface-bg-hover: #334155;
   --terminal-border: #334155;
   --terminal-dim: #475569;
   --terminal-text-primary: #f8fafc;
@@ -111,6 +112,8 @@ html[data-theme='light'][data-ui-mode='regular'] {
   --terminal-secondary: #3b82f6;
   --terminal-accent: #1d4ed8;
   --terminal-bg: #ffffff;
+  --surface-bg: #f8fafc;
+  --surface-bg-hover: #f1f5f9;
   --terminal-border: #e2e8f0;
   --terminal-dim: #94a3b8;
   --terminal-text-primary: #0f172a;
@@ -186,10 +189,18 @@ html[data-ui-mode='regular'] .terminal-content a:hover {
 
 /* Override utility colors dynamically for regular mode */
 html[data-ui-mode='regular'] .text-green-500,
-html[data-ui-mode='regular'] .hover\:text-green-500:hover,
-html[data-ui-mode='regular'] header a.text-green-500 {
+html[data-ui-mode='regular'] .hover\:text-green-500:hover {
   color: var(--terminal-primary) !important;
 }
+
+html[data-ui-mode='regular'] header a.text-green-500 {
+  color: var(--terminal-text-primary) !important;
+}
+
+html[data-ui-mode='regular'] .text-green-500\/70 {
+  color: var(--terminal-text-muted) !important;
+}
+
 html[data-ui-mode='regular'] .text-green-400,
 html[data-ui-mode='regular'] .hover\:text-green-400:hover,
 html[data-ui-mode='regular'] header a.hover\:text-green-400:hover,
@@ -211,7 +222,28 @@ html[data-ui-mode='regular'] [class*='border-green-'] {
   border-color: var(--terminal-border) !important;
 }
 html[data-ui-mode='regular'] [class*='bg-black/'] {
-  background-color: var(--terminal-bg) !important;
+  background-color: var(--surface-bg) !important;
+}
+html[data-ui-mode='regular'] .hover\:bg-black\/25:hover,
+html[data-ui-mode='regular'] .hover\:bg-black\/30:hover {
+  background-color: var(--surface-bg-hover) !important;
+}
+html[data-ui-mode='regular'] [class*='bg-green-500/'] {
+  background-color: var(--focus-bg) !important;
+}
+
+/* Modern border-radius for structural elements in regular mode */
+html[data-ui-mode='regular'] section.border,
+html[data-ui-mode='regular'] li.border,
+html[data-ui-mode='regular'] a.border,
+html[data-ui-mode='regular'] img.border-2 {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Tighter radius for tags */
+html[data-ui-mode='regular'] ul.flex-wrap li.border {
+  border-radius: 6px;
 }
 
 /* Table of Contents Overrides */
@@ -270,6 +302,7 @@ html[data-ui-mode='regular'] .terminal-content pre {
   font-family: var(--font-mono);
   background-color: var(--terminal-pre-bg);
   padding: 1.25rem;
+  font-size: 0.95em;
 }
 
 /* Adjust inline code */
@@ -278,7 +311,7 @@ html[data-ui-mode='regular'] .terminal-content code {
   border: none;
   border-radius: 6px;
   color: var(--terminal-text-primary);
-  font-size: 0.875em;
+  font-size: 0.95em;
   padding: 0.2em 0.4em;
 }
 
@@ -319,4 +352,19 @@ html[data-ui-mode='regular'] .theme-toggle:focus-visible {
   color: var(--terminal-text-primary);
   outline: 2px solid var(--terminal-primary);
   border-color: var(--terminal-primary);
+}
+
+html[data-ui-mode='regular'] .toggle-group .theme-toggle {
+  border-radius: 0;
+}
+
+html[data-ui-mode='regular'] .toggle-group .theme-toggle:first-child {
+  border-top-left-radius: 9999px;
+  border-bottom-left-radius: 9999px;
+  border-right-width: 0;
+}
+
+html[data-ui-mode='regular'] .toggle-group .theme-toggle:last-child {
+  border-top-right-radius: 9999px;
+  border-bottom-right-radius: 9999px;
 }

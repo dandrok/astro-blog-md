@@ -2,6 +2,7 @@
 title: 'Building a TUI to Tailor a Resume for a Job Offer'
 description: 'I built Resumer to make resume tailoring less repetitive: pick a PDF, paste a job link, answer a few questions, and export a cleaner version.'
 pubDate: 2026-04-06
+tags: ['tui', 'ai', 'cli']
 ---
 
 ## Overview

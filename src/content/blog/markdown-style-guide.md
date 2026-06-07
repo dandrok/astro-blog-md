@@ -3,6 +3,7 @@ title: 'Markdown Style Guide'
 description: 'A simple reference for common Markdown patterns used in this Astro blog, with a small note about inline HTML where needed.'
 pubDate: 'Jun 19 2024'
 heroImage: '../../assets/pomo-alert-break-end.png'
+tags: ['markdown', 'astro', 'guide']
 ---
 
 This post is a simple reference for common Markdown patterns that work in this Astro blog.

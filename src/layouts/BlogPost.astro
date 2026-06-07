@@ -5,6 +5,7 @@ import type { MarkdownHeading } from 'astro';
 import SiteLayout from './SiteLayout.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Prose from '../components/common/Prose.astro';
+import TagList from '../components/common/TagList.astro';
 import TerminalTitle from '../components/common/TerminalTitle.astro';
 import PageHeader from '../components/common/PageHeader.astro';
 import TableOfContents from '../components/features/blog/TableOfContents.astro';
@@ -20,13 +21,14 @@ const {
   updatedDate,
   heroImage,
   heroImageAlt,
+  tags = [],
   headings = [],
 } = Astro.props;
 ---
 
 <SiteLayout title={title} description={description}>
   <main id="main-content" class="relative z-[2] mx-auto max-w-6xl px-6 py-8 pb-16">
-    <PageHeader showBackButton={true} />
+    <PageHeader showBackButton={true} backUrl="/blog/" />
 
     <div class="lg:grid lg:grid-cols-[1fr_250px] lg:gap-12">
       <article class="min-w-0 space-y-8">
@@ -62,6 +64,8 @@ const {
           </div>
 
           <TerminalTitle title={title} level={1} />
+
+          <TagList tags={tags} class="pt-2" />
         </header>
 
         <!-- Article content with terminal-themed prose styling -->

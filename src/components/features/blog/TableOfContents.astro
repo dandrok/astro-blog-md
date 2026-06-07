@@ -53,11 +53,11 @@ const tocTree = buildToc(filteredHeadings);
   <div class="toc-content">
     <h2
       id="toc-heading"
-      class="mb-4 border-b border-green-500/30 pb-2 text-sm font-bold text-green-500 uppercase"
+      class="mb-4 border-b border-green-500/30 pb-2 text-base font-bold text-green-500 uppercase"
     >
       // Contents
     </h2>
-    <ul class="toc-root space-y-1 text-sm">
+    <ul class="toc-root space-y-1 text-base">
       {
         tocTree.map((heading) => (
           <li class="toc-item group">
@@ -74,7 +74,7 @@ const tocTree = buildToc(filteredHeadings);
                   <li class="toc-item">
                     <a
                       href={`#${subHeading.slug}`}
-                      class="toc-link relative block border-l-2 border-transparent py-1 pl-3 text-xs text-green-400/60 transition-colors hover:text-green-400"
+                      class="toc-link relative block border-l-2 border-transparent py-1 pl-3 text-sm text-green-400/60 transition-colors hover:text-green-400"
                       data-slug={subHeading.slug}
                     >
                       {subHeading.text}

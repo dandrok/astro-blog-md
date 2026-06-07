@@ -4,6 +4,7 @@ import SiteLayout from '../layouts/SiteLayout.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import PageHeader from '../components/common/PageHeader.astro';
 import FormattedDate from '../components/FormattedDate.astro';
+import TagList from '../components/common/TagList.astro';
 import type { GetStaticPaths } from 'astro';
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -89,6 +90,8 @@ const recentPosts = page.data.slice(0, 4);
                         {post.data.description}
                       </p>
                     )}
+
+                    <TagList tags={post.data.tags} class="mt-5" />
                   </a>
                 </li>
               ))}

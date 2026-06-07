@@ -2,6 +2,7 @@
 title: 'Pomo Doro: Building a Sleek, Session-Persistent Pomodoro TUI'
 description: 'I built Pomo Doro to bring a clean, React-powered Pomodoro timer to the terminal—complete with customizable presets, history tracking, desktop notifications, and crash-proof session persistence.'
 pubDate: 2026-05-31
+tags: ['tui', 'react', 'cli']
 ---
 
 ## Overview
