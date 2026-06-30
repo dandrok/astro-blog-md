@@ -75,7 +75,7 @@ usage=code generation,review,automation,research</code></pre>
           <pre><code>$ cat ~/.file/links
 
 <a href="https://github.com/dandrok" target="_blank" rel="noopener noreferrer">github=github.com/dandrok</a>
-<a href="mailto:patryk.stusik@gmail.com">email=patryk.stusik@gmail.com</a>
+<a href="#" id="email-link" data-u="patryk.stusik" data-d="gmail" data-t="com">email=[protected]</a>
 <a href="/about/">about=/about/</a>
 <a href="/blog/">writing=/blog/</a>
 <a href="/rss.xml">rss=/rss.xml</a></code></pre>
@@ -84,3 +84,29 @@ usage=code generation,review,automation,research</code></pre>
     </div>
   </main>
 </SiteLayout>
+
+<script>
+  function setupEmailObfuscation() {
+    const emailLink = document.getElementById('email-link') as HTMLAnchorElement | null;
+    if (!emailLink) return;
+
+    const u = emailLink.getAttribute('data-u');
+    const d = emailLink.getAttribute('data-d');
+    const t = emailLink.getAttribute('data-t');
+    if (!u || !d || !t) return;
+
+    const email = `${u}@${d}.${t}`;
+
+    const reveal = () => {
+      emailLink.href = `mailto:${email}`;
+      emailLink.textContent = `email=${email}`;
+    };
+
+    emailLink.addEventListener('mouseenter', reveal, { once: true });
+    emailLink.addEventListener('focus', reveal, { once: true });
+    emailLink.addEventListener('click', reveal);
+  }
+
+  setupEmailObfuscation();
+  document.addEventListener('astro:page-load', setupEmailObfuscation);
+</script>
