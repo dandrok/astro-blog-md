@@ -75,7 +75,7 @@ usage=code generation,review,automation,research</code></pre>
           <pre><code>$ cat ~/.file/links
 
 <a href="https://github.com/dandrok" target="_blank" rel="noopener noreferrer">github=github.com/dandrok</a>
-<a href="#" id="email-link" data-u="patryk.stusik" data-d="gmail" data-t="com">email=[protected]</a>
+<a href="#" id="email-link" data-u="cnegly.fthfvx" data-d="tznvy" data-t="pbz">email=[protected]</a>
 <a href="/about/">about=/about/</a>
 <a href="/blog/">writing=/blog/</a>
 <a href="/rss.xml">rss=/rss.xml</a></code></pre>
@@ -86,6 +86,15 @@ usage=code generation,review,automation,research</code></pre>
 </SiteLayout>
 
 <script>
+  function rot13(str: string): string {
+    return str.replace(/[a-zA-Z]/g, (c) => {
+      const code = c.charCodeAt(0);
+      const limit = c <= 'Z' ? 90 : 122;
+      const rotated = code + 13;
+      return String.fromCharCode(limit >= rotated ? rotated : rotated - 26);
+    });
+  }
+
   function setupEmailObfuscation() {
     const emailLink = document.getElementById('email-link') as HTMLAnchorElement | null;
     if (!emailLink) return;
@@ -95,7 +104,7 @@ usage=code generation,review,automation,research</code></pre>
     const t = emailLink.getAttribute('data-t');
     if (!u || !d || !t) return;
 
-    const email = `${u}@${d}.${t}`;
+    const email = `${rot13(u)}@${rot13(d)}.${rot13(t)}`;
 
     const reveal = () => {
       emailLink.href = `mailto:${email}`;
