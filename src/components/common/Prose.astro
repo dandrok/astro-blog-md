@@ -12,14 +12,52 @@ const { class: className = '' } = Astro.props;
 </div>
 
 <script>
+  async function setupMermaid() {
+    const mermaidBlocks = document.querySelectorAll<HTMLElement>('pre[data-language="mermaid"]');
+    if (mermaidBlocks.length === 0) return;
+
+    try {
+      const { default: mermaid } = await import(
+        /* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
+      );
+
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: isLight ? 'default' : 'dark',
+        securityLevel: 'loose',
+      });
+
+      mermaidBlocks.forEach((preEl, index) => {
+        const lines = Array.from(preEl.querySelectorAll('.line'));
+        let codeText = '';
+        if (lines.length > 0) {
+          codeText = lines.map((line) => line.textContent).join('\n');
+        } else {
+          codeText = preEl.textContent || '';
+        }
+
+        const container = document.createElement('div');
+        container.className =
+          'mermaid flex justify-center my-6 p-4 rounded bg-green-950/10 dark:bg-green-950/5 border border-green-500/20';
+        container.id = `mermaid-diagram-${index}`;
+        container.textContent = codeText;
+
+        preEl.replaceWith(container);
+      });
+
+      await mermaid.run();
+    } catch (err) {
+      console.error('Failed to render Mermaid diagrams: ', err);
+    }
+  }
+
   function setupCopyButtons() {
     const codeBlocks = document.querySelectorAll<HTMLElement>('.terminal-content pre');
 
     codeBlocks.forEach((block) => {
-      // Avoid adding multiple buttons
       if (block.querySelector('.copy-button')) return;
 
-      // Ensure pre is relatively positioned
       const currentPosition = window.getComputedStyle(block).position;
       if (currentPosition === 'static') {
         block.style.position = 'relative';
@@ -54,8 +92,13 @@ const { class: className = '' } = Astro.props;
     });
   }
 
-  setupCopyButtons();
-  document.addEventListener('astro:page-load', setupCopyButtons);
+  async function initProse() {
+    await setupMermaid();
+    setupCopyButtons();
+  }
+
+  initProse();
+  document.addEventListener('astro:page-load', initProse);
 </script>
 
 <style is:global>
@@ -112,5 +155,115 @@ const { class: className = '' } = Astro.props;
     background-color: var(--focus-bg);
     color: var(--terminal-primary);
     border-color: var(--terminal-primary);
+  }
+
+  /* Mermaid Diagram Custom Colors & A11y Contrast Overrides */
+  :root {
+    --mermaid-node-bg: rgb(15, 23, 42); /* Slate 900 base */
+    --mermaid-node-border: rgb(0, 255, 65); /* Classic terminal green */
+    --mermaid-node-text: rgb(200, 250, 210); /* Accessible text green */
+    --mermaid-edge-line: rgb(0, 204, 51); /* Muted path green */
+    --mermaid-edge-text: rgb(163, 242, 176); /* Distinct green text */
+    --mermaid-edge-bg: rgb(5, 10, 5); /* Dark canvas background */
+    --mermaid-cluster-bg: rgba(0, 255, 65, 0.03); /* Subtle subgraph container */
+    --mermaid-cluster-border: rgba(0, 255, 65, 0.25);
+  }
+
+  html[data-theme='light'] {
+    --mermaid-node-bg: rgb(255, 255, 255); /* Clean contrast white */
+    --mermaid-node-border: rgb(0, 102, 0); /* Accessible dark green */
+    --mermaid-node-text: rgb(33, 37, 41); /* High-contrast dark text */
+    --mermaid-edge-line: rgb(0, 102, 0); /* Accessible dark green path */
+    --mermaid-edge-text: rgb(33, 37, 41); /* High-contrast label text */
+    --mermaid-edge-bg: rgb(248, 249, 250); /* Light backdrop */
+    --mermaid-cluster-bg: rgba(0, 102, 0, 0.03);
+    --mermaid-cluster-border: rgba(0, 102, 0, 0.2);
+  }
+
+  html[data-ui-mode='regular'] {
+    --mermaid-node-bg: #1e293b;
+    --mermaid-node-border: #60a5fa; /* Accessible blue */
+    --mermaid-node-text: #f8fafc;
+    --mermaid-edge-line: #3b82f6;
+    --mermaid-edge-text: #cbd5e1;
+    --mermaid-edge-bg: #0f172a;
+    --mermaid-cluster-border: rgba(59, 130, 246, 0.25);
+  }
+
+  html[data-theme='light'][data-ui-mode='regular'] {
+    --mermaid-node-bg: #ffffff;
+    --mermaid-node-border: #2563eb; /* Accessible dark blue */
+    --mermaid-node-text: #0f172a;
+    --mermaid-edge-line: #3b82f6;
+    --mermaid-edge-text: #0f172a;
+    --mermaid-edge-bg: #ffffff;
+    --mermaid-cluster-border: rgba(37, 99, 235, 0.2);
+  }
+
+  .mermaid svg {
+    font-family: var(--font-mono) !important;
+  }
+
+  .mermaid rect.header,
+  .mermaid .node rect,
+  .mermaid .node circle,
+  .mermaid .node polygon,
+  .mermaid .node path,
+  .mermaid .node.clickable rect {
+    fill: var(--mermaid-node-bg) !important;
+    stroke: var(--mermaid-node-border) !important;
+    stroke-width: 1.5px !important;
+  }
+
+  .mermaid .node .label,
+  .mermaid .node .label text,
+  .mermaid .node .label span,
+  .mermaid .node .label div {
+    fill: var(--mermaid-node-text) !important;
+    color: var(--mermaid-node-text) !important;
+    font-weight: 500 !important;
+  }
+
+  .mermaid .edgePath .path {
+    stroke: var(--mermaid-edge-line) !important;
+    stroke-width: 1.5px !important;
+  }
+
+  .mermaid .edgeLabel,
+  .mermaid .edgeLabel text,
+  .mermaid .edgeLabel span {
+    fill: var(--mermaid-edge-text) !important;
+    color: var(--mermaid-edge-text) !important;
+  }
+
+  .mermaid .edgeLabel rect {
+    fill: var(--mermaid-edge-bg) !important;
+    stroke: none !important;
+  }
+
+  .mermaid marker {
+    fill: var(--mermaid-edge-line) !important;
+    stroke: var(--mermaid-edge-line) !important;
+  }
+
+  .mermaid marker path {
+    fill: var(--mermaid-edge-line) !important;
+    stroke: var(--mermaid-edge-line) !important;
+    stroke-width: 0px !important;
+  }
+
+  .mermaid .cluster rect {
+    fill: var(--mermaid-cluster-bg) !important;
+    stroke: var(--mermaid-cluster-border) !important;
+    stroke-width: 1px !important;
+    stroke-dasharray: 3, 3 !important;
+  }
+
+  .mermaid .cluster-label,
+  .mermaid .cluster-label text,
+  .mermaid .cluster-label span {
+    fill: var(--mermaid-node-text) !important;
+    color: var(--mermaid-node-text) !important;
+    font-weight: bold !important;
   }
 </style>
