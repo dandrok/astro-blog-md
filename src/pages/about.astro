@@ -75,12 +75,53 @@ usage=code generation,review,automation,research</code></pre>
           <pre><code>$ cat ~/.file/links
 
 <a href="https://github.com/dandrok" target="_blank" rel="noopener noreferrer">github=github.com/dandrok</a>
-<a href="mailto:patryk.stusik@gmail.com">email=patryk.stusik@gmail.com</a>
 <a href="/about/">about=/about/</a>
 <a href="/blog/">writing=/blog/</a>
-<a href="/rss.xml">rss=/rss.xml</a></code></pre>
+<a href="/rss.xml">rss=/rss.xml</a>
+<a href="#" id="email-link" data-u="cngelx.fghfvx" data-d="tznvy" data-t="pbz">email=[protected]</a>
+<noscript>
+  <style>
+    #email-link { display: none !important; }
+  </style>
+  <span>email=patryk.stusik [at] gmail [dot] com</span>
+</noscript></code></pre>
         </Prose>
       </section>
     </div>
   </main>
 </SiteLayout>
+
+<script>
+  function rot13(str: string): string {
+    return str.replace(/[a-zA-Z]/g, (c) => {
+      const code = c.charCodeAt(0);
+      const limit = c <= 'Z' ? 90 : 122;
+      const rotated = code + 13;
+      return String.fromCharCode(limit >= rotated ? rotated : rotated - 26);
+    });
+  }
+
+  function setupEmailObfuscation() {
+    const emailLink = document.getElementById('email-link') as HTMLAnchorElement | null;
+    if (!emailLink) return;
+
+    const u = emailLink.getAttribute('data-u');
+    const d = emailLink.getAttribute('data-d');
+    const t = emailLink.getAttribute('data-t');
+    if (!u || !d || !t) return;
+
+    const email = `${rot13(u)}@${rot13(d)}.${rot13(t)}`;
+
+    const reveal = () => {
+      emailLink.href = `mailto:${email}`;
+      emailLink.textContent = `email=${email}`;
+    };
+
+    emailLink.addEventListener('mouseenter', reveal, { once: true });
+    emailLink.addEventListener('focus', reveal, { once: true });
+    emailLink.addEventListener('click', reveal);
+  }
+
+  setupEmailObfuscation();
+  document.addEventListener('astro:page-load', setupEmailObfuscation);
+</script>
