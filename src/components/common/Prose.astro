@@ -12,20 +12,22 @@ const { class: className = '' } = Astro.props;
 </div>
 
 <script>
+  const MERMAID_URL = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
   async function setupMermaid() {
     const mermaidBlocks = document.querySelectorAll<HTMLElement>('pre[data-language="mermaid"]');
     if (mermaidBlocks.length === 0) return;
 
     try {
-      const { default: mermaid } = await import(
-        /* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs'
-      );
+      const { default: mermaid } = (await import(
+        /* @vite-ignore */ MERMAID_URL
+      )) as typeof import('mermaid');
 
       const isLight = document.documentElement.getAttribute('data-theme') === 'light';
       mermaid.initialize({
         startOnLoad: false,
         theme: isLight ? 'default' : 'dark',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
       });
 
       mermaidBlocks.forEach((preEl, index) => {
