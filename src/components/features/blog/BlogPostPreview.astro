@@ -16,7 +16,7 @@ const filename = `${post.id}${post.id.endsWith('.mdx') ? '' : '.md'}`;
   <a
     href={`/blog/${post.id}/`}
     class="group block border border-green-400/20 bg-black/15 p-6 no-underline transition-colors hover:bg-black/25 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
-    >
+  >
     <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
       <p class="text-sm leading-relaxed text-green-500">
         -rw-r--r-- <FormattedDate date={post.data.pubDate} />
@@ -26,7 +26,6 @@ const filename = `${post.id}${post.id.endsWith('.mdx') ? '' : '.md'}`;
 
     <div class="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div class="min-w-0">
-    
         <h2
           class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100"
         >
