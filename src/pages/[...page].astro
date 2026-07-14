@@ -24,38 +24,7 @@ const recentPosts = page.data.slice(0, 4);
 
     {
       page.currentPage === 1 ? (
-        <div class="items-start lg:grid lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-16 xl:gap-20">
-          <aside aria-labelledby="home-profile-title" class="space-y-8 lg:sticky lg:top-8">
-            <section class="overflow-hidden border border-green-400/30 bg-black/20 shadow-[0_0_0_1px_rgba(0,255,65,0.06)]">
-              <div class="flex items-center justify-between gap-4 border-b border-green-400/20 bg-black/25 px-5 py-3 text-sm tracking-[0.25em] text-green-500 uppercase">
-                <span>~/.file/profile</span>
-                <span class="text-green-300">online</span>
-              </div>
-
-              <div class="space-y-4 p-6">
-                <h1 id="home-profile-title" class="sr-only">
-                  Profile
-                </h1>
-
-                <p class="text-green-500">$ cat ~/.file/README</p>
-                <p class="leading-relaxed text-green-400">
-                  I build scalable frontend applications, TUIs, and practical developer workflows.
-                  This site is where I keep project notes, experiments, and write-ups in a small
-                  dotfile-shaped format.
-                </p>
-              </div>
-            </section>
-
-            <section class="border border-green-400/20 bg-black/15 p-6">
-              <p class="mb-3 text-green-500">$ tail -f ~/.file/current-focus</p>
-              <ul class="m-0 list-none space-y-3 p-0 leading-relaxed text-green-400">
-                <li>Building React and TypeScript</li>
-                <li>Passionate about LLM and AI tools.</li>
-                <li>Constantly evolving and learning.</li>
-              </ul>
-            </section>
-          </aside>
-
+        <div>
           <section aria-labelledby="recent-posts-title" class="mt-12 lg:mt-0">
             <header class="mb-10 border-b border-green-400/20 pb-5">
               <p class="mb-3 text-sm tracking-[0.3em] text-green-500 uppercase">~/writing/recent</p>
@@ -65,33 +34,27 @@ const recentPosts = page.data.slice(0, 4);
             </header>
 
             <ol class="m-0 list-none space-y-8 p-0">
-              {recentPosts.map((post, index) => (
+              {recentPosts.map((post) => (
                 <li class="border border-green-400/20 bg-black/15 transition-colors hover:bg-black/25">
                   <a
                     href={`/blog/${post.id}/`}
-                    class="group block p-6 no-underline focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+                    class="group block flex flex-col gap-3 p-6 no-underline focus:ring-2 focus:ring-green-400/50 focus:outline-none"
                   >
-                    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                      <div class="min-w-0">
-                        <p class="mb-3 text-sm tracking-[0.3em] text-green-500 uppercase">
-                          File {(index + 1).toString().padStart(2, '0')}
-                        </p>
-                        <h3 class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100">
-                          {post.data.title}
-                        </h3>
-                      </div>
-                      <p class="text-sm text-green-500 md:pl-6 md:whitespace-nowrap">
-                        <FormattedDate date={post.data.pubDate} />
+                    <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                      <p class="text-sm leading-relaxed text-green-500">
+                        -rw--r--r- <FormattedDate date={post.data.pubDate} /> {post.id}{post.id.endsWith('.mdx') ? '' : '.md'}
                       </p>
                     </div>
-
+                    <h3 class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100">
+                      {post.data.title}
+                    </h3>
                     {post.data.description && (
-                      <p class="mt-5 max-w-3xl leading-relaxed text-green-400 transition-colors group-hover:text-green-300">
+                      <p class="max-w-3xl leading-relaxed text-green-400 transition-colors group-hover:text-green-300">
                         {post.data.description}
                       </p>
                     )}
 
-                    <TagList tags={post.data.tags} class="mt-5" />
+                    <TagList tags={post.data.tags} />
                   </a>
                 </li>
               ))}

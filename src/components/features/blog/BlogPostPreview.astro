@@ -20,15 +20,12 @@ const filename = `${post.id}${post.id.endsWith('.mdx') ? '' : '.md'}`;
     <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
       <p class="text-sm leading-relaxed text-green-500">
         -rw-r--r-- <FormattedDate date={post.data.pubDate} />
-        {filename}
+        {' '}{filename}
       </p>
     </div>
 
     <div class="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div class="min-w-0">
-        <p class="mb-2 text-sm text-green-500">
-          # {filename}
-        </p>
         <h2
           class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100"
         >
