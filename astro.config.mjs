@@ -24,6 +24,9 @@ function kitbashModulePreload() {
         /** @type {string[]} */
         const htmlFiles = [];
 
+        /**
+         * @param {string} dirPath
+         */
         async function walk(dirPath) {
           const entries = await fs.readdir(dirPath, { withFileTypes: true });
           for (const entry of entries) {
