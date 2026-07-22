@@ -254,25 +254,7 @@ html[data-ui-mode='regular'] .toc-content h2 {
   text-transform: none;
   font-weight: 600;
 }
-html[data-ui-mode='regular'] .toc-link {
-  color: var(--terminal-text-muted) !important;
-  font-family: var(--font-regular);
-}
-html[data-ui-mode='regular'] .toc-link:hover {
-  color: var(--terminal-primary) !important;
-}
-html[data-ui-mode='regular'] .toc-link.active {
-  color: var(--terminal-primary) !important;
-  border-color: var(--terminal-primary) !important;
-  font-weight: 500;
-}
-html[data-ui-mode='regular'] .toc-scrollbar::-webkit-scrollbar-track {
-  background: var(--focus-bg);
-}
-html[data-ui-mode='regular'] .toc-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
-  border-radius: 4px;
-}
+/* TOC links: kitbash-toc shadow styles + --kb-* tokens */
 
 /* Scroll To Top Overrides */
 html[data-ui-mode='regular'] #scroll-to-top {
@@ -334,37 +316,4 @@ html[data-ui-mode='regular'] .terminal-content ul li::before {
   font-family: var(--font-regular);
 }
 
-/* Adjust Theme/Ui Toggles */
-html[data-ui-mode='regular'] .theme-toggle {
-  font-family: var(--font-regular);
-  border-radius: 9999px;
-  border: 1px solid var(--terminal-border);
-  color: var(--terminal-text-secondary);
-  background: transparent;
-  text-transform: none;
-  font-size: 0.875rem;
-  padding: 0.4rem 0.8rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-}
-html[data-ui-mode='regular'] .theme-toggle:hover,
-html[data-ui-mode='regular'] .theme-toggle:focus-visible {
-  background: var(--focus-bg);
-  color: var(--terminal-text-primary);
-  outline: 2px solid var(--terminal-primary);
-  border-color: var(--terminal-primary);
-}
-
-html[data-ui-mode='regular'] .toggle-group .theme-toggle {
-  border-radius: 0;
-}
-
-html[data-ui-mode='regular'] .toggle-group .theme-toggle:first-child {
-  border-top-left-radius: 9999px;
-  border-bottom-left-radius: 9999px;
-  border-right-width: 0;
-}
-
-html[data-ui-mode='regular'] .toggle-group .theme-toggle:last-child {
-  border-top-right-radius: 9999px;
-  border-bottom-right-radius: 9999px;
-}
+/* Theme/UI toggles: kitbash CEs — radius/border come from --kb-* tokens */
