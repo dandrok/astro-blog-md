@@ -133,11 +133,16 @@ const { class: className = '' } = Astro.props;
     opacity: 1;
   }
 
-  .terminal-content pre .copy-button:hover,
+  .terminal-content pre .copy-button:hover {
+    color: var(--terminal-text-primary);
+    background-color: var(--focus-bg);
+  }
+
   .terminal-content pre .copy-button:focus-visible {
     color: var(--terminal-text-primary);
     background-color: var(--focus-bg);
     outline: none;
+    box-shadow: var(--kb-focus-ring, 0 0 0 3px rgba(74, 222, 128, 0.45));
   }
 
   .terminal-content pre .copy-button.copied {

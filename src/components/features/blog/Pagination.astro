@@ -1,4 +1,9 @@
 ---
+/**
+ * URL-based prev/next for multi-page routes.
+ * Uses kitbash-link (not kitbash-pagination buttons) so MPA navigation stays
+ * progressive and shareable — matches Astro static pagination.
+ */
 type Props = {
   currentPage: number;
   lastPage: number;
@@ -9,28 +14,32 @@ type Props = {
 const { currentPage, lastPage, prevUrl, nextUrl } = Astro.props;
 ---
 
-<nav class="mt-16 flex justify-between text-green-500">
+<nav class="mt-16 flex items-center justify-between gap-4" aria-label="Pagination">
   {
     prevUrl ? (
-      <a href={prevUrl} class="transition-colors hover:text-green-400">
+      <kitbash-link href={prevUrl} tone="accent">
         &lt; prev
-      </a>
+      </kitbash-link>
     ) : (
-      <span class="text-green-900">&lt; prev</span>
+      <span class="text-green-900" aria-disabled="true">
+        &lt; prev
+      </span>
     )
   }
 
-  <span class="text-green-700">
+  <span class="text-green-700" aria-current="page">
     {currentPage} / {lastPage}
   </span>
 
   {
     nextUrl ? (
-      <a href={nextUrl} class="transition-colors hover:text-green-400">
+      <kitbash-link href={nextUrl} tone="accent">
         next &gt;
-      </a>
+      </kitbash-link>
     ) : (
-      <span class="text-green-900">next &gt;</span>
+      <span class="text-green-900" aria-disabled="true">
+        next &gt;
+      </span>
     )
   }
 </nav>

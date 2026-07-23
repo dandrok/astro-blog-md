@@ -1,0 +1,110 @@
+---
+/**
+ * Navigation CTA that looks like `kitbash-button` but stays a real link
+ * (MPA / open-in-new-tab / SEO). Kitbash’s CE is a `<button>` only, so we
+ * map the same visual variants via host classes + DS tokens.
+ *
+ * Prefer this for hrefs; use `kitbash-button` for true button actions.
+ */
+type Props = {
+  href: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+};
+
+const {
+  href,
+  variant = 'secondary',
+  size = 'md',
+  class: className = '',
+} = Astro.props;
+---
+
+<a
+  href={href}
+  class:list={[
+    'kb-button-link',
+    `kb-button-link--${variant}`,
+    `kb-button-link--${size}`,
+    className,
+  ]}
+>
+  <slot />
+</a>
+
+<style>
+  .kb-button-link {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--kb-space-sm, 0.5rem);
+    min-height: 2.25rem;
+    min-width: 2.25rem;
+    padding: var(--kb-space-sm, 0.5rem) var(--kb-space-md, 1rem);
+    border: 1px solid var(--kb-color-border-default, currentColor);
+    border-radius: var(--kb-radius-sm, 0.25rem);
+    font-family: var(--kb-font-family-sans, inherit);
+    font-size: var(--kb-font-size-md, 1rem);
+    font-weight: var(--kb-font-weight-medium, 500);
+    line-height: var(--kb-line-height-tight, 1.25);
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .kb-button-link--sm {
+    min-height: 2rem;
+    padding: var(--kb-space-xs, 0.25rem) var(--kb-space-sm, 0.5rem);
+    font-size: var(--kb-font-size-sm, 0.875rem);
+  }
+
+  /* Matches previous home CTA: ~px-5 py-3, comfortable terminal hit target */
+  .kb-button-link--lg {
+    min-height: 3rem;
+    padding: 0.75rem 1.25rem;
+    font-size: var(--kb-font-size-lg, 1.125rem);
+    gap: 0.75rem;
+  }
+
+  .kb-button-link--primary {
+    background: var(--kb-color-accent-default, #00ff41);
+    color: var(--kb-color-fg-on-accent, #050a05);
+    border-color: transparent;
+  }
+
+  .kb-button-link--primary:hover {
+    background: var(--kb-color-accent-hover, var(--kb-color-accent-default, #00ff41));
+  }
+
+  .kb-button-link--secondary {
+    background: var(--kb-color-bg-subtle, rgba(0, 0, 0, 0.2));
+    color: var(--kb-color-fg-default, #4ade80);
+    border-color: var(--kb-color-border-default, rgba(0, 255, 65, 0.3));
+  }
+
+  .kb-button-link--secondary:hover {
+    background: var(--kb-color-bg-surface, rgba(0, 0, 0, 0.3));
+    color: var(--kb-color-fg-default, #d1fae5);
+    border-color: var(--kb-color-border-focus, rgba(0, 255, 65, 0.5));
+  }
+
+  .kb-button-link--ghost {
+    background: transparent;
+    color: var(--kb-color-fg-default, #4ade80);
+    border-color: transparent;
+  }
+
+  .kb-button-link--ghost:hover {
+    background: var(--kb-color-bg-subtle, rgba(0, 0, 0, 0.15));
+  }
+
+  .kb-button-link:focus-visible {
+    outline: none;
+    box-shadow: var(--kb-focus-ring, 0 0 0 2px #00ff41);
+  }
+</style>

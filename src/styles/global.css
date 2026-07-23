@@ -150,15 +150,11 @@
     box-sizing: border-box;
   }
 
-  /* Global keyboard focus indicators (WCAG 1.4.1 & 2.4.7) */
-  a:focus-visible,
-  button:focus-visible,
-  [tabindex='0']:focus-visible {
-    outline: 2px dashed var(--terminal-text-bright);
-    outline-offset: var(--spacing-1);
-    background-color: var(--focus-bg);
-    border-radius: var(--radius-sm);
-  }
+  /*
+   * Keyboard focus: owned by @ktbsh/ui/themes/focus.css
+   * (`box-shadow: var(--kb-focus-ring)`). Do not reintroduce dashed outlines
+   * here or Tab will diverge from kitbash-toc / theme-toggle.
+   */
 
   /* Screen reader only utility */
   .sr-only {
@@ -185,70 +181,7 @@
   }
 }
 
-.theme-toggle {
-  color: rgb(0 204 51);
-  background: rgba(0, 0, 0, 0.18);
-  border: 1px solid rgba(0, 230, 55, 0.3);
-  padding: 0.45rem 0.8rem;
-  font: inherit;
-  font-size: 0.95rem;
-  line-height: 1;
-  letter-spacing: 0.08em;
-  text-transform: lowercase;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-}
-
-.theme-toggle:hover,
-.theme-toggle:focus-visible {
-  color: rgb(209 250 229);
-  background: rgba(0, 0, 0, 0.28);
-  outline: 2px solid rgba(74, 222, 128, 0.45);
-  outline-offset: 2px;
-}
-
-html[data-theme='light'] .theme-toggle {
-  color: rgb(87 86 83);
-  background: rgba(242, 240, 229, 0.8);
-  border-color: rgba(183, 181, 172, 0.8);
-}
-
-html[data-theme='light'] .theme-toggle:hover,
-html[data-theme='light'] .theme-toggle:focus-visible {
-  color: rgb(28 27 26);
-  background: rgba(242, 240, 229, 1);
-  outline-color: rgba(135, 154, 57, 0.45);
-}
-
-/* Button Group for Toggles */
-.toggle-group {
-  display: flex;
-  align-items: center;
-}
-
-.toggle-group .theme-toggle {
-  margin: 0;
-  position: relative;
-}
-
-.toggle-group .theme-toggle:first-child {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  border-right-width: 0;
-}
-
-.toggle-group .theme-toggle:last-child {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-}
-
-.toggle-group .theme-toggle:focus-visible,
-.toggle-group .theme-toggle:hover {
-  z-index: 10;
-}
+/* theme/preset toggles: kitbash-theme-toggle + kitbash-preset-toggle (shadow CSS) */
 
 html[data-theme='light'] .text-green-100,
 html[data-theme='light'] .hover\:text-green-100:hover {
@@ -333,31 +266,7 @@ html[data-theme='light'] footer nav a:hover {
   color: rgb(0 153 0) !important;
 }
 
-html[data-theme='light'] .toc-content h2 {
-  color: rgb(108 117 125) !important;
-  border-color: rgba(0, 102, 0, 0.25) !important;
-}
-
-html[data-theme='light'] .toc-link {
-  color: rgba(108, 117, 125, 0.9) !important;
-}
-
-html[data-theme='light'] .toc-link:hover {
-  color: rgb(33 37 41) !important;
-}
-
-html[data-theme='light'] .toc-link.active {
-  color: rgb(33 37 41) !important;
-  border-color: rgb(0 102 0) !important;
-}
-
-html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 102, 0, 0.05);
-}
-
-html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(0, 102, 0, 0.25);
-}
+/* TOC chrome: kitbash-toc (shadow) — light/dark via --kb-* tokens */
 
 @keyframes flicker {
   0% {
@@ -462,8 +371,7 @@ html[data-theme='light'] .toc-scrollbar::-webkit-scrollbar-thumb {
   color: var(--terminal-text-primary);
   background-color: rgba(74, 222, 128, 0.1);
   text-decoration: underline;
-  outline: 2px dashed var(--terminal-text-bright);
-  outline-offset: var(--spacing-1); /* 4px */
+  /* ring from @ktbsh/ui/themes/focus.css — no dashed outline */
 }
 
 /* Terminal emphasis - better readability */
@@ -716,4 +624,19 @@ html[data-theme='dark'] .astro-code span {
   body {
     font-size: var(--text-xl); /* 20px - larger on big screens */
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* @ktbsh/ui consumer tweaks (host app — do not edit the package)     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Tags: DS default is `font-size-xs` (blog chip parity). On the terminal
+ * face (VT323) that reads a bit small next to body text — bump to `sm`
+ * and slightly roomier padding while keeping the chip silhouette.
+ */
+kitbash-tag {
+  font-size: var(--kb-font-size-sm, 0.875rem);
+  padding: var(--kb-space-xs, 0.25rem) var(--kb-space-md, 0.75rem);
+  line-height: var(--kb-line-height-normal, 1.5);
 }
