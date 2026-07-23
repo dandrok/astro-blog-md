@@ -9,9 +9,6 @@ type KitbashAttrs = Record<string, unknown>;
 declare global {
   namespace astroHTML.JSX {
     interface IntrinsicElements {
-      'kitbash-theme-toggle': KitbashAttrs;
-      'kitbash-preset-toggle': KitbashAttrs;
-      'kitbash-toggle-group': KitbashAttrs;
       'kitbash-scroll-top': KitbashAttrs;
       'kitbash-tag': KitbashAttrs;
       'kitbash-tag-list': KitbashAttrs;

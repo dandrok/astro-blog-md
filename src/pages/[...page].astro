@@ -20,7 +20,8 @@ const allPosts = page.currentPage === 1 ? page.data : [];
 ---
 
 <SiteLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
-  <main id="main-content" class="mx-auto min-h-screen max-w-6xl px-6 py-8 pb-16">
+  {/* z-[2]: above body CRT scanlines (z-0/1) — matches BlogPost so toggle chrome composites the same */}
+  <main id="main-content" class="relative z-[2] mx-auto min-h-screen max-w-6xl px-6 py-8 pb-16">
     <PageHeader />
 
     {
