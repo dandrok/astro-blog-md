@@ -159,7 +159,7 @@
   /*
    * Keyboard focus: owned by @ktbsh/ui/themes/focus.css
    * (`box-shadow: var(--kb-focus-ring)`). Do not reintroduce dashed outlines
-   * here or Tab will diverge from kitbash-toc / theme-toggle.
+   * here or Tab will diverge from kitbash-toc / .site-toggle.
    */
 
   /* Screen reader only utility */
@@ -187,7 +187,7 @@
   }
 }
 
-/* theme/preset toggles: kitbash-theme-toggle + kitbash-preset-toggle (shadow CSS) */
+/* theme/UI toggles: plain .site-toggle buttons (PageHeader) — not kitbash CEs */
 
 html[data-theme='light'] .text-green-100,
 html[data-theme='light'] .hover\:text-green-100:hover {
@@ -273,100 +273,91 @@ html[data-theme='light'] footer nav a:hover {
 }
 
 /*
- * Header toggles — fixed geometry always
- * --------------------------------------
- * Labels swap ("theme=night" / "theme=light") and fonts swap (VT323 ↔ Inter
- * when flipping ui preset). Intrinsic width would reflow the header on every
- * page load / toggle. Pin host size; fill the inner button via ::part.
- * 7.75rem covers the widest measured case (Inter + "theme=night" ≈ 124px).
+ * Header theme/UI toggles — plain HTML (PageHeader)
+ * -------------------------------------------------
+ * Not custom elements: first paint = final paint (same model as the logo).
+ * Labels are always in the DOM; visibility follows html[data-theme] /
+ * data-ui-mode set by the head FOUC script before paint.
  */
-kitbash-toggle-group {
+.site-toggle-group {
   display: inline-flex;
   align-items: center;
   height: 2.25rem;
   vertical-align: middle;
 }
 
-kitbash-theme-toggle,
-kitbash-preset-toggle {
-  display: inline-block;
+.site-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  /* px (not rem): stable if root font-size ever changes with UI preset */
   width: 124px;
   height: 36px;
+  margin: 0;
+  padding: 0.45rem 0.8rem;
   flex-shrink: 0;
-  vertical-align: middle;
-  overflow: hidden;
-  contain: layout size;
+  border: 1px solid var(--kb-color-border-default, rgba(0, 255, 65, 0.35));
+  border-radius: var(--kb-radius-sm, 0.25rem);
+  background: var(--kb-color-bg-subtle, rgba(0, 255, 65, 0.06));
+  color: var(--kb-color-accent-default, #00ff41);
+  font-family: var(--kb-font-family-sans, var(--font-mono, ui-monospace, monospace));
+  font-size: var(--kb-font-size-sm, 0.875rem);
+  font-weight: var(--kb-font-weight-medium, 500);
+  letter-spacing: 0.08em;
+  text-transform: lowercase;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 
-kitbash-theme-toggle::part(toggle-root),
-kitbash-preset-toggle::part(toggle-root) {
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  white-space: nowrap;
+.site-toggle:hover {
+  color: var(--kb-color-fg-default, #e8ffe8);
+  background: var(--kb-color-bg-surface, rgba(0, 255, 65, 0.1));
+}
+
+.site-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--kb-focus-ring, 0 0 0 2px rgba(0, 255, 65, 0.45));
+  color: var(--kb-color-fg-default, #e8ffe8);
+  background: var(--kb-color-bg-surface, rgba(0, 255, 65, 0.1));
+}
+
+/* Segmented pair */
+.site-toggle--theme {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right-width: 0;
+}
+
+.site-toggle--ui {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/* One label visible from first paint — no JS required for the string */
+.site-toggle__label {
+  display: none;
+}
+
+html:not([data-theme='light']) .site-toggle__label--night,
+html[data-theme='light'] .site-toggle__label--light {
+  display: inline;
+}
+
+html:not([data-ui-mode='regular']) .site-toggle__label--terminal,
+html[data-ui-mode='regular'] .site-toggle__label--regular {
+  display: inline;
 }
 
 /*
- * @ktbsh/ui FOUC shells (:not(:defined) only)
- * Logo / prose paint immediately. CEs need the deferred module — shells hold
- * layout until customElements.define. Without JS, light-DOM stays usable.
- *
- * Toggle labels: hosts are empty until the shadow button mounts, so the label
- * used to flash in on every MPA load. Mirror CE copy with ::before from the
- * same html[data-theme] / data-ui-mode the head inline script sets pre-paint.
+ * @ktbsh/ui FOUC shells (:not(:defined) only) — tags / TOC / scroll-top.
+ * Header toggles are native .site-toggle (no CE shell needed).
  */
 @media (scripting: enabled) {
-  kitbash-theme-toggle:not(:defined),
-  kitbash-preset-toggle:not(:defined) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--kb-color-border-default, rgba(0, 255, 65, 0.35));
-    border-radius: var(--kb-radius-sm, 0.25rem);
-    background: var(--kb-color-bg-subtle, rgba(0, 255, 65, 0.06));
-    color: var(--kb-color-accent-default, #00ff41);
-    font-family: var(--kb-font-family-sans, var(--font-mono, ui-monospace, monospace));
-    font-size: var(--kb-font-size-sm, 0.875rem);
-    font-weight: var(--kb-font-weight-medium, 500);
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  /* kitbash-theme-toggle labels: "theme=light" | "theme=night" */
-  kitbash-theme-toggle:not(:defined)::before {
-    content: 'theme=night';
-  }
-
-  html[data-theme='light'] kitbash-theme-toggle:not(:defined)::before {
-    content: 'theme=light';
-  }
-
-  /* kitbash-preset-toggle labels: "ui=terminal" | "ui=regular" */
-  kitbash-preset-toggle:not(:defined)::before {
-    content: 'ui=terminal';
-  }
-
-  html[data-ui-mode='regular'] kitbash-preset-toggle:not(:defined)::before {
-    content: 'ui=regular';
-  }
-
-  /* Segmented pair before group CE wires data-group-pos */
-  kitbash-toggle-group:not(:defined) kitbash-theme-toggle:not(:defined) {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    border-right-width: 0;
-  }
-
-  kitbash-toggle-group:not(:defined) kitbash-preset-toggle:not(:defined) {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-  }
-
   kitbash-tag-list:not(:defined) {
     display: flex;
     flex-wrap: wrap;
@@ -374,6 +365,10 @@ kitbash-preset-toggle::part(toggle-root) {
     gap: var(--kb-space-sm, 0.5rem);
   }
 
+  /*
+   * TOC: hide light-DOM anchors until upgrade. No-JS still works: this block
+   * only applies when scripting is enabled.
+   */
   kitbash-toc:not(:defined) {
     display: block;
     box-sizing: border-box;
@@ -387,6 +382,17 @@ kitbash-preset-toggle::part(toggle-root) {
   kitbash-scroll-top:not(:defined) {
     display: none;
   }
+}
+
+/*
+ * Single scrollport for sticky TOC: layout <aside> owns max-height + overflow.
+ * kitbash-toc :host defaults to max-height + overflow-y:auto (nested scroll).
+ * External type selectors lose to :host specificity — need !important.
+ */
+kitbash-toc {
+  max-height: none !important;
+  overflow: visible !important;
+  overflow-y: visible !important;
 }
 
 /* TOC chrome: kitbash-toc (shadow) — light/dark via --kb-* tokens */

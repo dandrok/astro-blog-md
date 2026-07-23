@@ -316,4 +316,4 @@ html[data-ui-mode='regular'] .terminal-content ul li::before {
   font-family: var(--font-regular);
 }
 
-/* Theme/UI toggles: kitbash CEs — radius/border come from --kb-* tokens */
+/* Theme/UI toggles: .site-toggle (PageHeader) — tokens via --kb-* */

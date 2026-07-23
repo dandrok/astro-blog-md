@@ -4,10 +4,10 @@
  * as possible. Module scripts still defer until after HTML parse — light-DOM
  * FOUC shells in global.css hold layout until customElements.define runs.
  * Production also modulepreloads this chunk (kitbashModulePreload in astro.config).
+ *
+ * Header theme/UI toggles are plain HTML in PageHeader (not kitbash CEs) so they
+ * never FOUC on MPA navigation — same first-paint model as the logo.
  */
-import '@ktbsh/ui/vanilla/theme-toggle';
-import '@ktbsh/ui/vanilla/preset-toggle';
-import '@ktbsh/ui/vanilla/toggle-group';
 import '@ktbsh/ui/vanilla/scroll-top';
 import '@ktbsh/ui/vanilla/tag';
 import '@ktbsh/ui/vanilla/tag-list';
