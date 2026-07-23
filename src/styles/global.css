@@ -1,9 +1,8 @@
 /* Modern Tailwind-based Matrix Theme */
 
 /*
- * Fonts (VT323 + Inter) load from BaseHead via <link rel="stylesheet"> —
- * not CSS @import. @import delays the whole stylesheet and makes header
- * toggles reflow when the webfont swaps in after first paint.
+ * Fonts (VT323 + Inter): self-hosted @fontsource imports in BaseHead.astro.
+ * Never pull @ktbsh/ui/themes/fonts.css — it @import-s Google Fonts.
  */
 
 /* Import Tailwind v4 */
