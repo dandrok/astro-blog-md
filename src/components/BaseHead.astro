@@ -1,8 +1,15 @@
 ---
+// Self-hosted faces (latin only) — no fonts.googleapis.com chain.
+// Do NOT import @ktbsh/ui/themes/fonts.css: it @import-s Google Fonts and
+// serializes extra stylesheets on the critical path (Lighthouse killer).
+import '@fontsource/vt323/latin-400.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
 // Global site styles (prose, layout utilities, CRT chrome).
 import '../styles/global.css';
 // @ktbsh/ui design tokens — light/dark × default/terminal (inherit into CE shadow roots).
-import '@ktbsh/ui/themes/fonts.css';
 import '@ktbsh/ui/themes/light.css';
 import '@ktbsh/ui/themes/dark.css';
 import '@ktbsh/ui/themes/terminal/light.css';
@@ -39,20 +46,10 @@ const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`
 <meta name="generator" content={Astro.generator} />
 
 <!--
-  Site fonts early (not CSS @import — that delays the whole stylesheet).
-  VT323 = terminal face; Inter = regular UI. Toggles size is fixed in CSS so
-  late font swap cannot stretch the header; still load ASAP for text quality.
+  Fonts: self-hosted via @fontsource/* imports above (bundled into site CSS).
+  No Google Fonts <link>/@import — that third-party chain tanked Lighthouse.
+  Atkinson under /fonts is unused by current stacks (VT323 / Inter).
 -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=VT323&display=swap"
-/>
-
-<!-- Local body font preloads (prose / legacy) -->
-<link rel="preload" href="/fonts/atkinson-regular.woff" as="font" type="font/woff" crossorigin />
-<link rel="preload" href="/fonts/atkinson-bold.woff" as="font" type="font/woff" crossorigin />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
