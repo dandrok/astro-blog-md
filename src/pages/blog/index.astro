@@ -16,17 +16,15 @@ const posts = (await getCollection('blog')).sort(
     <PageHeader showBackButton={true} />
 
     <div class="space-y-8">
-      {/* Blog Title */}
       <section class="mb-16">
         <Prose>
           <h1 class="mb-4 text-4xl font-semibold text-green-300">&gt; ~/blog</h1>
         </Prose>
       </section>
 
-      {/* Blog List */}
       {
         posts.length > 0 ? (
-          <BlogList posts={posts} />
+          <BlogList posts={posts} titleLevel={2} />
         ) : (
           <section class="py-12 text-center">
             <Prose>

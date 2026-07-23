@@ -1,61 +1,60 @@
 ---
-
+/**
+ * Fixed scroll-to-top control via `@ktbsh/ui` `kitbash-scroll-top`.
+ * Visibility + desktop gutter position are owned by this host script
+ * (CE has no window scroll lifecycle — by design).
+ */
 ---
 
-<button
+<kitbash-scroll-top
   id="scroll-to-top"
-  aria-label="Scroll to top"
-  class="fixed bottom-6 z-40 hidden border border-green-400/30 bg-black/90 px-4 py-2 text-sm text-green-400 transition-colors duration-200 hover:bg-black hover:text-green-200 focus:ring-2 focus:ring-green-500/50 focus:outline-none"
->
-  <span class="sr-only">Scroll to top</span>
-  <span aria-hidden="true" class="tracking-[0.25em] uppercase">$ top</span>
-</button>
+  caption="$ top"
+  label="Scroll to top"
+  behavior="smooth"
+></kitbash-scroll-top>
 
 <script>
-  const scrollBtn = document.getElementById('scroll-to-top');
-  const mainContent = document.getElementById('main-content'); // Assuming main-content ID is set in layout
+  type ScrollTopEl = HTMLElement & {
+    visible?: boolean;
+  };
 
-  function setButtonPosition() {
-    if (scrollBtn && mainContent) {
+  function setupScrollTop() {
+    const scrollBtn = document.getElementById('scroll-to-top') as ScrollTopEl | null;
+    const mainContent = document.getElementById('main-content');
+    if (!scrollBtn) return;
+
+    const setVisible = () => {
+      const show = window.scrollY > 300;
+      // Boolean attribute + property for CE prop systems
+      scrollBtn.visible = show;
+      if (show) scrollBtn.setAttribute('visible', '');
+      else scrollBtn.removeAttribute('visible');
+    };
+
+    const setButtonPosition = () => {
+      if (!mainContent) {
+        scrollBtn.style.right = '1rem';
+        scrollBtn.style.left = 'auto';
+        return;
+      }
       if (window.innerWidth < 1024) {
-        // Mobile/Tablet: keep it in the lower-right corner.
         scrollBtn.style.right = '1rem';
         scrollBtn.style.left = 'auto';
       } else {
-        // Desktop: place it in the right gutter beside the main content.
         const mainRect = mainContent.getBoundingClientRect();
         const rightOffset = Math.max(24, window.innerWidth - mainRect.right - 24);
-
         scrollBtn.style.right = `${rightOffset}px`;
         scrollBtn.style.left = 'auto';
       }
-    }
-  }
+    };
 
-  if (scrollBtn && mainContent) {
-    // Initial position setup
+    setVisible();
     setButtonPosition();
 
-    // Recalculate position on window resize
-    window.addEventListener('resize', setButtonPosition);
-
-    // Toggle visibility based on scroll position
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 300) {
-        scrollBtn.classList.remove('hidden');
-        scrollBtn.classList.add('block');
-      } else {
-        scrollBtn.classList.add('hidden');
-        scrollBtn.classList.remove('block');
-      }
-    });
-
-    // Smooth scroll to top
-    scrollBtn.addEventListener('click', () => {
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth',
-      });
-    });
+    window.addEventListener('scroll', setVisible, { passive: true });
+    window.addEventListener('resize', setButtonPosition, { passive: true });
   }
+
+  setupScrollTop();
+  document.addEventListener('astro:page-load', setupScrollTop);
 </script>
