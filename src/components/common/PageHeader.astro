@@ -1,7 +1,9 @@
 ---
-import ThemeToggle from './ThemeToggle.astro';
-import UiToggle from './UiToggle.astro';
-
+/**
+ * Site header chrome: brand link + native theme/UI toggles.
+ * Plain <button>s (not kitbash CEs) so labels paint on first frame like the logo —
+ * no customElements upgrade flash on MPA navigation / refresh.
+ */
 type Props = {
   showBackButton?: boolean;
   backText?: string;
@@ -19,9 +21,26 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
     ~/.file
   </a>
   <div class="flex items-center gap-4">
-    <div class="toggle-group">
-      <ThemeToggle />
-      <UiToggle />
+    <div class="site-toggle-group" role="group" aria-label="Display options">
+      <button
+        type="button"
+        class="site-toggle site-toggle--theme"
+        data-theme-toggle
+        aria-label="Toggle color theme"
+      >
+        <span class="site-toggle__label site-toggle__label--night" aria-hidden="true">theme=night</span>
+        <span class="site-toggle__label site-toggle__label--light" aria-hidden="true">theme=light</span>
+      </button>
+      <button
+        type="button"
+        class="site-toggle site-toggle--ui"
+        data-ui-toggle
+        aria-label="Toggle UI mode"
+        title="Toggle UI mode"
+      >
+        <span class="site-toggle__label site-toggle__label--terminal" aria-hidden="true">ui=terminal</span>
+        <span class="site-toggle__label site-toggle__label--regular" aria-hidden="true">ui=regular</span>
+      </button>
     </div>
   </div>
 </header>
@@ -32,7 +51,7 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
       <a
         href={backUrl}
         data-back-btn
-        class="group inline-flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+        class="group inline-flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400"
       >
         <span class="transition-transform group-hover:-translate-x-1">←</span> {backText}
       </a>
@@ -41,28 +60,118 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
 }
 
 <script>
-  document.addEventListener('astro:page-load', () => {
+  function setupBackButton() {
     const backBtn = document.querySelector('a[data-back-btn]');
-    let isInternalReferrer = false;
+    if (!backBtn) return;
 
+    let isInternalReferrer = false;
     if (document.referrer) {
       try {
         const referrerUrl = new URL(document.referrer);
         isInternalReferrer = referrerUrl.host === window.location.host;
       } catch {
-        // Invalid URL, default to false
+        // Invalid URL
       }
     }
 
-    if (backBtn && isInternalReferrer) {
-      backBtn.addEventListener('click', (e) => {
-        // Allow standard navigation for modified clicks (cmd+click, etc)
-        const mouseEvent = e as MouseEvent;
-        if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) return;
+    if (!isInternalReferrer) return;
 
-        e.preventDefault();
-        history.back();
-      });
+    backBtn.addEventListener('click', (e) => {
+      const mouseEvent = e as MouseEvent;
+      if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) return;
+      e.preventDefault();
+      history.back();
+    });
+  }
+
+  function syncToggleA11y() {
+    const root = document.documentElement;
+    const themeBtn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    const uiBtn = document.querySelector<HTMLButtonElement>('[data-ui-toggle]');
+
+    if (themeBtn) {
+      const isLight = root.dataset.theme === 'light';
+      themeBtn.setAttribute('aria-pressed', isLight ? 'true' : 'false');
+      themeBtn.setAttribute(
+        'aria-label',
+        isLight ? 'Switch to dark theme' : 'Switch to light theme',
+      );
     }
-  });
+
+    if (uiBtn) {
+      const isRegular = root.dataset.uiMode === 'regular';
+      uiBtn.setAttribute('aria-pressed', isRegular ? 'true' : 'false');
+      uiBtn.setAttribute(
+        'aria-label',
+        isRegular ? 'Switch to terminal UI preset' : 'Switch to regular UI preset',
+      );
+    }
+  }
+
+  function setupThemeToggle() {
+    const themeBtn = document.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+    if (!themeBtn || themeBtn.dataset.bound === '1') return;
+    themeBtn.dataset.bound = '1';
+
+    themeBtn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const next = root.dataset.theme === 'light' ? 'dark' : 'light';
+      root.dataset.theme = next;
+      try {
+        localStorage.setItem('theme', next);
+      } catch {
+        /* private mode */
+      }
+      syncToggleA11y();
+    });
+  }
+
+  function setupUiToggle() {
+    const uiBtn = document.querySelector<HTMLButtonElement>('[data-ui-toggle]');
+    if (!uiBtn || uiBtn.dataset.bound === '1') return;
+    uiBtn.dataset.bound = '1';
+
+    uiBtn.addEventListener('click', () => {
+      const root = document.documentElement;
+      const nextTerminal = root.dataset.uiMode !== 'terminal';
+
+      if (nextTerminal) {
+        root.dataset.kbPreset = 'terminal';
+        root.dataset.uiMode = 'terminal';
+      } else {
+        delete root.dataset.kbPreset;
+        root.dataset.uiMode = 'regular';
+      }
+
+      try {
+        localStorage.setItem('ui-mode', nextTerminal ? 'terminal' : 'regular');
+      } catch {
+        /* private mode */
+      }
+
+      // Blog polish: glitch / smooth body class on preset flip
+      document.body.classList.remove('glitch-transition', 'smooth-transition');
+      void document.body.offsetWidth;
+      if (nextTerminal) {
+        document.body.style.setProperty('--scroll-y', `${window.scrollY}px`);
+        document.body.classList.add('glitch-transition');
+        window.setTimeout(() => document.body.classList.remove('glitch-transition'), 400);
+      } else {
+        document.body.classList.add('smooth-transition');
+        window.setTimeout(() => document.body.classList.remove('smooth-transition'), 400);
+      }
+
+      syncToggleA11y();
+    });
+  }
+
+  function initHeader() {
+    setupBackButton();
+    setupThemeToggle();
+    setupUiToggle();
+    syncToggleA11y();
+  }
+
+  initHeader();
+  document.addEventListener('astro:page-load', initHeader);
 </script>

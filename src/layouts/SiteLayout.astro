@@ -15,23 +15,32 @@ const { title, description } = Astro.props;
 <html lang="en">
   <head>
     <BaseHead title={title} description={description} />
+    {/* FOUC: apply theme + preset before first paint (must stay is:inline). */}
     <script is:inline>
       (() => {
-        const themeStorageKey = 'theme';
-        const savedTheme = localStorage.getItem(themeStorageKey);
-        const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-        const theme =
-          savedTheme === 'light' || savedTheme === 'dark'
-            ? savedTheme
-            : prefersLight
-              ? 'light'
-              : 'dark';
-        document.documentElement.dataset.theme = theme;
+        try {
+          const root = document.documentElement;
+          const savedTheme = localStorage.getItem('theme');
+          const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          const theme =
+            savedTheme === 'light' || savedTheme === 'dark'
+              ? savedTheme
+              : prefersLight
+                ? 'light'
+                : 'dark';
+          root.dataset.theme = theme;
 
-        const uiStorageKey = 'ui-mode';
-        const savedUi = localStorage.getItem(uiStorageKey);
-        const uiMode = savedUi === 'regular' || savedUi === 'terminal' ? savedUi : 'terminal';
-        document.documentElement.dataset.uiMode = uiMode;
+          const savedUi = localStorage.getItem('ui-mode');
+          const uiMode = savedUi === 'regular' || savedUi === 'terminal' ? savedUi : 'terminal';
+          root.dataset.uiMode = uiMode;
+          if (uiMode === 'terminal') {
+            root.dataset.kbPreset = 'terminal';
+          } else {
+            delete root.dataset.kbPreset;
+          }
+        } catch {
+          /* private mode / blocked storage */
+        }
       })();
     </script>
   </head>

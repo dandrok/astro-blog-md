@@ -1,7 +1,21 @@
 ---
-// Import the global.css file here so that it is included on
-// all pages through the use of the <BaseHead /> component.
+// Self-hosted faces (latin only) — no fonts.googleapis.com chain.
+// Do NOT import @ktbsh/ui/themes/fonts.css: it @import-s Google Fonts and
+// serializes extra stylesheets on the critical path (Lighthouse killer).
+import '@fontsource/vt323/latin-400.css';
+import '@fontsource/inter/latin-400.css';
+import '@fontsource/inter/latin-500.css';
+import '@fontsource/inter/latin-600.css';
+import '@fontsource/inter/latin-700.css';
+// Global site styles (prose, layout utilities, CRT chrome).
 import '../styles/global.css';
+// @ktbsh/ui design tokens — light/dark × default/terminal (inherit into CE shadow roots).
+import '@ktbsh/ui/themes/light.css';
+import '@ktbsh/ui/themes/dark.css';
+import '@ktbsh/ui/themes/terminal/light.css';
+import '@ktbsh/ui/themes/terminal/dark.css';
+// Light-DOM Tab focus ≡ kitbash CE --kb-focus-ring (after theme CSS).
+import '@ktbsh/ui/themes/focus.css';
 import type { ImageMetadata } from 'astro';
 import FallbackImage from '../assets/pomo-alert-break-end.png';
 import { SITE_TITLE } from '../consts';
@@ -31,9 +45,11 @@ const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`
 />
 <meta name="generator" content={Astro.generator} />
 
-<!-- Font preloads -->
-<link rel="preload" href="/fonts/atkinson-regular.woff" as="font" type="font/woff" crossorigin />
-<link rel="preload" href="/fonts/atkinson-bold.woff" as="font" type="font/woff" crossorigin />
+<!--
+  Fonts: self-hosted via @fontsource/* imports above (bundled into site CSS).
+  No Google Fonts <link>/@import — that third-party chain tanked Lighthouse.
+  Atkinson under /fonts is unused by current stacks (VT323 / Inter).
+-->
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
@@ -56,3 +72,14 @@ const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`
 <meta property="twitter:title" content={metaTitle} />
 <meta property="twitter:description" content={description} />
 <meta property="twitter:image" content={new URL(image.src, Astro.url)} />
+
+{/*
+
+  Register @ktbsh/ui CEs from <head> so the browser starts fetching the chunk
+  before <body> HTML (toggles / tags / TOC). Module scripts are still deferred
+  (run after parse) — FOUC shells in global.css cover the gap until upgrade.
+  Production also modulepreloads this chunk (kitbashModulePreload).
+*/}
+<script>
+  import '../scripts/kitbash.ts';
+</script>
