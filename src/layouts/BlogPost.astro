@@ -76,8 +76,11 @@ const {
         </div>
       </article>
 
-      {/* Table of Contents Sidebar */}
-      <aside class="relative hidden lg:block">
+      {/*
+        TOC column: sticky + self-start on the grid item so the sidebar pins
+        under the header for the full article height (lg+ only).
+      */}
+      <aside class="sticky top-[100px] hidden max-h-[calc(100vh_-_150px)] w-[250px] self-start overflow-y-auto lg:block">
         <TableOfContents headings={headings} />
       </aside>
     </div>

@@ -45,16 +45,6 @@ const { title, description } = Astro.props;
     </script>
   </head>
   <body>
-    {/*
-      Register kitbash CEs at the *start* of <body> (not after footer).
-      Module scripts are deferred (run after full parse), but the browser starts
-      downloading as soon as it hits this tag — on long posts a trailing script
-      only begins fetch after the whole article HTML is parsed.
-    */}
-    <script>
-      import '../scripts/kitbash.ts';
-    </script>
-
     <slot />
 
     <Footer />

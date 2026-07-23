@@ -15,8 +15,13 @@ const filteredHeadings = headings.filter((h) => h.depth > 1 && h.depth < 4);
 
 {
   filteredHeadings.length > 0 && (
-    <div class="toc-sidebar sticky top-[100px] hidden max-h-[calc(100vh_-_150px)] w-[250px] overflow-y-auto lg:block">
-      <kitbash-toc label="// Contents" sticky>
+    /*
+      Sticky / max-height / overflow are on the <aside> in BlogPost (grid item).
+      Do not put sticky on kitbash-toc — :host is already a scrollport and nested
+      sticky here failed to stay visible while scrolling the article.
+    */
+    <div class="toc-sidebar">
+      <kitbash-toc label="// Contents">
         {filteredHeadings.map((heading) => (
           <a
             href={`#${heading.slug}`}

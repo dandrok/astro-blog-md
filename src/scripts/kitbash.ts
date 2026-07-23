@@ -1,8 +1,9 @@
 /**
  * Client-side registration for `@ktbsh/ui` custom elements used by the blog.
- * Import once from the site shell (SiteLayout, top of <body> so the fetch
- * starts before the rest of a long page is parsed). Production also
- * modulepreloads this chunk from <head> (kitbashModulePreload in astro.config).
+ * Import once from BaseHead (<head>) so the CE chunk download starts as early
+ * as possible. Module scripts still defer until after HTML parse — light-DOM
+ * FOUC shells in global.css hold layout until customElements.define runs.
+ * Production also modulepreloads this chunk (kitbashModulePreload in astro.config).
  */
 import '@ktbsh/ui/vanilla/theme-toggle';
 import '@ktbsh/ui/vanilla/preset-toggle';

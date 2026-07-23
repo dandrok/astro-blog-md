@@ -10,8 +10,9 @@ import { fileURLToPath } from 'node:url';
 
 /**
  * Preload the kitbash CE registration chunk as soon as <head> is parsed.
- * Script stays in its normal Astro position (top of <body>); we only inject
- * modulepreload so the download races the rest of the HTML on long posts.
+ * Finds the built module that registers kitbash CEs (name changes with
+ * content hash / entry: BaseHead or SiteLayout) and injects modulepreload
+ * so the download races the rest of the HTML on long posts.
  *
  * @returns {import('astro').AstroIntegration}
  */
@@ -21,6 +22,7 @@ function kitbashModulePreload() {
     hooks: {
       'astro:build:done': async ({ dir }) => {
         const root = fileURLToPath(dir);
+        const astroDir = path.join(root, '_astro');
         /** @type {string[]} */
         const htmlFiles = [];
 
@@ -38,16 +40,30 @@ function kitbashModulePreload() {
 
         await walk(root);
 
-        const scriptRe =
-          /<script type="module" src="(\/_astro\/SiteLayout\.astro_astro_type_script_index_0_lang\.[^"]+\.js)"><\/script>/;
+        /** @type {string | null} */
+        let kitbashHref = null;
+        try {
+          const assets = await fs.readdir(astroDir);
+          for (const name of assets) {
+            if (!name.endsWith('.js')) continue;
+            const src = await fs.readFile(path.join(astroDir, name), 'utf8');
+            // CE registration chunk imports / defines kitbash-toc (unique-ish).
+            if (src.includes('kitbash-toc') || src.includes('KitbashToc')) {
+              kitbashHref = `/_astro/${name}`;
+              break;
+            }
+          }
+        } catch {
+          /* no _astro dir */
+        }
 
+        if (!kitbashHref) return;
+
+        const inject = `<link rel="modulepreload" href="${kitbashHref}" />`;
         for (const file of htmlFiles) {
           let html = await fs.readFile(file, 'utf8');
-          const match = html.match(scriptRe);
-          if (!match) continue;
-          if (html.includes(`rel="modulepreload" href="${match[1]}"`)) continue;
-
-          const inject = `<link rel="modulepreload" href="${match[1]}" />`;
+          if (html.includes(`rel="modulepreload" href="${kitbashHref}"`)) continue;
+          if (!html.includes('</head>')) continue;
           html = html.replace('</head>', `${inject}</head>`);
           await fs.writeFile(file, html);
         }

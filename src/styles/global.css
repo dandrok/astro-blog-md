@@ -1,9 +1,10 @@
 /* Modern Tailwind-based Matrix Theme */
 
-/* Import authentic terminal font for Matrix experience */
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
-/* Import Google Fonts for Regular UI */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+/*
+ * Fonts (VT323 + Inter) load from BaseHead via <link rel="stylesheet"> —
+ * not CSS @import. @import delays the whole stylesheet and makes header
+ * toggles reflow when the webfont swaps in after first paint.
+ */
 
 /* Import Tailwind v4 */
 @import 'tailwindcss';
@@ -91,7 +92,12 @@
     font-size: var(--text-xl); /* 20px - optimal for readability */
     line-height: var(--leading-relaxed); /* 1.625 - improved readability */
     min-height: 100vh;
-    overflow-x: hidden;
+    /*
+      clip (not hidden): still kills horizontal bleed, but does not force
+      overflow-y to compute to auto. overflow-x:hidden on body is a common
+      sticky-killer for the desktop TOC sidebar.
+    */
+    overflow-x: clip;
     margin: 0;
     padding: 0;
   }
@@ -264,6 +270,123 @@ html[data-theme='light'] footer nav a {
 
 html[data-theme='light'] footer nav a:hover {
   color: rgb(0 153 0) !important;
+}
+
+/*
+ * Header toggles — fixed geometry always
+ * --------------------------------------
+ * Labels swap ("theme=night" / "theme=light") and fonts swap (VT323 ↔ Inter
+ * when flipping ui preset). Intrinsic width would reflow the header on every
+ * page load / toggle. Pin host size; fill the inner button via ::part.
+ * 7.75rem covers the widest measured case (Inter + "theme=night" ≈ 124px).
+ */
+kitbash-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  height: 2.25rem;
+  vertical-align: middle;
+}
+
+kitbash-theme-toggle,
+kitbash-preset-toggle {
+  display: inline-block;
+  box-sizing: border-box;
+  /* px (not rem): stable if root font-size ever changes with UI preset */
+  width: 124px;
+  height: 36px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  overflow: hidden;
+  contain: layout size;
+}
+
+kitbash-theme-toggle::part(toggle-root),
+kitbash-preset-toggle::part(toggle-root) {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  white-space: nowrap;
+}
+
+/*
+ * @ktbsh/ui FOUC shells (:not(:defined) only)
+ * Logo / prose paint immediately. CEs need the deferred module — shells hold
+ * layout until customElements.define. Without JS, light-DOM stays usable.
+ *
+ * Toggle labels: hosts are empty until the shadow button mounts, so the label
+ * used to flash in on every MPA load. Mirror CE copy with ::before from the
+ * same html[data-theme] / data-ui-mode the head inline script sets pre-paint.
+ */
+@media (scripting: enabled) {
+  kitbash-theme-toggle:not(:defined),
+  kitbash-preset-toggle:not(:defined) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--kb-color-border-default, rgba(0, 255, 65, 0.35));
+    border-radius: var(--kb-radius-sm, 0.25rem);
+    background: var(--kb-color-bg-subtle, rgba(0, 255, 65, 0.06));
+    color: var(--kb-color-accent-default, #00ff41);
+    font-family: var(--kb-font-family-sans, var(--font-mono, ui-monospace, monospace));
+    font-size: var(--kb-font-size-sm, 0.875rem);
+    font-weight: var(--kb-font-weight-medium, 500);
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* kitbash-theme-toggle labels: "theme=light" | "theme=night" */
+  kitbash-theme-toggle:not(:defined)::before {
+    content: 'theme=night';
+  }
+
+  html[data-theme='light'] kitbash-theme-toggle:not(:defined)::before {
+    content: 'theme=light';
+  }
+
+  /* kitbash-preset-toggle labels: "ui=terminal" | "ui=regular" */
+  kitbash-preset-toggle:not(:defined)::before {
+    content: 'ui=terminal';
+  }
+
+  html[data-ui-mode='regular'] kitbash-preset-toggle:not(:defined)::before {
+    content: 'ui=regular';
+  }
+
+  /* Segmented pair before group CE wires data-group-pos */
+  kitbash-toggle-group:not(:defined) kitbash-theme-toggle:not(:defined) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-width: 0;
+  }
+
+  kitbash-toggle-group:not(:defined) kitbash-preset-toggle:not(:defined) {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  kitbash-tag-list:not(:defined) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--kb-space-sm, 0.5rem);
+  }
+
+  kitbash-toc:not(:defined) {
+    display: block;
+    box-sizing: border-box;
+    width: min(100%, 15.5rem);
+  }
+
+  kitbash-toc:not(:defined) > * {
+    display: none !important;
+  }
+
+  kitbash-scroll-top:not(:defined) {
+    display: none;
+  }
 }
 
 /* TOC chrome: kitbash-toc (shadow) — light/dark via --kb-* tokens */
@@ -631,12 +754,35 @@ html[data-theme='dark'] .astro-code span {
 /* ------------------------------------------------------------------ */
 
 /**
- * Tags: DS default is `font-size-xs` (blog chip parity). On the terminal
- * face (VT323) that reads a bit small next to body text — bump to `sm`
- * and slightly roomier padding while keeping the chip silhouette.
+ * Tags: full chip geometry on the host so pre-upgrade light-DOM text already
+ * looks like a chip (border/padding/flex). After upgrade, CE :host styles
+ * match. DS default is font-size-xs; terminal face (VT323) bumps to sm.
  */
 kitbash-tag {
-  font-size: var(--kb-font-size-sm, 0.875rem);
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  margin: 0;
   padding: var(--kb-space-xs, 0.25rem) var(--kb-space-md, 0.75rem);
+  border: 1px solid color-mix(in srgb, var(--kb-color-accent-default, #00ff41) 30%, transparent);
+  border-radius: var(--kb-radius-sm, 0.25rem);
+  background: color-mix(in srgb, var(--kb-color-accent-default, #00ff41) 5%, transparent);
+  color: var(--kb-color-accent-default, #00ff41);
+  font-family: var(--kb-font-family-sans, var(--font-mono, ui-monospace, monospace));
+  font-size: var(--kb-font-size-sm, 0.875rem);
+  font-weight: var(--kb-font-weight-regular, 400);
   line-height: var(--kb-line-height-normal, 1.5);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* CE adds "#" in shadow after upgrade; mirror it before define so width is stable */
+kitbash-tag:not(:defined)::before {
+  content: '#';
+  flex-shrink: 0;
+}
+
+kitbash-tag-list {
+  display: block;
+  font-family: var(--kb-font-family-sans, var(--font-mono, ui-monospace, monospace));
 }
