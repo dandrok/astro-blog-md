@@ -2,16 +2,46 @@
 import type { CollectionEntry } from 'astro:content';
 import BlogPostPreview from './BlogPostPreview.astro';
 
+/**
+ * Reusable post list for homepage and `/blog` (DRY card chrome).
+ */
 type Props = {
   posts: CollectionEntry<'blog'>[];
   showDescription?: boolean;
+  /** Cap how many posts to show (e.g. recent on home). */
+  limit?: number;
+  /** h2 on archive, h3 when nested under a section title. */
+  titleLevel?: 2 | 3;
+  /** Optional accessible name for the list region. */
+  labelledBy?: string;
+  /** Ordered list on home (“recent files”); unordered on archive. */
+  ordered?: boolean;
+  class?: string;
 };
 
-const { posts, showDescription = true } = Astro.props;
+const {
+  posts,
+  showDescription = true,
+  limit,
+  titleLevel = 2,
+  labelledBy,
+  ordered = false,
+  class: className = '',
+} = Astro.props;
+
+const items = typeof limit === 'number' && limit > 0 ? posts.slice(0, limit) : posts;
+const ListTag = ordered ? 'ol' : 'ul';
 ---
 
-<section>
-  <ul class="m-0 list-none space-y-8 p-0">
-    {posts.map((post) => <BlogPostPreview post={post} showDescription={showDescription} />)}
-  </ul>
-</section>
+{
+  items.length > 0 && (
+    <ListTag
+      class:list={['blog-post-list m-0 list-none space-y-8 p-0', className]}
+      aria-labelledby={labelledBy}
+    >
+      {items.map((post) => (
+        <BlogPostPreview post={post} showDescription={showDescription} titleLevel={titleLevel} />
+      ))}
+    </ListTag>
+  )
+}

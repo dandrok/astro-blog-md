@@ -3,45 +3,45 @@ import type { CollectionEntry } from 'astro:content';
 import FormattedDate from '../../FormattedDate.astro';
 import TagList from '../../common/TagList.astro';
 
+/**
+ * Single post card — shared by homepage “Recent Files” and `/blog` archive.
+ */
 type Props = {
   post: CollectionEntry<'blog'>;
   showDescription?: boolean;
+  /** Heading level for the post title (h2 on archive, h3 under a page h2 on home). */
+  titleLevel?: 2 | 3;
 };
 
-const { post, showDescription = true } = Astro.props;
+const { post, showDescription = true, titleLevel = 2 } = Astro.props;
 const filename = `${post.id}${post.id.endsWith('.mdx') ? '' : '.md'}`;
+const TitleTag = titleLevel === 3 ? 'h3' : 'h2';
 ---
 
-<li>
+<li class="blog-post-card border border-green-400/20 bg-black/15 transition-colors hover:bg-black/25">
   <a
     href={`/blog/${post.id}/`}
-    class="group block border border-green-400/20 bg-black/15 p-6 no-underline transition-colors hover:bg-black/25 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+    class="group flex flex-col gap-3 p-6 no-underline"
   >
-    <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-      <p class="text-sm leading-relaxed text-green-500">
-        -rw-r--r-- <FormattedDate date={post.data.pubDate} />
-        {' '}{filename}
-      </p>
-    </div>
+    <p class="m-0 text-sm leading-relaxed text-green-500">
+      -rw-r--r-- <FormattedDate date={post.data.pubDate} />
+      {' '}{filename}
+    </p>
 
-    <div class="mt-4 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-      <div class="min-w-0">
-        <h2
-          class="text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100"
-        >
-          {post.data.title}
-        </h2>
-      </div>
-    </div>
+    <TitleTag
+      class="m-0 text-2xl leading-tight text-green-200 transition-colors group-hover:text-green-100"
+    >
+      {post.data.title}
+    </TitleTag>
 
     {
       showDescription && post.data.description && (
-        <p class="mt-5 max-w-3xl leading-relaxed text-green-400 transition-colors group-hover:text-green-300">
+        <p class="m-0 max-w-3xl leading-relaxed text-green-400 transition-colors group-hover:text-green-300">
           // {post.data.description}
         </p>
       )
     }
 
-    <TagList tags={post.data.tags} class="mt-5" />
+    <TagList tags={post.data.tags} class="mt-1" />
   </a>
 </li>

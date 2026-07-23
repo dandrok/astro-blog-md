@@ -1,7 +1,7 @@
 ---
-import ThemeToggle from './ThemeToggle.astro';
-import UiToggle from './UiToggle.astro';
-
+/**
+ * Site header chrome: brand link + kitbash theme/preset toggles.
+ */
 type Props = {
   showBackButton?: boolean;
   backText?: string;
@@ -19,10 +19,11 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
     ~/.file
   </a>
   <div class="flex items-center gap-4">
-    <div class="toggle-group">
-      <ThemeToggle />
-      <UiToggle />
-    </div>
+    <kitbash-toggle-group>
+      <!-- Defaults: storageKey theme / ui-mode (blog-compatible). -->
+      <kitbash-theme-toggle></kitbash-theme-toggle>
+      <kitbash-preset-toggle></kitbash-preset-toggle>
+    </kitbash-toggle-group>
   </div>
 </header>
 
@@ -32,7 +33,7 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
       <a
         href={backUrl}
         data-back-btn
-        class="group inline-flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400 focus:ring-2 focus:ring-green-400/50 focus:outline-none"
+        class="group inline-flex items-center gap-2 text-green-500 no-underline transition-colors hover:text-green-400"
       >
         <span class="transition-transform group-hover:-translate-x-1">←</span> {backText}
       </a>
@@ -41,28 +42,61 @@ const { showBackButton = false, backText = 'cd ..', backUrl = '/' } = Astro.prop
 }
 
 <script>
-  document.addEventListener('astro:page-load', () => {
+  function setupBackButton() {
     const backBtn = document.querySelector('a[data-back-btn]');
-    let isInternalReferrer = false;
+    if (!backBtn) return;
 
+    let isInternalReferrer = false;
     if (document.referrer) {
       try {
         const referrerUrl = new URL(document.referrer);
         isInternalReferrer = referrerUrl.host === window.location.host;
       } catch {
-        // Invalid URL, default to false
+        // Invalid URL
       }
     }
 
-    if (backBtn && isInternalReferrer) {
-      backBtn.addEventListener('click', (e) => {
-        // Allow standard navigation for modified clicks (cmd+click, etc)
-        const mouseEvent = e as MouseEvent;
-        if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) return;
+    if (!isInternalReferrer) return;
 
-        e.preventDefault();
-        history.back();
-      });
-    }
-  });
+    backBtn.addEventListener('click', (e) => {
+      const mouseEvent = e as MouseEvent;
+      if (mouseEvent.ctrlKey || mouseEvent.metaKey || mouseEvent.shiftKey) return;
+      e.preventDefault();
+      history.back();
+    });
+  }
+
+  /** Optional glitch / smooth body class when UI preset flips (blog polish). */
+  function setupPresetTransition() {
+    const preset = document.querySelector('kitbash-preset-toggle') as HTMLElement | null;
+    if (!preset || preset.dataset.transitionBound === '1') return;
+    preset.dataset.transitionBound = '1';
+
+    preset.addEventListener('kitbash-change', (ev) => {
+      // kitbash-change detail: { props, state } — not a flat value
+      const props = (ev as CustomEvent<{ props?: { value?: string } }>).detail?.props;
+      const next = props?.value;
+      if (next !== 'terminal' && next !== 'default') return;
+
+      document.body.classList.remove('glitch-transition', 'smooth-transition');
+      void document.body.offsetWidth;
+
+      if (next === 'terminal') {
+        document.body.style.setProperty('--scroll-y', `${window.scrollY}px`);
+        document.body.classList.add('glitch-transition');
+        window.setTimeout(() => document.body.classList.remove('glitch-transition'), 400);
+      } else {
+        document.body.classList.add('smooth-transition');
+        window.setTimeout(() => document.body.classList.remove('smooth-transition'), 400);
+      }
+    });
+  }
+
+  function initHeader() {
+    setupBackButton();
+    setupPresetTransition();
+  }
+
+  initHeader();
+  document.addEventListener('astro:page-load', initHeader);
 </script>
