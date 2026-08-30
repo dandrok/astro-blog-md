@@ -52,6 +52,11 @@
           rss=/rss.xml
         </a>
       </li>
+      <li>
+        <body>
+          <div id="terminal"></div>
+        </body>
+      </li>
     </ul>
   </nav>
 </footer>
@@ -90,3 +95,53 @@
   setupEmailObfuscation();
   document.addEventListener('astro:page-load', setupEmailObfuscation);
 </script>
+<script>
+  import { Terminal } from '@xterm/xterm';
+  import '@xterm/xterm/css/xterm.css';
+
+  const container = document.getElementById('terminal');
+
+  if (container) {
+    const term = new Terminal({
+      cursorBlink: true,
+      fontFamily: 'monospace',
+      fontSize: 14,
+      theme: {
+        background: '#18181b',
+        foreground: '#f4f4f5',
+      },
+    });
+
+
+    term.open(container);
+
+    term.writeln('Welcome to \x1b[1;32mxterm.js\x1b[0m in native Astro!');
+    term.write('\r\n$ ');
+
+    term.onData((data) => {
+      if (data === '\r') {
+        term.write('\r\n$ ');
+      } else if (data === '\u007F') {
+        term.write('\b \b');
+      } else {
+        term.write(data);
+      }
+    });
+
+  }
+</script>
+
+<style>
+  .terminal-container {
+    width: 100%;
+    background-color: #18181b;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  #terminal {
+    width: 100%;
+    height: 100%;
+  }
+</style>
