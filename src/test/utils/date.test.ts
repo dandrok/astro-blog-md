@@ -12,14 +12,14 @@ describe('Date Formatting', () => {
     expect(formatted).toBe('Jan 15, 2024');
   });
 
-  it('handles different months', () => {
+  describe('handles different months', () => {
     const testCases = [
       { date: new Date('2024-12-25'), expected: 'Dec 25, 2024' },
       { date: new Date('2024-07-04'), expected: 'Jul 4, 2024' },
       { date: new Date('2024-03-01'), expected: 'Mar 1, 2024' },
     ];
 
-    testCases.forEach(({ date, expected }) => {
+    test.each(testCases)('date $date should be formatted as $expected', ({ date, expected }) => {
       const formatted = date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
