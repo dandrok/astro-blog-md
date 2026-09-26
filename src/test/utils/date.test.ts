@@ -1,5 +1,6 @@
 import { describe, it, expect, test } from 'vitest';
 
+// TODO: those tests are useless
 describe('Date Formatting', () => {
   it('formats date correctly', () => {
     const testDate = new Date('2024-01-15');
