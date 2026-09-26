@@ -12,7 +12,8 @@ interface Props {
   image?: ImageMetadata;
 }
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const site = Astro.site ?? Astro.url;
+const canonicalURL = new URL(Astro.url.pathname, site);
 
 const { title, description, image = FallbackImage } = Astro.props;
 const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`;
@@ -27,7 +28,7 @@ const metaTitle = title === SITE_TITLE ? SITE_TITLE : `${SITE_TITLE} | ${title}`
   rel="alternate"
   type="application/rss+xml"
   title={SITE_TITLE}
-  href={new URL('rss.xml', Astro.site)}
+  href={new URL('rss.xml', site)}
 />
 <meta name="generator" content={Astro.generator} />
 
