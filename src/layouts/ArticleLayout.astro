@@ -23,5 +23,14 @@ const { title, description } = Astro.props;
       <slot />
     </main>
     <SiteFooter />
+    <script>
+      import { followTheme, renderMermaidDiagrams } from '../lib/mermaid';
+
+      // The only script an article page needs: mermaid itself is a lazy chunk,
+      // so pages without a diagram never fetch it.
+      renderMermaidDiagrams()
+        .then(() => followTheme())
+        .catch((error) => console.error('mermaid: setup failed', error));
+    </script>
   </body>
 </html>
