@@ -1,0 +1,42 @@
+---
+// Article navigation, written the way you would type it: an article is a file
+// in ~/writing, so `cd ..` is the list and `cd ~` is the shell. The command is
+// what you see; `label` is what a screen reader hears.
+type Props = {
+  href: string;
+  command: string;
+  label: string;
+};
+
+const { href, command, label } = Astro.props;
+---
+
+<a class="shell-link" href={href} aria-label={label} title={label}>
+  <span class="ps1" aria-hidden="true">$</span>
+  <span class="cmd" aria-hidden="true">{command}</span>
+</a>
+
+<style>
+  .shell-link {
+    display: inline-block;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    color: var(--dim);
+  }
+  .ps1 {
+    color: var(--dim-2);
+    margin-right: 6px;
+  }
+  .cmd {
+    color: var(--dim);
+  }
+  .shell-link:hover .ps1,
+  .shell-link:focus-visible .ps1 {
+    color: var(--accent);
+  }
+  .shell-link:hover .cmd,
+  .shell-link:focus-visible .cmd {
+    color: var(--bright);
+  }
+</style>

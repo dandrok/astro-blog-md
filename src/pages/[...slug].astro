@@ -1,7 +1,7 @@
 ---
 import { render } from 'astro:content';
 import ArticleLayout from '../layouts/ArticleLayout.astro';
-import ArrowLink from '../components/site/ArrowLink.astro';
+import ShellLink from '../components/site/ShellLink.astro';
 import { readPosts, longDate } from '../lib/read';
 import type { ReadPost } from '../lib/read';
 
@@ -21,7 +21,7 @@ const tags = post.entry.data.tags ?? [];
 >
   <article>
     <header class="article-head">
-      <ArrowLink href="/#writing" label="← all articles" />
+      <ShellLink href="/#writing" command="cd .." label="back to the article list" />
       <h1>{post.entry.data.title}</h1>
       <p class="meta">
         <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
@@ -35,8 +35,8 @@ const tags = post.entry.data.tags ?? [];
     </div>
 
     <div class="article-foot">
-      <ArrowLink href="/#writing" label="← all articles" />
-      <ArrowLink href="/" label="open this in the shell →" />
+      <ShellLink href="/#writing" command="cd .." label="back to the article list" />
+      <ShellLink href="/" command="cd ~" label="back to the shell" />
     </div>
   </article>
 </ArticleLayout>
