@@ -1,7 +1,7 @@
 /* Article page. Tokens come from site.css. */
 
 .article-head { margin-bottom: 32px; }
-.article-head > .back { margin-bottom: 20px; }
+.article-head > .arrow-link { margin-bottom: 20px; }
 .article-head h1 {
   font-size: clamp(27px, 3.2vw, 38px);
   line-height: 1.28;
@@ -106,8 +106,6 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.article-foot .shell-link { color: var(--dim); text-decoration: none; border: 0; }
-.article-foot .shell-link:hover { color: var(--bright); }
 
 @media (max-width: 680px) {
   .prose { font-size: 16.5px; }
