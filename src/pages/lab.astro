@@ -79,6 +79,8 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
 
       const CONFIG_PATH = '/home/dandrok/.config/site.conf';
       const MOTD_PATH = '/etc/motd';
+      const THEME_KEY = 'dotfile.theme.v1';
+      const HINTS_KEY = 'dotfile.suggest.v1';
 
       const posts: PostSeed[] = JSON.parse(document.getElementById('post-data')?.textContent ?? '[]');
 
@@ -116,19 +118,14 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       function applyTheme(configText: string) {
         const config = parseConfig(configText);
         shell.env.PROMPT = config.prompt;
-        const colors = palette(config.theme);
-        const root = document.documentElement.style;
-        // the same palette drives the terminal and the page chrome
-        root.setProperty('--bg', colors.bg);
-        root.setProperty('--surface', colors.surface);
-        root.setProperty('--text', colors.text);
-        root.setProperty('--bright', colors.bright);
-        root.setProperty('--dim', colors.dim);
-        root.setProperty('--dim-2', colors.dim2);
-        root.setProperty('--accent', colors.accent);
-        root.setProperty('--edge', colors.edge);
-        root.setProperty('--line', colors.line);
-        root.setProperty('--line-soft', colors.lineSoft);
+        // the palette is CSS-level, so articles pick it up too
+        document.documentElement.dataset.theme = config.theme;
+        document.documentElement.style.setProperty('--accent', palette(config.theme).accent);
+        try {
+          storage?.setItem(THEME_KEY, config.theme);
+        } catch {
+          // storage disabled — the page still themes for this visit
+        }
         document.body.dataset.scanlines = config.scanlines ? 'on' : 'off';
         term.options.theme = xtermTheme(config.theme);
         term.options.cursorStyle = config.cursor;
@@ -169,6 +166,10 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
             break;
           case 'reset':
             applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+            break;
+          case 'hints':
+            if (suggestBar) suggestBar.hidden = !effect.visible;
+            storage?.setItem(SUGGEST_KEY, effect.visible ? 'shown' : 'hidden');
             break;
           case 'exit':
             sessionEnded = true;
@@ -217,7 +218,21 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
             if (flag) flag.textContent = 'modified';
           }),
         ];
-        if (mode === 'vim') base.push(vim({ status: true }));
+        if (mode === 'vim') {
+          base.push(
+            vim({ status: true }),
+            EditorView.domEventHandlers({
+              keyup: () => {
+                syncVimStatus();
+                return false;
+              },
+              focus: () => {
+                syncVimStatus();
+                return false;
+              },
+            }),
+          );
+        }
         else {
           base.push(
             keymap.of([
@@ -301,6 +316,44 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
           created.focus();
         }
       }
+
+      type VimAware = EditorView & { cm?: { state?: { vim?: { mode?: string } } } };
+
+      /** Read vim's own mode and make the UI tell the truth. */
+      function syncVimStatus() {
+        const cm = (editorView() as VimAware | undefined)?.cm;
+        const mode = cm?.state?.vim?.mode;
+        if (!mode) return;
+        const label = `--${mode.toUpperCase()}--`;
+        const foot = document.getElementById('ed-foot');
+        if (foot) foot.textContent = `vim — ${mode.toUpperCase()} · :w write · :q quit`;
+        // the plugin's status span can go stale after a mode change; correct it
+        // while no ex prompt is open (the prompt lives in the same panel)
+        const panel = document.querySelector('.cm-vim-panel');
+        if (panel && !panel.querySelector('input')) {
+          const first = panel.firstElementChild;
+          if (first && first.tagName === 'SPAN' && first.textContent !== label) first.textContent = label;
+        }
+      }
+
+      // Safety net: some Escape presses blur the content element instead of
+      // reaching vim, which left the editor stuck in INSERT with no cursor.
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key !== 'Escape' || !editingPath) return;
+          const current = editorView() as VimAware | undefined;
+          if (!current) return;
+          if (!current.hasFocus) current.focus();
+          setTimeout(() => {
+            if (current.cm?.state?.vim?.mode === 'insert') {
+              Vim.handleKey(current.cm as never, '<Esc>', 'user');
+            }
+            syncVimStatus();
+          }, 0);
+        },
+        true,
+      );
 
       // registered once, on the shared module state
       Vim.defineEx('write', 'w', () => saveEditor());
@@ -563,7 +616,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
 
       // starter chips: clicking one types the command, so the metaphor lands
       const suggestBar = document.getElementById('suggest');
-      const SUGGEST_KEY = 'dotfile.suggest.v1';
+      const SUGGEST_KEY = HINTS_KEY;
       let chipRuns = 0;
       const hideSuggest = () => {
         if (suggestBar) suggestBar.hidden = true;
@@ -579,7 +632,15 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
             if (chipRuns >= 2) hideSuggest();
           });
         });
-        document.getElementById('suggest-hide')?.addEventListener('click', hideSuggest);
+        document.getElementById('suggest-hide')?.addEventListener('click', () => {
+          hideSuggest();
+          write(
+            fg.dim('hints hidden — ') +
+              fg.green('hints on') +
+              fg.dim(' brings the buttons back\n'),
+          );
+          renderPrompt();
+        });
       }
 
       // a nudge for anyone who lands and freezes
@@ -607,6 +668,10 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
         input: () => input,
         caret: () => caret,
         editorDoc: () => editorView()?.state.doc.toString() ?? null,
+        vimMode: () => {
+          const cm = (editorView() as unknown as { cm?: { state?: { vim?: { mode?: string } } } })?.cm;
+          return cm?.state?.vim?.mode ?? null;
+        },
         editorOpen: () => views[editorMode] !== undefined && document.getElementById('editor-layer')?.classList.contains('on') === true,
         applyTheme,
         closeEditor: () => document.getElementById('editor-layer')?.classList.remove('on'),

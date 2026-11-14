@@ -27,6 +27,7 @@ export type Effect =
   | { type: 'edit'; path: string; editor: 'vim' | 'nano' }
   | { type: 'reset' }
   | { type: 'theme'; config: string }
+  | { type: 'hints'; visible: boolean }
   | { type: 'exit' }
   | { type: 'title'; value: string };
 

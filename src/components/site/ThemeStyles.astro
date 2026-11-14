@@ -1,0 +1,36 @@
+---
+// One palette table drives the terminal and every page. This component turns it
+// into CSS so an article page picks up `theme set theme=nord` from localStorage
+// without loading the shell, and stamps the choice before first paint.
+import { THEME_NAMES, palette } from '../../lib/terminal/theme';
+
+const vars = (name: (typeof THEME_NAMES)[number]) => {
+  const p = palette(name);
+  return [
+    `--bg:${p.bg}`,
+    `--surface:${p.surface}`,
+    `--text:${p.text}`,
+    `--bright:${p.bright}`,
+    `--dim:${p.dim}`,
+    `--dim-2:${p.dim2}`,
+    `--accent:${p.accent}`,
+    `--edge:${p.edge}`,
+    `--line:${p.line}`,
+    `--line-soft:${p.lineSoft}`,
+  ].join(';');
+};
+
+const themes = THEME_NAMES.filter((name) => name !== 'matrix');
+const css = themes.map((name) => `:root[data-theme='${name}']{${vars(name)}}`).join('\n');
+export const THEME_STORAGE_KEY = 'dotfile.theme.v1';
+---
+
+<style is:inline set:html={css}></style>
+<script is:inline define:vars={{ key: THEME_STORAGE_KEY }}>
+  try {
+    const saved = localStorage.getItem(key);
+    if (saved) document.documentElement.dataset.theme = saved;
+  } catch {
+    /* storage disabled: the default palette stands */
+  }
+</script>

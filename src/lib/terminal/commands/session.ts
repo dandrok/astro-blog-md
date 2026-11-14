@@ -344,7 +344,31 @@ export const neofetch: Command = {
   },
 };
 
+export const hints: Command = {
+  name: 'hints',
+  summary: 'Show or hide the starter buttons under the window.',
+  usage: 'hints [on|off]',
+  man: [
+    'The chip row under the terminal is a beginner aid. Hiding it sticks',
+    '(localStorage), and this command brings it back.',
+    '',
+    '  hints on   show the buttons',
+    '  hints off  hide them',
+  ],
+  run(ctx: Ctx) {
+    const arg = ctx.argv[0];
+    if (arg !== 'on' && arg !== 'off') {
+      return { out: fg.dim('usage: ') + fg.green('hints on') + fg.dim(' · ') + fg.green('hints off') + '\n' };
+    }
+    return {
+      out: fg.dim(arg === 'on' ? 'starter buttons shown' : 'starter buttons hidden') + '\n',
+      effect: { type: 'hints', visible: arg === 'on' },
+    };
+  },
+};
+
 export const sessionCommands: Command[] = [
+  hints,
   help,
   man,
   clear,
