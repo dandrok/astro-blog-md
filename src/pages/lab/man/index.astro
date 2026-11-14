@@ -1,0 +1,68 @@
+---
+import ReadLayout from '../../../layouts/ReadLayout.astro';
+import { readPosts, longDate } from '../../../lib/read';
+
+const posts = await readPosts();
+---
+
+<ReadLayout
+  view="man"
+  title="dotfile(7) — writing"
+  description="Every article as a manual page."
+>
+  <div class="man-head">
+    <span>DOTFILE(7)</span>
+    <span>~/.file</span>
+    <span>APROPOS(1)</span>
+  </div>
+
+  <div class="man-title">
+    <h1>writing — apropos</h1>
+    <p>{posts.length} manual pages, newest first</p>
+  </div>
+
+  <section class="man-section">
+    <h2>name</h2>
+    <div class="man-body">
+      <p>writing — articles published from this site, one manual page each</p>
+    </div>
+  </section>
+
+  <section class="man-section">
+    <h2>pages</h2>
+    <div class="man-body">
+      <table class="apropos">
+        <tbody>
+          {
+            posts.map((post) => (
+              <tr>
+                <td>
+                  <a href={`/lab/man/${post.slug}/`}>{post.slug}</a>
+                </td>
+                <td>
+                  <a class="apropos-title" href={`/lab/man/${post.slug}/`}>{post.entry.data.title}</a>
+                  <span class="apropos-meta">
+                    {longDate(post.entry.data.pubDate)} · {post.readingMinutes} min · {post.words} words
+                  </span>
+                </td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="man-section">
+    <h2>see also</h2>
+    <div class="man-body">
+      <p><a href="/lab/read/">index(1)</a>, <a href="/lab/">dotfile-shell(1)</a>, <a href="/blog/">blog(7)</a></p>
+    </div>
+  </section>
+
+  <div class="man-foot">
+    <span>dotfile 1.0</span>
+    <span>built from the content collection</span>
+    <span>DOTFILE(7)</span>
+  </div>
+</ReadLayout>

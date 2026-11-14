@@ -1,0 +1,48 @@
+---
+import ReadLayout from '../../../layouts/ReadLayout.astro';
+import { readPosts, shortDay, yearOf } from '../../../lib/read';
+
+const posts = await readPosts();
+const byYear = new Map<number, typeof posts>();
+for (const post of posts) {
+  const year = yearOf(post.entry.data.pubDate);
+  byYear.set(year, [...(byYear.get(year) ?? []), post]);
+}
+const years = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
+---
+
+<ReadLayout
+  title="reading — ~/.file"
+  description="Everything written here, as a plain list: no shell required."
+  current="index"
+>
+  <div class="masthead">
+    <h1>reading</h1>
+    <span class="count">{posts.length} files</span>
+  </div>
+
+  {
+    years.map(([year, list]) => (
+      <section>
+        <h2 class="year">{year}</h2>
+        <ul class="rows">
+          {list.map((post) => (
+            <li class="row">
+              <span class="date">{shortDay(post.entry.data.pubDate)}</span>
+              <div class="row-body">
+                <a class="title" href={`/lab/read/${post.slug}/`}>
+                  {post.entry.data.title}
+                </a>
+                <span class="meta">
+                  {post.entry.data.tags?.length ? `${post.entry.data.tags.join(' · ')} · ` : ''}
+                  {post.readingMinutes} min read
+                </span>
+                {post.entry.data.description && <p class="desc">{post.entry.data.description}</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</ReadLayout>

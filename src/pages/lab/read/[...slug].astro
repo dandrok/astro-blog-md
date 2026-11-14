@@ -1,0 +1,58 @@
+---
+import { render } from 'astro:content';
+import ReadLayout from '../../../layouts/ReadLayout.astro';
+import { readPosts, longDate } from '../../../lib/read';
+import type { ReadPost } from '../../../lib/read';
+
+export async function getStaticPaths() {
+  const posts = await readPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+const { post } = Astro.props as { post: ReadPost };
+const { Content, headings } = await render(post.entry);
+const toc = headings.filter((heading) => heading.depth === 2);
+const tags = post.entry.data.tags ?? [];
+---
+
+<ReadLayout
+  title={`${post.entry.data.title} — ~/.file`}
+  description={post.entry.data.description ?? ''}
+  current="article"
+>
+  <article>
+    <header class="article-head">
+      <p class="kicker">writing</p>
+      <h1>{post.entry.data.title}</h1>
+      <p class="meta">
+        <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
+        {tags.length > 0 && <><span class="sep">·</span><span>{tags.join(', ')}</span></>}
+        <span class="sep">·</span><span>{post.readingMinutes} min read</span>
+      </p>
+    </header>
+
+    {
+      toc.length > 2 && (
+        <details class="toc" open={toc.length <= 8}>
+          <summary>contents · {toc.length} sections</summary>
+          <ol>
+            {toc.map((heading) => (
+              <li>
+                <a href={`#${heading.slug}`}>{heading.text}</a>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )
+    }
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <div class="article-foot">
+      <a href="/lab/read/">← back to the index</a>
+      <a href="/lab/">open this in the shell →</a>
+    </div>
+  </article>
+</ReadLayout>
