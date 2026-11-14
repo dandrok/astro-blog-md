@@ -200,8 +200,12 @@ export class Shell {
       const blocked = this.redirectProblem(segment, redirectPath);
       if (blocked) {
         result.err += (result.err ? '\n' : '') + blocked;
+        // The stage never runs, so nothing flows downstream — but the rest of
+        // the pipeline still does, and the last stage decides the status, like
+        // a real shell (`echo hi > /nope/x | cat` still runs `cat`).
         result.code = 1;
-        return result;
+        stdin = '';
+        continue;
       }
       const outcome = this.runSegment(
         segment.argv,

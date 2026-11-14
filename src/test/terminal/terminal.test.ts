@@ -840,6 +840,18 @@ describe('third review round', () => {
     expect(shell.exec('cat < ~/empty.txt').code).toBe(0);
   });
 
+  it('skips a stage whose redirect failed but keeps the pipeline running', () => {
+    const shell = newShell();
+    const result = shell.exec('echo hi > /nope/deeper.txt | cat');
+    expect(result.err).toContain('No such file or directory');
+    expect(result.out).toBe('');
+    expect(result.code).toBe(0); // `cat` ran and decided the status
+
+    const last = shell.exec('echo hi | cat > /nope/deeper.txt');
+    expect(last.err).toContain('No such file or directory');
+    expect(last.code).toBe(1); // the failing stage is the last one
+  });
+
   it('keeps the failure status when the redirect cannot be written', () => {
     const shell = newShell();
     const result = shell.exec('echo hi > /nope/deeper.txt');
