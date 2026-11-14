@@ -560,3 +560,51 @@ describe('doom', () => {
     expect(shell.exec('doom').effects).toEqual([{ type: 'play', game: 'doom' }]);
   });
 });
+
+describe('overlay durability', () => {
+  const memoryStorage = () => {
+    const store = new Map<string, string>();
+    return {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+      clear: () => store.clear(),
+      key: (i: number) => [...store.keys()][i] ?? null,
+      get length() {
+        return store.size;
+      },
+    } as Storage;
+  };
+
+  const seed = [{ path: '/home/dandrok/about.md', content: 'published version' }];
+
+  it('keeps an edit made against the current published file', () => {
+    const storage = memoryStorage();
+    const first = new FileSystem(seed, storage);
+    first.writeFile('/home/dandrok/about.md', 'my notes');
+
+    const reopened = new FileSystem(seed, storage);
+    expect(reopened.read('/home/dandrok/about.md')).toBe('my notes');
+    expect(reopened.droppedEdits).toBe(0);
+  });
+
+  it('drops an edit when the published file changed under it', () => {
+    const storage = memoryStorage();
+    const first = new FileSystem(seed, storage);
+    first.writeFile('/home/dandrok/about.md', 'my notes');
+
+    const updated = [{ path: '/home/dandrok/about.md', content: 'edited by the author' }];
+    const reopened = new FileSystem(updated, storage);
+    expect(reopened.read('/home/dandrok/about.md')).toBe('edited by the author');
+    expect(reopened.droppedEdits).toBe(1);
+  });
+
+  it('keeps files the visitor created themselves', () => {
+    const storage = memoryStorage();
+    const first = new FileSystem(seed, storage);
+    first.writeFile('/home/dandrok/notes.md', 'mine');
+
+    const reopened = new FileSystem([{ path: '/home/dandrok/about.md', content: 'changed' }], storage);
+    expect(reopened.read('/home/dandrok/notes.md')).toBe('mine');
+  });
+});

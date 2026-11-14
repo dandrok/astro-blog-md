@@ -625,6 +625,9 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       const motd = shell.fs.read(MOTD_PATH);
       if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
       write(style.bold(fg.bright('dandrok')) + fg.dim(' — software engineer · Poland') + '\n');
+      if (shell.fs.droppedEdits > 0) {
+        write(fg.dim(`note: the published files changed since your last visit — dropped ${shell.fs.droppedEdits} saved edit(s)`) + '\n');
+      }
       write(
         fg.dim(`${posts.length} articles in `) +
           fg.green('~/writing') +

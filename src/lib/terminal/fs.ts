@@ -14,12 +14,33 @@ export type SeedEntry = { path: string; content: string; mode?: number; mtime?: 
 
 export type ListEntry = { name: string; node: Node };
 
-const OVERLAY_KEY = 'dotfile.vfs.v1';
+const OVERLAY_KEY = 'dotfile.vfs.v2';
+
+/** Bumped whenever the overlay shape changes; older payloads are discarded. */
+const OVERLAY_VERSION = 2;
+
+type OverlayEntry = {
+  content: string;
+  mtime: number;
+  /** Fingerprint of the published file this edit was made against. */
+  base: string;
+};
 
 type Overlay = {
-  files: Record<string, { content: string; mtime: number }>;
+  version: number;
+  files: Record<string, OverlayEntry>;
   removed: string[];
 };
+
+/** FNV-1a: enough to notice that a published file changed under a saved edit. */
+function fingerprint(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
 
 /** Resolve `.`, `..` and relative segments against a cwd. Always absolute. */
 export function normalize(path: string, cwd = '/'): string {
@@ -58,13 +79,19 @@ export class FileSystem {
   readonly root: DirNode = dir();
   private storage: Storage | null;
   private seed: SeedEntry[];
-  private overlay: Overlay = { files: {}, removed: [] };
+  /** Published content by path, so an edit can be checked against its base. */
+  private published = new Map<string, string>();
+  private overlay: Overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+  /** Saved edits thrown away because the published file changed under them. */
+  droppedEdits = 0;
 
   constructor(seed: SeedEntry[], storage: Storage | null = null) {
     this.storage = storage;
     this.seed = seed;
     for (const entry of seed) {
-      this.putNode(normalize(entry.path), {
+      const path = normalize(entry.path);
+      this.published.set(path, entry.content);
+      this.putNode(path, {
         type: 'file',
         content: entry.content,
         mode: entry.mode ?? 0o644,
@@ -224,9 +251,19 @@ export class FileSystem {
   private track(path: string): void {
     const node = this.get(path);
     if (node?.type !== 'file') return;
-    this.overlay.files[path] = { content: node.content, mtime: node.mtime };
+    this.overlay.files[path] = {
+      content: node.content,
+      mtime: node.mtime,
+      base: this.baseFor(path),
+    };
     this.overlay.removed = this.overlay.removed.filter((p) => p !== path);
     this.persist();
+  }
+
+  /** Fingerprint of the published version of a path ('' if it is not published). */
+  private baseFor(path: string): string {
+    const published = this.published.get(normalize(path));
+    return published === undefined ? '' : fingerprint(published);
   }
 
   private persist(): void {
@@ -244,10 +281,30 @@ export class FileSystem {
       const raw = this.storage.getItem(OVERLAY_KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Partial<Overlay>;
-      this.overlay = {
-        files: parsed.files ?? {},
-        removed: parsed.removed ?? [],
-      };
+
+      // An overlay written by an older build cannot be trusted: the published
+      // files may have changed under it. Start clean instead of resurrecting
+      // text the site no longer says.
+      if (parsed.version !== OVERLAY_VERSION) {
+        this.droppedEdits = Object.keys(parsed.files ?? {}).length;
+        this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+        this.persist();
+        return;
+      }
+
+      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: parsed.removed ?? [] };
+
+      // Keep only edits that still sit on top of the published text: if the
+      // file changed upstream, the published version wins.
+      for (const [path, entry] of Object.entries(parsed.files ?? {})) {
+        const base = this.baseFor(path);
+        if (base && entry.base !== base) {
+          this.droppedEdits++;
+          continue;
+        }
+        this.overlay.files[path] = entry;
+      }
+
       for (const path of this.overlay.removed) {
         const parent = this.dir(dirname(path));
         if (parent) delete parent.children[basename(path)];
@@ -256,7 +313,7 @@ export class FileSystem {
         this.putNode(path, { type: 'file', content: file.content, mode: 0o644, mtime: file.mtime });
       }
     } catch {
-      this.overlay = { files: {}, removed: [] };
+      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
     }
   }
 
@@ -276,7 +333,8 @@ export class FileSystem {
         mtime: entry.mtime ?? now(),
       });
     }
-    this.overlay = { files: {}, removed: [] };
+    this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+    this.droppedEdits = 0;
     if (this.storage) {
       try {
         this.storage.removeItem(OVERLAY_KEY);
