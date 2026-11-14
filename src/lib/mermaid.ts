@@ -8,7 +8,44 @@
  * light-theme island in the dark reading view.
  */
 
+import type { MermaidConfig } from 'mermaid';
+
 const FENCE_SELECTOR = 'pre[data-language="mermaid"]';
+
+/**
+ * Every diagram type mermaid ships sizes itself with `useMaxWidth`: it stamps
+ * `max-width` (and `width="100%"`) on the SVG, which beats the stylesheet and
+ * squeezes a wide graph into the column. The fit is ours, so each type keeps its
+ * intrinsic size — a phone rule on the figure then scrolls instead of shrinking.
+ */
+const INTRINSIC_SIZE: MermaidConfig = {
+  flowchart: { useMaxWidth: false },
+  swimlane: { useMaxWidth: false },
+  sequence: { useMaxWidth: false },
+  gantt: { useMaxWidth: false },
+  journey: { useMaxWidth: false },
+  timeline: { useMaxWidth: false },
+  class: { useMaxWidth: false },
+  state: { useMaxWidth: false },
+  er: { useMaxWidth: false },
+  pie: { useMaxWidth: false },
+  quadrantChart: { useMaxWidth: false },
+  xyChart: { useMaxWidth: false },
+  requirement: { useMaxWidth: false },
+  architecture: { useMaxWidth: false },
+  mindmap: { useMaxWidth: false },
+  ishikawa: { useMaxWidth: false },
+  kanban: { useMaxWidth: false },
+  gitGraph: { useMaxWidth: false },
+  sankey: { useMaxWidth: false },
+  packet: { useMaxWidth: false },
+  block: { useMaxWidth: false },
+  eventmodeling: { useMaxWidth: false },
+  treeView: { useMaxWidth: false },
+  radar: { useMaxWidth: false },
+  venn: { useMaxWidth: false },
+  cynefin: { useMaxWidth: false },
+};
 
 type Diagram = { source: string; target: HTMLElement };
 type Engine = typeof import('mermaid').default;
@@ -16,6 +53,8 @@ type Engine = typeof import('mermaid').default;
 const diagrams: Diagram[] = [];
 let engine: Engine | null = null;
 let drawn = 0;
+/** The palette the engine was last initialised with, so a stale one is detected. */
+let paletteInUse = '';
 
 /**
  * The fence's text with shiki's per-line spans flattened back into newlines.
@@ -73,19 +112,27 @@ export function mermaidTheme() {
   };
 }
 
+/** Identity of the colours a diagram was drawn with. */
+function paletteSignature(): string {
+  return JSON.stringify(mermaidTheme());
+}
+
 async function loadEngine(): Promise<Engine> {
   const { default: mermaid } = await import('mermaid');
+  const variables = mermaidTheme();
   mermaid.initialize({
     startOnLoad: false,
     securityLevel: 'strict',
     theme: 'base',
-    // The fit is the stylesheet's job: mermaid's own `max-width` inline style
-    // would win over the phone rule and squeeze a wide diagram into unreadable type.
-    flowchart: { useMaxWidth: false },
-    fontFamily: mermaidTheme().fontFamily,
-    themeVariables: mermaidTheme(),
+    // A parse error must not paint mermaid's own error graphic into the page: the
+    // fence below keeps its source and carries the label instead.
+    suppressErrorRendering: true,
+    ...INTRINSIC_SIZE,
+    fontFamily: variables.fontFamily,
+    themeVariables: variables,
   });
   engine = mermaid;
+  paletteInUse = paletteSignature();
   return mermaid;
 }
 
@@ -93,7 +140,7 @@ async function loadEngine(): Promise<Engine> {
 export async function renderMermaidDiagrams(root: ParentNode = document): Promise<number> {
   const fences = Array.from(root.querySelectorAll<HTMLElement>(FENCE_SELECTOR));
   if (fences.length === 0) return 0;
-  const mermaid = engine ?? (await loadEngine());
+  const mermaid = engine !== null && paletteInUse === paletteSignature() ? engine : await loadEngine();
 
   for (const pre of fences) {
     const source = mermaidSource(pre);
@@ -117,6 +164,7 @@ export async function renderMermaidDiagrams(root: ParentNode = document): Promis
 }
 
 async function redraw(): Promise<void> {
+  if (diagrams.length === 0) return;
   const mermaid = await loadEngine();
   for (const diagram of diagrams) {
     try {
@@ -131,9 +179,13 @@ async function redraw(): Promise<void> {
 
 /** Keep every drawn diagram in the palette the reader currently has. */
 export function followTheme(): void {
-  if (diagrams.length === 0 || typeof MutationObserver !== 'function') return;
+  if (typeof MutationObserver !== 'function') return;
+  // Attached even when nothing is drawn yet: this can legitimately be called
+  // before rendering, and an early return would lose every later theme change.
   new MutationObserver(() => void redraw()).observe(document.documentElement, {
     attributes: true,
     attributeFilter: ['data-theme'],
   });
+  // The theme may already have moved between the first render and this call.
+  if (diagrams.length > 0 && paletteInUse !== paletteSignature()) void redraw();
 }
