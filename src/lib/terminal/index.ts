@@ -52,7 +52,9 @@ period, open to B2B and remote work.
   mail     contact@thedotfile.com
 `;
 
-const CONFIG = `theme=matrix
+const CONFIG = `# themes: matrix | amber | mono | light | nord
+# font: mono | vt323 · scanlines: on | off · cursor: block | bar | underline
+theme=matrix
 font=mono
 scanlines=off
 cursor=bar

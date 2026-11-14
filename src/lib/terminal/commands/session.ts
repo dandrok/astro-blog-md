@@ -1,6 +1,7 @@
 /** Session commands: help man clear history export env echo which exit reset theme date uname whoami neofetch. */
 
 import { humanSize, fg, style, table } from '../format';
+import { THEMES, THEME_NAMES, parseConfig } from '../theme';
 import type { Command, Ctx } from '../shell';
 
 const CONFIG_PATH = '/home/dandrok/.config/site.conf';
@@ -181,32 +182,60 @@ export const theme: Command = {
   summary: 'Read or change the terminal theme.',
   usage: 'theme | theme set <key>=<value>',
   man: [
-    'Settings live in ~/.config/site.conf and are applied live:',
+    'Settings live in ~/.config/site.conf and are applied live, to the shell and',
+    'to the whole page:',
     '',
-    '  theme=matrix|amber|mono|light',
+    '  theme=matrix|amber|mono|light|nord',
     '  font=vt323|mono',
     '  scanlines=on|off',
     '  cursor=block|bar|underline',
     '  prompt={user}@{host}:{path}$ ',
+    '',
+    'Themes:',
+    ...THEME_NAMES.map((name) => `  ${name.padEnd(9)} ${THEMES[name].summary}`),
   ],
   run(ctx: Ctx) {
     const config = ctx.fs.read(CONFIG_PATH) ?? '';
     const [sub, ...rest] = ctx.argv;
     if (sub !== 'set') {
+      const active = parseConfig(config).theme;
+      const themes = THEME_NAMES.map((name) => (name === active ? fg.green(name) : fg.dim(name))).join(fg.dim(' · '));
       return {
         out:
           fg.dim(`# ${CONFIG_PATH}`) +
           '\n' +
-          config.split('\n').filter(Boolean).map((line) => {
-            const [key] = line.split('=');
-            return line.replace(key + '=', fg.green(key + '='));
-          }).join('\n') +
+          config
+            .split('\n')
+            .filter(Boolean)
+            .map((line) => {
+              if (line.startsWith('#')) return fg.dim(line);
+              const [key] = line.split('=');
+              return line.replace(key + '=', fg.green(key + '='));
+            })
+            .join('\n') +
+          '\n\n' +
+          fg.dim('themes: ') +
+          themes +
+          '\n' +
+          fg.dim(`try: theme set theme=nord`) +
           '\n',
       };
     }
     const assignment = rest.join(' ');
     const [key, value] = assignment.split('=');
     if (!key || value === undefined) return { err: 'theme: usage: theme set key=value', code: 2 };
+    if (key === 'theme' && !THEME_NAMES.includes(value as (typeof THEME_NAMES)[number])) {
+      return { err: `theme: unknown theme '${value}'. try: ${THEME_NAMES.join(', ')}`, code: 2 };
+    }
+    if (key === 'font' && !['mono', 'vt323'].includes(value)) {
+      return { err: `theme: font must be mono or vt323`, code: 2 };
+    }
+    if (key === 'cursor' && !['block', 'bar', 'underline'].includes(value)) {
+      return { err: `theme: cursor must be block, bar or underline`, code: 2 };
+    }
+    if (key === 'scanlines' && !['on', 'off'].includes(value)) {
+      return { err: 'theme: scanlines must be on or off', code: 2 };
+    }
     const lines = config.split('\n').filter(Boolean).filter((line) => !line.startsWith(`${key}=`));
     lines.push(`${key}=${value}`);
     const written = ctx.fs.writeFile(CONFIG_PATH, lines.join('\n') + '\n');

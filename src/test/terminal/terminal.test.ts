@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { tokenize, parseLine, parseFlags, FlagError, ParseError } from '../../lib/terminal/args';
 import { FileSystem, normalize } from '../../lib/terminal/fs';
 import { createShell, slugify } from '../../lib/terminal';
-import { parseConfig } from '../../lib/terminal/theme';
+import { parseConfig, palette, contrastRatio, THEME_NAMES } from '../../lib/terminal/theme';
 import type { PostSeed } from '../../lib/terminal';
 
 const posts: PostSeed[] = [
@@ -474,5 +474,44 @@ describe('easter eggs', () => {
     const result = shell.exec('rm -rf /');
     expect(result.code).toBe(1);
     expect(shell.fs.exists('/home/dandrok/README.md')).toBe(true);
+  });
+});
+
+describe('themes', () => {
+  it('accepts every documented theme and rejects the rest', () => {
+    for (const name of THEME_NAMES) {
+      expect(parseConfig(`theme=${name}`).theme).toBe(name);
+    }
+    const shell = newShell();
+    const bad = shell.exec('theme set theme=neon');
+    expect(bad.code).toBe(2);
+    expect(bad.err).toContain('unknown theme');
+    expect(shell.exec('theme set cursor=sideways').code).toBe(2);
+  });
+
+  it('lists the themes and says how to switch', () => {
+    const out = newShell().exec('theme').out;
+    for (const name of THEME_NAMES) expect(out).toContain(name);
+    expect(out).toContain('theme set theme=');
+  });
+
+  it('switching a theme rewrites the config and asks for a repaint', () => {
+    const shell = newShell();
+    const result = shell.exec('theme set theme=nord');
+    expect(result.effects).toEqual([{ type: 'theme', config: expect.stringContaining('theme=nord') }]);
+    expect(shell.fs.read('/home/dandrok/.config/site.conf')).toContain('theme=nord');
+  });
+
+  it('every palette is complete and readable', () => {
+    for (const name of THEME_NAMES) {
+      const p = palette(name);
+      for (const key of ['bg', 'surface', 'text', 'bright', 'dim', 'dim2', 'accent', 'edge', 'line', 'lineSoft'] as const) {
+        expect(p[key], `${name}.${key}`).toBeTruthy();
+      }
+      // small labels need AA (4.5:1); body text needs AAA (7:1)
+      expect(contrastRatio(p.dim, p.bg), `${name} dim`).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(p.dim2, p.bg), `${name} dim2`).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(p.text, p.bg), `${name} text`).toBeGreaterThanOrEqual(7);
+    }
   });
 });

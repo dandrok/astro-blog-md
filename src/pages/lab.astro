@@ -71,7 +71,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       import { oneDark } from '@codemirror/theme-one-dark';
       import { vim, Vim } from '@replit/codemirror-vim';
       import { createShell, type PostSeed, type Effect } from '../lib/terminal';
-      import { pageColors, parseConfig, xtermTheme } from '../lib/terminal/theme';
+      import { palette, parseConfig, xtermTheme } from '../lib/terminal/theme';
       import { fg, style } from '../lib/terminal/format';
 
       const CONFIG_PATH = '/home/dandrok/.config/site.conf';
@@ -113,13 +113,19 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       function applyTheme(configText: string) {
         const config = parseConfig(configText);
         shell.env.PROMPT = config.prompt;
-        const colors = pageColors(config.theme);
+        const colors = palette(config.theme);
         const root = document.documentElement.style;
+        // the same palette drives the terminal and the page chrome
         root.setProperty('--bg', colors.bg);
-        root.setProperty('--edge', colors.frame);
+        root.setProperty('--surface', colors.surface);
         root.setProperty('--text', colors.text);
+        root.setProperty('--bright', colors.bright);
         root.setProperty('--dim', colors.dim);
-        root.setProperty('--accent', xtermTheme(config.theme).cursor);
+        root.setProperty('--dim-2', colors.dim2);
+        root.setProperty('--accent', colors.accent);
+        root.setProperty('--edge', colors.edge);
+        root.setProperty('--line', colors.line);
+        root.setProperty('--line-soft', colors.lineSoft);
         document.body.dataset.scanlines = config.scanlines ? 'on' : 'off';
         term.options.theme = xtermTheme(config.theme);
         term.options.cursorStyle = config.cursor;
