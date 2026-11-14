@@ -5,7 +5,8 @@
   width: 100%;
   max-width: var(--page);
   margin: 0 auto;
-  height: min(52vh, 520px);
+  /* tall enough to work in: ~300px more than the old 520px cap */
+  height: min(78vh, 820px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--edge);
