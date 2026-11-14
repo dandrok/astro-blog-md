@@ -43,10 +43,9 @@ content collection, a small shell, and CodeMirror with vim keybindings.
 
 const ABOUT = `# about
 
-Frontend engineer, ~6 years of TypeScript, React and Node.
+Software engineer based in Poland, ~6 years of TypeScript, React and Node.
 
-Based in Poland. Currently freelancing — available immediately, no notice
-period, open to B2B and remote work.
+Currently freelancing.
 
   github   github.com/dandrok
   mail     contact@thedotfile.com

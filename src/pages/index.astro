@@ -624,7 +624,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       write(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
       const motd = shell.fs.read(MOTD_PATH);
       if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
-      write(style.bold(fg.bright('dandrok')) + fg.dim(' — frontend engineer · TypeScript, React') + '\n');
+      write(style.bold(fg.bright('dandrok')) + fg.dim(' — software engineer · Poland') + '\n');
       write(
         fg.dim(`${posts.length} articles in `) +
           fg.green('~/writing') +
