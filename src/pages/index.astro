@@ -879,6 +879,25 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       }, 9000);
       document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
 
+      // Smooth anchor landing: the browser scrolls (CSS) and the section greets
+      // the reader with a short highlight, so "you are here" is visible.
+      document.addEventListener('click', (event) => {
+        const link = (event.target as HTMLElement | null)?.closest?.<HTMLAnchorElement>('a[href^="#"]');
+        const hash = link?.getAttribute('href');
+        if (!hash || hash === '#') return;
+        const target = document.querySelector<HTMLElement>(hash);
+        if (!target) return;
+        const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        target.classList.remove('arrived');
+        setTimeout(
+          () => {
+            target.classList.add('arrived');
+            setTimeout(() => target.classList.remove('arrived'), 1200);
+          },
+          calm ? 0 : 650,
+        );
+      });
+
       // hooks used by the test harness and by `?cmd=` deep links
       (window as unknown as { dotfile: unknown }).dotfile = {
         shell,

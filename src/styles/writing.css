@@ -83,3 +83,25 @@
   .writing { margin-top: 40px; }
   .row { grid-template-columns: 10.5ch minmax(0, 1fr); }
 }
+
+/* A short highlight when the `articles ↓` door brings you here. */
+.writing { scroll-margin-top: 24px; }
+
+.writing.arrived h2 {
+  animation: writing-arrive 1100ms ease both;
+}
+.writing.arrived .count {
+  animation: writing-arrive-dim 1100ms ease both;
+}
+@keyframes writing-arrive {
+  0% { color: var(--accent); }
+  100% { color: var(--dim); }
+}
+@keyframes writing-arrive-dim {
+  0% { color: var(--accent); }
+  100% { color: var(--dim-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .writing.arrived h2,
+  .writing.arrived .count { animation: none; }
+}
