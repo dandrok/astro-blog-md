@@ -1,9 +1,11 @@
-# The article URLs moved from /blog/<slug>/ to /<slug>/.
-# Netlify and Cloudflare Pages read this file.
-/blog/*        /:splat        301
-/lab/read/*    /:splat        301
-/lab            /            301
-/lab/           /            301
-/page/*         /            301
-
-# SPA-style fallback is not needed: every route is prerendered.
+# Article URLs moved from /blog/<slug>/ to /<slug>/, and /lab/ is gone.
+# Netlify reads this from the publish root; Cloudflare Pages accepts it too.
+# A rule only fires when no file exists at the source path, which is the case
+# for every route below.
+/blog             /            301
+/blog/            /            301
+/blog/*           /:splat      301
+/lab              /            301
+/lab/             /            301
+/lab/*            /            301
+/page/*           /            301

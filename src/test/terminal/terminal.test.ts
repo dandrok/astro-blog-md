@@ -599,6 +599,16 @@ describe('overlay durability', () => {
     expect(reopened.droppedEdits).toBe(1);
   });
 
+  it('does not resurrect a file the site stopped publishing', () => {
+    const storage = memoryStorage();
+    const first = new FileSystem(seed, storage);
+    first.writeFile('/home/dandrok/about.md', 'my notes against the old file');
+
+    const reopened = new FileSystem([], storage);
+    expect(reopened.read('/home/dandrok/about.md')).toBeUndefined();
+    expect(reopened.droppedEdits).toBe(1);
+  });
+
   it('keeps files the visitor created themselves', () => {
     const storage = memoryStorage();
     const first = new FileSystem(seed, storage);

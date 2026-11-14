@@ -294,11 +294,13 @@ export class FileSystem {
 
       this.overlay = { version: OVERLAY_VERSION, files: {}, removed: parsed.removed ?? [] };
 
-      // Keep only edits that still sit on top of the published text: if the
-      // file changed upstream, the published version wins.
+      // Keep only edits that still sit on top of the published text. An edit
+      // made against a file that has since changed — or been withdrawn from the
+      // site — is dropped; files the reader created have no base and stay.
       for (const [path, entry] of Object.entries(parsed.files ?? {})) {
-        const base = this.baseFor(path);
-        if (base && entry.base !== base) {
+        const published = this.published.get(path);
+        const stale = published === undefined ? entry.base !== '' : entry.base !== fingerprint(published);
+        if (stale) {
           this.droppedEdits++;
           continue;
         }
