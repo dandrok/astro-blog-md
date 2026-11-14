@@ -1,0 +1,65 @@
+---
+import ArticleRow from './ArticleRow.astro';
+import type { ReadPost } from '../../../lib/read';
+
+type Props = {
+  posts: ReadPost[];
+  /** Rows shown before "load more"; the rest ship in the HTML but stay hidden. */
+  pageSize?: number;
+};
+
+const { posts, pageSize = 6 } = Astro.props;
+---
+
+<section class="writing" id="writing" aria-labelledby="writing-title">
+  <div class="writing-head">
+    <h2 id="writing-title">writing</h2>
+    <span class="count">{posts.length} articles</span>
+  </div>
+
+  <ul class="rows" data-writing-list data-page-size={pageSize}>
+    {
+      posts.map((post) => (
+        <li data-writing-row>
+          <ArticleRow post={post} />
+        </li>
+      ))
+    }
+  </ul>
+
+  <button type="button" class="more" data-writing-more hidden>
+    load more <span class="more-count" data-writing-count aria-live="polite"></span>
+  </button>
+</section>
+
+<script>
+  // Progressive enhancement: everything is in the HTML, JS only hides the tail.
+  const list = document.querySelector<HTMLElement>('[data-writing-list]');
+  const button = document.querySelector<HTMLButtonElement>('[data-writing-more]');
+  const counter = document.querySelector<HTMLElement>('[data-writing-count]');
+
+  if (list && button && counter) {
+    const rows = [...list.querySelectorAll<HTMLElement>('[data-writing-row]')];
+    const size = Number(list.dataset.pageSize ?? 6) || 6;
+    const show = (upto: number) => {
+      rows.forEach((row, index) => row.toggleAttribute('data-hidden', index >= upto));
+    };
+
+    if (rows.length > size) {
+      let shown = size;
+      show(shown);
+      button.hidden = false;
+      counter.textContent = `${rows.length - shown} more`;
+
+      button.addEventListener('click', () => {
+        shown = Math.min(rows.length, shown + size);
+        show(shown);
+        if (shown >= rows.length) {
+          button.hidden = true;
+        } else {
+          counter.textContent = `${rows.length - shown} more`;
+        }
+      });
+    }
+  }
+</script>

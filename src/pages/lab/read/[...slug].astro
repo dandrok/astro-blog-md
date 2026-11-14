@@ -11,48 +11,71 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props as { post: ReadPost };
 const { Content, headings } = await render(post.entry);
-const toc = headings.filter((heading) => heading.depth === 2);
 const tags = post.entry.data.tags ?? [];
+const toc = headings.filter((heading) => heading.depth === 2);
 ---
 
 <ReadLayout
   title={`${post.entry.data.title} — ~/.file`}
   description={post.entry.data.description ?? ''}
-  section="read"
 >
-  <article>
-    <header class="article-head">
-      <p class="kicker">writing</p>
-      <h1>{post.entry.data.title}</h1>
-      <p class="meta">
-        <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
-        {tags.length > 0 && <><span class="sep">·</span><span>{tags.join(', ')}</span></>}
-        <span class="sep">·</span><span>{post.readingMinutes} min read</span>
-      </p>
-    </header>
+  <div class="article-grid">
+    <article>
+      <header class="article-head">
+        <p class="kicker">writing</p>
+        <h1>{post.entry.data.title}</h1>
+        <p class="meta">
+          <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
+          <span class="sep">·</span><span>{post.readingMinutes} min read</span>
+          {tags.length > 0 && <><span class="sep">·</span><span>{tags.join(', ')}</span></>}
+        </p>
+      </header>
 
-    {
-      toc.length > 2 && (
-        <details class="toc" open={toc.length <= 8}>
-          <summary>contents · {toc.length} sections</summary>
-          <ol>
-            {toc.map((heading) => (
-              <li>
-                <a href={`#${heading.slug}`}>{heading.text}</a>
-              </li>
-            ))}
-          </ol>
-        </details>
-      )
-    }
+      <div class="prose">
+        <Content />
+      </div>
 
-    <div class="prose">
-      <Content />
-    </div>
+      <div class="article-foot">
+        <a href="/lab/#writing">← all articles</a>
+        <a href="/lab/">open this in the shell →</a>
+      </div>
+    </article>
 
-    <div class="article-foot">
-      <a href="/lab/read/">← back to the index</a>
-      <a href="/lab/">open this in the shell →</a>
-    </div>
-  </article>
+    <aside class="article-rail" aria-label="Article details">
+      <div>
+        <h3>published</h3>
+        <p>{longDate(post.entry.data.pubDate)}</p>
+      </div>
+      <div>
+        <h3>length</h3>
+        <p>{post.readingMinutes} min · {post.words} words</p>
+      </div>
+      {
+        tags.length > 0 && (
+          <div>
+            <h3>tags</h3>
+            <p>{tags.join(' · ')}</p>
+          </div>
+        )
+      }
+      {
+        toc.length > 1 && (
+          <div>
+            <h3>contents</h3>
+            <ul class="toc-list">
+              {toc.map((heading) => (
+                <li>
+                  <a href={`#${heading.slug}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )
+      }
+      <div>
+        <h3>elsewhere</h3>
+        <p><a href="/lab/#writing">all articles</a></p>
+      </div>
+    </aside>
+  </div>
 </ReadLayout>

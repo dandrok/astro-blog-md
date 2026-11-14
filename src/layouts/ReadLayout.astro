@@ -1,18 +1,15 @@
 ---
 import '../styles/site.css';
-import '../styles/read-views.css';
+import '../styles/article.css';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 
 type Props = {
   title: string;
   description?: string;
-  /** Layout personality: the quiet editorial view, or the man pages. */
-  view?: 'read' | 'man';
-  section?: 'read' | 'man' | 'shell';
 };
 
-const { title, description = '', view = 'read', section = 'read' } = Astro.props;
+const { title, description = '' } = Astro.props;
 ---
 
 <!doctype html>
@@ -25,8 +22,8 @@ const { title, description = '', view = 'read', section = 'read' } = Astro.props
     <meta name="description" content={description} />
     <meta name="robots" content="noindex" />
   </head>
-  <body class={`view-${view}`}>
-    <SiteHeader section={section} />
+  <body>
+    <SiteHeader />
     <main class="frame">
       <slot />
     </main>

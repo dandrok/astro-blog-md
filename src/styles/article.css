@@ -1,0 +1,161 @@
+/* Article page. Tokens come from site.css. */
+
+.article-grid {
+  display: grid;
+  grid-template-columns: minmax(0, var(--measure)) minmax(12rem, 1fr);
+  gap: 64px;
+  align-items: start;
+}
+
+.article-head { margin-bottom: 32px; }
+.article-head .kicker {
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--dim-2);
+  margin: 0 0 14px;
+}
+.article-head h1 {
+  font-size: clamp(25px, 3.4vw, 33px);
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  font-weight: 500;
+  margin: 0 0 16px;
+  color: var(--bright);
+}
+.article-head .meta {
+  font-size: 13px;
+  color: var(--dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+}
+.article-head .meta .sep { color: var(--dim-2); }
+
+/* ---------------------------------------------------------------- prose */
+
+.prose { font-size: 16px; }
+.prose > *:first-child { margin-top: 0; }
+
+.prose p { margin: 0 0 1.15em; }
+.prose a { color: var(--bright); text-decoration: none; border-bottom: 1px solid var(--line); }
+.prose a:hover { color: #fff; border-bottom-color: var(--accent); }
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--bright);
+  font-weight: 500;
+  line-height: 1.35;
+  margin: 2.2em 0 0.7em;
+  scroll-margin-top: 24px;
+}
+.prose h2 { font-size: 19px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 2.6em; }
+.prose h3 { font-size: 17px; }
+.prose h4 { font-size: 15px; color: var(--text); }
+
+.prose ul,
+.prose ol { margin: 0 0 1.2em; padding-left: 1.4em; }
+.prose li { margin: 0.35em 0; }
+.prose li::marker { color: var(--dim); }
+
+.prose blockquote {
+  margin: 1.6em 0;
+  padding: 2px 0 2px 18px;
+  border-left: 2px solid var(--line);
+  color: var(--dim);
+}
+.prose blockquote p { color: var(--dim); }
+
+.prose code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid var(--line-soft);
+  padding: 1px 5px;
+  color: var(--bright);
+}
+.prose pre {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--dim-2);
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 1.6em 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.prose pre code { background: none; border: 0; padding: 0; font-size: inherit; }
+
+.prose hr { border: 0; border-top: 1px solid var(--line); margin: 2.4em 0; }
+.prose img { border: 1px solid var(--line); margin: 1.6em 0; display: block; }
+
+.prose table { width: 100%; border-collapse: collapse; margin: 1.6em 0; font-size: 14px; }
+.prose th,
+.prose td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.prose th {
+  color: var(--dim);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+.prose details { border: 1px solid var(--line); padding: 10px 14px; margin: 1.4em 0; }
+.prose summary { cursor: pointer; color: var(--bright); }
+.prose kbd { border: 1px solid var(--edge); border-bottom-width: 2px; padding: 1px 5px; font-size: 0.85em; color: var(--bright); }
+
+/* ----------------------------------------------------------------- rail */
+
+.article-rail {
+  position: sticky;
+  top: 28px;
+  display: grid;
+  gap: 24px;
+  font-size: 12.5px;
+  color: var(--dim);
+  justify-self: end;
+  width: 100%;
+  max-width: 16rem;
+}
+.article-rail h3 {
+  margin: 0 0 8px;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim-2);
+}
+.article-rail p { margin: 0; }
+.article-rail a { color: var(--text); text-decoration: none; }
+.article-rail a:hover { color: var(--bright); }
+.article-rail .toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 12px;
+  border-left: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+}
+
+.article-foot {
+  max-width: var(--measure);
+  margin-top: 48px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--dim);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.article-foot a { color: var(--dim); text-decoration: none; border: 0; }
+.article-foot a:hover { color: var(--bright); }
+
+@media (max-width: 940px) {
+  .article-grid { grid-template-columns: minmax(0, 1fr); gap: 34px; }
+  .article-rail { position: static; justify-self: start; max-width: none; order: 2; }
+}

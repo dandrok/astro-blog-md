@@ -67,10 +67,14 @@ body {
   border: 0;
 }
 .site-header .brand:hover { color: #fff; }
-.site-header nav { display: flex; gap: 18px; }
-.site-header nav a { color: var(--dim); text-decoration: none; border: 0; }
-.site-header nav a:hover { color: var(--bright); }
-.site-header nav a[aria-current='page'] { color: var(--accent); }
+.site-header .to-writing {
+  color: var(--dim);
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  border: 0;
+}
+.site-header .to-writing:hover { color: var(--bright); }
 
 /* --------------------------------------------------------------- main */
 
@@ -109,6 +113,7 @@ main.frame.is-shell {
 .site-footer .links { display: flex; flex-wrap: wrap; gap: 18px; }
 .site-footer a { color: var(--dim); text-decoration: none; border: 0; }
 .site-footer a:hover { color: var(--bright); }
+.site-footer .email-plain { color: var(--dim); }
 
 /* ----------------------------------------------------- shared prose bits */
 

@@ -1,6 +1,7 @@
 ---
 import '../styles/site.css';
 import '../styles/shell.css';
+import '../styles/writing.css';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 
@@ -23,7 +24,7 @@ const { title, description = '' } = Astro.props;
     <meta name="robots" content="noindex" />
   </head>
   <body class="view-shell">
-    <SiteHeader section="shell" />
+    <SiteHeader />
     <main class="frame is-shell">
       <slot />
     </main>

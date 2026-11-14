@@ -1,0 +1,21 @@
+---
+import type { ReadPost } from '../../../lib/read';
+import { shortDay } from '../../../lib/read';
+
+type Props = { post: ReadPost };
+
+const { post } = Astro.props;
+const { data } = post.entry;
+const tags = data.tags ?? [];
+---
+
+<a class="row" href={`/lab/read/${post.slug}/`}>
+  <span class="date">{shortDay(data.pubDate)}</span>
+  <span class="row-body">
+    <span class="title">{data.title}</span>
+    <span class="meta">
+      {tags.length > 0 ? `${tags.join(' · ')} · ` : ''}{post.readingMinutes} min read
+    </span>
+    {data.description && <span class="desc">{data.description}</span>}
+  </span>
+</a>

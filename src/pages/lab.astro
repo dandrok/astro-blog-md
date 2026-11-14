@@ -5,7 +5,8 @@ import { readPosts } from '../lib/read';
 import type { PostSeed } from '../lib/terminal';
 
 // the same model the reading views use: normalised slugs, one entry per slug
-const posts: PostSeed[] = (await readPosts()).map(({ slug, entry }) => ({
+const model = await readPosts();
+const posts: PostSeed[] = model.map(({ slug, entry }) => ({
   slug,
   title: entry.data.title,
   description: entry.data.description ?? '',
@@ -17,13 +18,14 @@ const posts: PostSeed[] = (await readPosts()).map(({ slug, entry }) => ({
 const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 import ShellLayout from '../layouts/ShellLayout.astro';
 import TerminalWindow from '../components/features/terminal/TerminalWindow.astro';
+import ArticleList from '../components/features/writing/ArticleList.astro';
 ---
 
 <ShellLayout
   title="~/.file — terminal"
   description="A personal site that behaves like a Unix home directory: a working shell, a virtual filesystem, and the articles as files you can read and edit."
 >
-  <TerminalWindow title="dandrok@dotfile: ~" door="/lab/read/">
+  <TerminalWindow title="dandrok@dotfile: ~" door="#writing" doorLabel="articles ↓">
     <div id="term" role="application" aria-label="interactive terminal"></div>
 
     <div class="suggest" id="suggest">
@@ -31,7 +33,6 @@ import TerminalWindow from '../components/features/terminal/TerminalWindow.astro
       <button type="button" data-run="ls ~/writing">ls ~/writing</button>
       <button type="button" data-run="cat about.md">cat about.md</button>
       <button type="button" data-run="help">help</button>
-      <a href="/lab/read/">read the posts →</a>
       <button type="button" class="dismiss" id="suggest-hide">hide hints</button>
     </div>
 
@@ -53,8 +54,9 @@ import TerminalWindow from '../components/features/terminal/TerminalWindow.astro
     <span><kbd>↑</kbd> history</span>
     <span><kbd>ctrl-l</kbd> clear</span>
     <span><code>help</code> commands</span>
-    <a href="/lab/read/">plain reading →</a>
   </p>
+
+  <ArticleList posts={model} />
 
   <script is:inline type="application/json" id="post-data" set:html={data}></script>
 
@@ -483,7 +485,7 @@ import TerminalWindow from '../components/features/terminal/TerminalWindow.astro
       write(
         fg.dim(`${posts.length} articles in `) +
           fg.green('~/writing') +
-          fg.dim(', a shell you can actually use, and a plain reading view.') +
+          fg.dim(', a shell you can actually use, and the articles underneath.') +
           '\n',
       );
       write(

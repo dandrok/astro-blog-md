@@ -1,9 +1,9 @@
 ---
+// The email is rot13-encoded in the markup and only decoded on hover/focus,
+// same trick the old footer used: no plain address for scrapers.
 const links = [
   { href: 'https://github.com/dandrok', label: 'github' },
   { href: '/rss.xml', label: 'rss' },
-  { href: '/blog/', label: 'blog' },
-  { href: '/lab/', label: 'shell' },
 ];
 ---
 
@@ -11,5 +11,38 @@ const links = [
   <div><span class="prompt">$</span> cat ~/.file/links</div>
   <div class="links">
     {links.map((link) => <a href={link.href}>{link.label}</a>)}
+    <a
+      href="#"
+      id="email-link"
+      class="email"
+      data-u="pbagnpg"
+      data-d="gurqbgsvyr"
+      data-t="pbz">email=[protected]</a
+    >
+    <noscript><span class="email-plain">email=contact [at] thedotfile [dot] com</span></noscript>
   </div>
 </footer>
+
+<script>
+  import { rot13 } from '../../utils/rot13';
+
+  function wire() {
+    const link = document.getElementById('email-link') as HTMLAnchorElement | null;
+    if (!link) return;
+    const u = link.dataset.u;
+    const d = link.dataset.d;
+    const t = link.dataset.t;
+    if (!u || !d || !t) return;
+    const email = `${rot13(u)}@${rot13(d)}.${rot13(t)}`;
+    const reveal = () => {
+      link.href = `mailto:${email}`;
+      link.textContent = `email=${email}`;
+    };
+    link.addEventListener('mouseenter', reveal, { once: true });
+    link.addEventListener('focus', reveal, { once: true });
+    link.addEventListener('click', reveal);
+  }
+
+  wire();
+  document.addEventListener('astro:page-load', wire);
+</script>

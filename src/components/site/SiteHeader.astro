@@ -1,27 +1,8 @@
 ---
-type Props = {
-  /** Which top-level place we are in, for aria-current. */
-  section?: 'read' | 'man' | 'shell';
-};
-
-const { section } = Astro.props;
-
-const links = [
-  { href: '/lab/read/', label: 'read', key: 'read' },
-  { href: '/lab/man/', label: 'man', key: 'man' },
-  { href: '/lab/', label: 'shell', key: 'shell' },
-] as const;
+// One header, one destination: the site is a single page plus articles.
 ---
 
 <header class="site-header">
   <a class="brand" href="/lab/">~/.file</a>
-  <nav aria-label="Sections">
-    {
-      links.map((link) => (
-        <a href={link.href} aria-current={section === link.key ? 'page' : undefined}>
-          {link.label}
-        </a>
-      ))
-    }
-  </nav>
+  <a class="to-writing" href="/lab/#writing">writing <span aria-hidden="true">↓</span></a>
 </header>
