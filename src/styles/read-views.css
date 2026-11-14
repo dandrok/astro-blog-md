@@ -12,6 +12,7 @@
   --line-strong: rgba(0, 255, 65, 0.28);
   --mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
   --measure: 66ch;
+  --frame: 1080px;
 }
 
 * { box-sizing: border-box; }
@@ -42,7 +43,7 @@ a:hover { color: #fff; border-bottom-color: var(--accent); }
   align-items: baseline;
   justify-content: space-between;
   gap: 24px;
-  max-width: 78ch;
+  max-width: var(--frame);
   width: 100%;
   margin: 0 auto;
   padding: 28px clamp(20px, 5vw, 40px) 0;
@@ -58,13 +59,13 @@ a:hover { color: #fff; border-bottom-color: var(--accent); }
 main {
   flex: 1;
   width: 100%;
-  max-width: 78ch;
+  max-width: var(--frame);
   margin: 0 auto;
   padding: 56px clamp(20px, 5vw, 40px) 80px;
 }
 
 footer.site {
-  max-width: 78ch;
+  max-width: var(--frame);
   width: 100%;
   margin: 0 auto;
   padding: 28px clamp(20px, 5vw, 40px) 48px;
