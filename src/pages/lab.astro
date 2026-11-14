@@ -41,7 +41,10 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
         <span class="path" id="ed-file">—</span>
         <span class="flag" id="ed-hint"></span>
       </div>
-      <div id="editor"></div>
+      <div class="editor-mounts">
+        <div class="editor-mount" id="editor-vim"></div>
+        <div class="editor-mount" id="editor-nano"></div>
+      </div>
       <div class="editor-foot">
         <span id="ed-foot">— NORMAL —</span>
         <span id="ed-save"></span>
@@ -65,7 +68,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       import { FitAddon } from '@xterm/addon-fit';
       import '@xterm/xterm/css/xterm.css';
       import { EditorView, keymap } from '@codemirror/view';
-      import { EditorState } from '@codemirror/state';
+      import { EditorState, type Extension } from '@codemirror/state';
       import { basicSetup } from 'codemirror';
       import { markdown } from '@codemirror/lang-markdown';
       import { oneDark } from '@codemirror/theme-one-dark';
@@ -146,7 +149,6 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       // --------------------------------------------------------------- effects
 
       let editingPath: string | null = null;
-      let view: EditorView | null = null;
 
       function handleEffect(effect: Effect) {
         switch (effect.type) {
@@ -185,48 +187,18 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       }
 
       // ---------------------------------------------------------------- editor
+      // One CodeMirror instance per editor mode, reused for every file. Calling
+      // view.destroy() corrupts @replit/codemirror-vim's module state (its
+      // cleanup throws on `searchState_`), and the next session then opens in
+      // INSERT with `:` dead — so the view is never destroyed, only repointed.
 
-      function openEditor(path: string, editor: 'vim' | 'nano') {
-        const content = shell.fs.read(path);
-        if (content === undefined) {
-          write(fg.error(`cannot open ${path}\n`));
-          return;
-        }
-        editingPath = path;
-        const layer = document.getElementById('editor-layer')!;
-        const file = document.getElementById('ed-file')!;
-        const foot = document.getElementById('ed-foot')!;
-        const saveFlag = document.getElementById('ed-save')!;
-        const hint = document.getElementById('ed-hint')!;
-        layer.classList.add('on');
-        layer.setAttribute('aria-hidden', 'false');
-        file.textContent = path.replace('/home/dandrok', '~');
-        hint.textContent = editor === 'vim' ? ':w write · :q quit · :wq both' : '^O write · ^X exit';
-        foot.textContent = editor === 'vim' ? 'vim — :w write · :q quit' : 'nano — arrows, no modes';
-        saveFlag.textContent = '';
+      type EditorMode = 'vim' | 'nano';
 
-        const save = () => {
-          if (!view || !editingPath) return;
-          const text = view.state.doc.toString();
-          const written = shell.fs.writeFile(editingPath, text);
-          const lines = text.split('\n').length;
-          saveFlag.textContent = written.ok ? `${lines}L written` : (written.error ?? 'write failed');
-          setTimeout(() => (saveFlag.textContent = ''), 2000);
-          if (editingPath === CONFIG_PATH) applyTheme(text);
-        };
+      const views: Partial<Record<EditorMode, EditorView>> = {};
+      let editorMode: EditorMode = 'vim';
 
-        const close = () => {
-          layer.classList.remove('on');
-          layer.setAttribute('aria-hidden', 'true');
-          view?.destroy();
-          view = null;
-          editingPath = null;
-          term.focus();
-          fit.fit();
-          renderPrompt();
-        };
-
-        const extensions = [
+      function editorExtensions(mode: EditorMode): Extension[] {
+        const base: Extension[] = [
           basicSetup,
           markdown(),
           oneDark,
@@ -238,39 +210,106 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
               backgroundColor: 'color-mix(in srgb, var(--accent) 22%, transparent)',
             },
           }),
+          EditorView.updateListener.of((update) => {
+            if (!update.docChanged) return;
+            const flag = document.getElementById('ed-save');
+            if (flag) flag.textContent = 'modified';
+          }),
         ];
-
-        if (editor === 'vim') {
-          extensions.push(
-            vim({ status: true }),
-            EditorView.updateListener.of((update) => {
-              if (update.docChanged) saveFlag.textContent = 'modified';
-            }),
-          );
-          Vim.defineEx('write', 'w', () => save());
-          Vim.defineEx('wq', 'wq', () => {
-            save();
-            close();
-          });
-          Vim.defineEx('quit', 'q', () => close());
-          Vim.defineEx('q!', 'q!', () => close());
-          Vim.defineEx('w!', 'w!', () => save());
-        } else {
-          extensions.push(
+        if (mode === 'vim') base.push(vim({ status: true }));
+        else {
+          base.push(
             keymap.of([
-              { key: 'Ctrl-o', run: () => (save(), true) },
-              { key: 'Ctrl-x', run: () => (close(), true) },
-              { key: 'Escape', run: () => (close(), true) },
+              { key: 'Ctrl-o', run: () => (saveEditor(), true) },
+              { key: 'Ctrl-x', run: () => (closeEditor(), true) },
+              { key: 'Escape', run: () => (closeEditor(), true) },
             ]),
           );
         }
-
-        view = new EditorView({
-          state: EditorState.create({ doc: content, extensions }),
-          parent: document.getElementById('editor')!,
-        });
-        view.focus();
+        return base;
       }
+
+      function editorView(): EditorView | undefined {
+        return views[editorMode];
+      }
+
+      function saveEditor() {
+        const current = editorView();
+        if (!current || !editingPath) return;
+        const text = current.state.doc.toString();
+        const written = shell.fs.writeFile(editingPath, text);
+        const flag = document.getElementById('ed-save');
+        const lines = text.split('\n').length;
+        if (flag) {
+          flag.textContent = written.ok ? `${lines}L written` : (written.error ?? 'write failed');
+          setTimeout(() => {
+            if (flag) flag.textContent = '';
+          }, 2000);
+        }
+        if (editingPath === CONFIG_PATH) applyTheme(text);
+      }
+
+      function closeEditor() {
+        const layer = document.getElementById('editor-layer');
+        if (layer) {
+          layer.classList.remove('on');
+          layer.setAttribute('aria-hidden', 'true');
+        }
+        document.querySelectorAll('.editor-mount').forEach((mount) => mount.classList.remove('on'));
+        editingPath = null;
+        term.focus();
+        fit.fit();
+        renderPrompt();
+      }
+
+      function openEditor(path: string, editor: EditorMode) {
+        const content = shell.fs.read(path);
+        if (content === undefined) {
+          write(fg.error(`cannot open ${path}\n`));
+          return;
+        }
+        editingPath = path;
+        editorMode = editor;
+
+        const layer = document.getElementById('editor-layer')!;
+        const file = document.getElementById('ed-file')!;
+        const foot = document.getElementById('ed-foot')!;
+        const saveFlag = document.getElementById('ed-save')!;
+        const hint = document.getElementById('ed-hint')!;
+
+        layer.classList.add('on');
+        layer.setAttribute('aria-hidden', 'false');
+        file.textContent = path.replace('/home/dandrok', '~');
+        hint.textContent = editor === 'vim' ? ':w write · :q quit · :wq both' : '^O write · ^X exit';
+        foot.textContent = editor === 'vim' ? 'vim — :w write · :q quit' : 'nano — arrows, no modes';
+        saveFlag.textContent = '';
+
+        document.querySelectorAll('.editor-mount').forEach((mount) => {
+          mount.classList.toggle('on', mount.id === `editor-${editor}`);
+        });
+
+        const state = EditorState.create({ doc: content, extensions: editorExtensions(editor) });
+        const existing = views[editor];
+        if (existing) {
+          existing.setState(state);
+          existing.focus();
+        } else {
+          const mount = document.getElementById(`editor-${editor}`)!;
+          const created = new EditorView({ state, parent: mount });
+          views[editor] = created;
+          created.focus();
+        }
+      }
+
+      // registered once, on the shared module state
+      Vim.defineEx('write', 'w', () => saveEditor());
+      Vim.defineEx('wq', 'wq', () => {
+        saveEditor();
+        closeEditor();
+      });
+      Vim.defineEx('quit', 'q', () => closeEditor());
+      Vim.defineEx('q!', 'q!', () => closeEditor());
+      Vim.defineEx('w!', 'w!', () => saveEditor());
 
       // ------------------------------------------------------------- key input
       // One line editor owns the prompt: prompt + typed text are always
@@ -410,7 +449,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       function handleData(data: string) {
         if (sessionEnded) return;
         interacted = true;
-        if (view && !term.element?.classList.contains('focus')) return;
+        if (editingPath && !term.element?.classList.contains('focus')) return;
 
         if (data === '\r' || data === '\n') {
           submitLine();
@@ -566,8 +605,8 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
         key: (data: string) => handleData(data),
         input: () => input,
         caret: () => caret,
-        editorDoc: () => view?.state.doc.toString() ?? null,
-        editorOpen: () => view !== null,
+        editorDoc: () => editorView()?.state.doc.toString() ?? null,
+        editorOpen: () => views[editorMode] !== undefined && document.getElementById('editor-layer')?.classList.contains('on') === true,
         applyTheme,
         closeEditor: () => document.getElementById('editor-layer')?.classList.remove('on'),
       };

@@ -135,10 +135,12 @@
 }
 .editor-bar .path { color: var(--text); }
 .editor-bar .flag { color: var(--dim); }
-#editor { flex: 1; min-height: 0; overflow: auto; }
-#editor .cm-editor { height: 100%; background: transparent; }
-#editor .cm-scroller { font-family: var(--mono); font-size: 14px; line-height: 1.5; }
-#editor .cm-gutters {
+.editor-mounts { flex: 1; min-height: 0; display: flex; }
+.editor-mount { flex: 1; min-height: 0; overflow: auto; display: none; }
+.editor-mount.on { display: block; }
+.editor-mount .cm-editor { height: 100%; background: transparent; }
+.editor-mount .cm-scroller { font-family: var(--mono); font-size: 14px; line-height: 1.5; }
+.editor-mount .cm-gutters {
   background: transparent;
   border-right: 1px solid color-mix(in srgb, var(--edge) 40%, transparent);
   color: var(--dim);
