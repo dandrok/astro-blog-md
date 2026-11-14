@@ -6,6 +6,7 @@ import { slugify } from '../slug';
 import type { Command, Ctx } from '../shell';
 
 const slugOf = (path: string) => slugify(path.split('/').pop() ?? '');
+const WRITING = '/home/dandrok/writing/';
 
 export const open: Command = {
   name: 'open',
@@ -19,7 +20,9 @@ export const open: Command = {
     const node = ctx.fs.get(path);
     if (!node) return { err: `open: ${target}: No such file or directory`, code: 1 };
     if (node.type === 'dir') return { err: `open: ${target}: Is a directory`, code: 2 };
-    if (!/\.mdx?$/.test(path)) return { err: `open: ${target}: not an article`, code: 2 };
+    if (!path.startsWith(WRITING) || !/\.mdx?$/.test(path)) {
+      return { err: `open: ${target}: not an article (articles live in ~/writing)`, code: 2 };
+    }
     const slug = slugOf(path);
     return {
       out: fg.dim(`opening /${slug}/ …`) + '\n',

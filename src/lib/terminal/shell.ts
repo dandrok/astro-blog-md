@@ -13,6 +13,8 @@ export type Env = Record<string, string>;
 export type Ctx = {
   argv: string[];
   stdin: string;
+  /** True when a previous pipeline stage fed this command, even if it wrote nothing. */
+  piped?: boolean;
   fs: FileSystem;
   env: Env;
   cwd: string;
@@ -196,7 +198,7 @@ export class Shell {
         result.code = 1;
         return result;
       }
-      const outcome = this.runSegment(segment.argv, segment.stdin, stdin);
+      const outcome = this.runSegment(segment.argv, segment.quoted, segment.stdin, stdin, index > 0);
       if (outcome.effect) result.effects.push(outcome.effect);
       if (outcome.cwd && outcome.cwd !== this.cwd) {
         this.env.OLDPWD = this.cwd;
@@ -220,16 +222,21 @@ export class Shell {
         result.out += outcome.out ?? '';
       }
 
-      if (outcome.code) {
-        result.code = outcome.code;
-        break;
-      }
-      stdin = outcome.out ?? '';
+      // every stage runs, like a real shell: the status is the last stage's,
+      // and output that went to a file is not piped onward
+      result.code = outcome.code ?? 0;
+      stdin = segment.stdout ? '' : (outcome.out ?? '');
     }
     return result;
   }
 
-  private runSegment(argv: string[], stdinPath: string | null, stdin: string): CmdResult {
+  private runSegment(
+    argv: string[],
+    quoted: boolean[],
+    stdinPath: string | null,
+    stdin: string,
+    piped: boolean,
+  ): CmdResult {
     if (!argv.length) return { code: 0 };
     const name = argv[0];
     const command = this.commands.get(name);
@@ -254,10 +261,13 @@ export class Shell {
     }
 
     const args: string[] = [];
-    for (const token of argv.slice(1)) args.push(...this.glob(token));
+    argv.slice(1).forEach((token, index) => {
+      // `find writing -name '*.md'` passes the pattern through untouched
+      args.push(...(quoted[index + 1] ? [token] : this.glob(token)));
+    });
 
     try {
-      return command.run({ argv: args, stdin: input, fs: this.fs, env: this.env, cwd: this.cwd, tty: true, shell: this });
+      return command.run({ argv: args, stdin: input, piped, fs: this.fs, env: this.env, cwd: this.cwd, tty: true, shell: this });
     } catch (error) {
       if (error instanceof FlagError) return { err: `${name}: ${error.message}`, code: 2 };
       return { err: `${name}: ${(error as Error).message}`, code: 1 };

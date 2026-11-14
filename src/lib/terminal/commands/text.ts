@@ -4,10 +4,33 @@ import { normalize } from '../fs';
 import { fg, renderMarkdown, style, table } from '../format';
 import type { Command, Ctx } from '../shell';
 
-function readTargets(argv: string[], ctx: Ctx): { name: string; content: string }[] | { error: string; code: number } {
-  const targets = argv.filter((arg) => !arg.startsWith('-'));
-  // no operands: behave like the real tools and read what came through the pipe
-  if (!targets.length) return ctx.stdin ? [{ name: '(standard input)', content: ctx.stdin }] : { error: 'missing file operand', code: 1 };
+/** Words that are operands: flags are dropped, together with a flag's value. */
+function operands(argv: string[], valueFlags: string[] = []): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (valueFlags.includes(arg.slice(1))) {
+      i += 1; // the next word belongs to this flag (`head -n 2 file`)
+      continue;
+    }
+    if (arg.startsWith('-') && arg !== '-') continue;
+    out.push(arg);
+  }
+  return out;
+}
+
+function readTargets(
+  argv: string[],
+  ctx: Ctx,
+  valueFlags: string[] = [],
+): { name: string; content: string }[] | { error: string; code: number } {
+  const targets = operands(argv, valueFlags);
+  // no operands: read the pipe, even when the upstream stage wrote nothing
+  if (!targets.length) {
+    return ctx.piped || ctx.stdin !== ''
+      ? [{ name: '(standard input)', content: ctx.stdin }]
+      : { error: 'missing file operand', code: 1 };
+  }
   const files: { name: string; content: string }[] = [];
   for (const target of targets) {
     const path = normalize(target, ctx.cwd);
@@ -39,11 +62,16 @@ export const cat: Command = {
     if ('error' in files) return { err: `cat: ${files.error}`, code: files.code };
     return {
       out: files
-        .map((entry) =>
-          raw || !/\.mdx?$/.test(entry.name)
-            ? entry.content
-            : renderMarkdown(entry.content, { numbers: numbered }),
-        )
+        .map((entry) => {
+          if (!raw && /\.mdx?$/.test(entry.name)) return renderMarkdown(entry.content, { numbers: numbered });
+          if (!numbered) return entry.content;
+          return entry.content
+            .split('\n')
+            .map((line, index, all) =>
+              index === all.length - 1 && !line ? line : fg.muted(String(index + 1).padStart(3) + ' ') + line,
+            )
+            .join('\n');
+        })
         .join('\n'),
     };
   },
@@ -76,8 +104,9 @@ export const head: Command = {
   flags: { n: 'value' },
   run(ctx: Ctx) {
     const count = lineCount(ctx.argv);
-    const files = readTargets(ctx.argv, ctx);
+    const files = readTargets(ctx.argv, ctx, ['n']);
     if ('error' in files) return { err: `head: ${files.error}`, code: files.code };
+    if (count === 0) return { out: '' };
     return { out: files.map((entry) => entry.content.split('\n').slice(0, count).join('\n') + '\n').join('') };
   },
 };
@@ -89,9 +118,19 @@ export const tail: Command = {
   flags: { n: 'value' },
   run(ctx: Ctx) {
     const count = lineCount(ctx.argv);
-    const files = readTargets(ctx.argv, ctx);
+    const files = readTargets(ctx.argv, ctx, ['n']);
     if ('error' in files) return { err: `tail: ${files.error}`, code: files.code };
-    return { out: files.map((entry) => entry.content.split('\n').slice(-count).join('\n') + '\n').join('') };
+    if (count === 0) return { out: '' };
+    return {
+      out: files
+        .map((entry) => {
+          const lines = entry.content.split('\n');
+          // `a\nb\n` splits into ['a','b',''] — that empty tail is not a line
+          if (lines.length && lines[lines.length - 1] === '') lines.pop();
+          return lines.slice(-count).join('\n') + '\n';
+        })
+        .join(''),
+    };
   },
 };
 
@@ -109,7 +148,7 @@ export const wc: Command = {
     const rows = files.map((entry) => {
       const lines = entry.content.split('\n').length - (entry.content.endsWith('\n') ? 1 : 0);
       const words = entry.content.split(/\s+/).filter(Boolean).length;
-      const bytes = entry.content.length;
+      const bytes = new TextEncoder().encode(entry.content).length;
       const cells: string[] = [];
       if (onlyLines || (!onlyWords && !onlyBytes)) cells.push(String(lines));
       if (onlyWords || (!onlyLines && !onlyBytes)) cells.push(String(words));
@@ -151,7 +190,9 @@ export const grep: Command = {
       if (source) return source.test(line);
       const needle = flags.has('i') ? pattern.toLowerCase() : pattern;
       const haystack = flags.has('i') ? line.toLowerCase() : line;
-      return flags.has('w') ? new RegExp(`\\b${needle}\\b`, flags.has('i') ? 'i' : '').test(line) : haystack.includes(needle);
+      if (!flags.has('w')) return haystack.includes(needle);
+      const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return new RegExp(`\\b${escaped}\\b`, flags.has('i') ? 'i' : '').test(line);
     };
 
     const files: { path: string; content: string }[] = [];
@@ -268,16 +309,21 @@ export const uniq: Command = {
 /** `-n 5`, `-n5` and the obsolete `-5` shorthand, like head(1)/tail(1). */
 function lineCount(argv: string[]): number {
   const bare = argv.find((arg) => /^-\d+$/.test(arg));
-  if (bare) return Number(bare.slice(1)) || 10;
+  if (bare) return Number(bare.slice(1));
   return numberFlag(argv, 'n', 10);
 }
 
 function numberFlag(argv: string[], name: string, fallback: number): number {
+  const asCount = (raw: string | undefined): number | null => {
+    if (raw === undefined || raw === '') return null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === `-${name}`) return Number(argv[i + 1] ?? fallback) || fallback;
+    if (argv[i] === `-${name}`) return asCount(argv[i + 1]) ?? fallback;
     if (argv[i].startsWith(`-${name}`)) {
-      const inline = Number(argv[i].slice(name.length + 1));
-      if (inline) return inline;
+      const inline = asCount(argv[i].slice(name.length + 1));
+      if (inline !== null) return inline;
     }
   }
   return fallback;

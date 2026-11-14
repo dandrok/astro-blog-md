@@ -8,11 +8,15 @@
 
 export type Segment = {
   argv: string[];
+  /** Parallel to `argv`: true when that word was quoted or escaped. */
+  quoted: boolean[];
   /** `>` or `>>` target, empty for none. */
   stdout: { path: string; append: boolean } | null;
   /** `<` source, empty for none. */
   stdin: string | null;
 };
+
+export type Token = { text: string; /** the word contained quotes or escapes */ quoted: boolean };
 
 export type ParsedLine = {
   segments: Segment[];
@@ -22,11 +26,16 @@ export type ParsedLine = {
 
 export class ParseError extends Error {}
 
-/** Split a command line into tokens, honouring quotes and backslashes. */
-export function tokenize(line: string): string[] {
-  const tokens: string[] = [];
+/**
+ * Split a command line into tokens, honouring quotes and backslashes.
+ * Each token remembers whether it carried quotes: an operator inside quotes is
+ * a literal character, and a quoted pattern is never glob-expanded.
+ */
+export function tokenizeTokens(line: string): Token[] {
+  const tokens: Token[] = [];
   let current = '';
   let started = false;
+  let sawQuote = false;
   let quote: '"' | "'" | null = null;
 
   for (let i = 0; i < line.length; i++) {
@@ -46,18 +55,21 @@ export function tokenize(line: string): string[] {
     if (char === '"' || char === "'") {
       quote = char;
       started = true;
+      sawQuote = true;
       continue;
     }
     if (char === '\\' && i + 1 < line.length) {
       current += line[++i];
       started = true;
+      sawQuote = true;
       continue;
     }
     if (/\s/.test(char)) {
       if (started) {
-        tokens.push(current);
+        tokens.push({ text: current, quoted: sawQuote });
         current = '';
         started = false;
+        sawQuote = false;
       }
       continue;
     }
@@ -66,8 +78,13 @@ export function tokenize(line: string): string[] {
   }
 
   if (quote) throw new ParseError(`unexpected EOF while looking for matching ${quote}`);
-  if (started) tokens.push(current);
+  if (started) tokens.push({ text: current, quoted: sawQuote });
   return tokens;
+}
+
+/** Token texts only — the historical shape of `tokenize`. */
+export function tokenize(line: string): string[] {
+  return tokenizeTokens(line).map((token) => token.text);
 }
 
 export function parseLine(line: string): ParsedLine {
@@ -76,31 +93,35 @@ export function parseLine(line: string): ParsedLine {
   const body = background ? trimmed.replace(/&\s*$/, '') : trimmed;
 
   const segments: Segment[] = [];
-  let current: Segment = { argv: [], stdout: null, stdin: null };
-  const tokens = tokenize(body);
+  const fresh = (): Segment => ({ argv: [], quoted: [], stdout: null, stdin: null });
+  let current = fresh();
+  const tokens = tokenizeTokens(body);
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    if (token === '|') {
+    // a quoted `|`, `>` or `>>` is an argument, not an operator
+    const operator = token.quoted ? null : token.text;
+    if (operator === '|') {
       if (current.argv.length === 0) throw new ParseError('syntax error near unexpected token `|\'');
       segments.push(current);
-      current = { argv: [], stdout: null, stdin: null };
+      current = fresh();
       continue;
     }
-    if (token === '>' || token === '>>' || token === '<') {
+    if (operator === '>' || operator === '>>' || operator === '<') {
       const target = tokens[++i];
-      if (!target) throw new ParseError(`syntax error near unexpected token \`${token}'`);
-      if (token === '<') current.stdin = target;
-      else current.stdout = { path: target, append: token === '>>' };
+      if (!target) throw new ParseError(`syntax error near unexpected token \`${operator}'`);
+      if (operator === '<') current.stdin = target.text;
+      else current.stdout = { path: target.text, append: operator === '>>' };
       continue;
     }
     // `>file` / `2>file` written without spaces
-    const redirect = /^(\d?)(>>?)(.+)$/.exec(token);
+    const redirect = operator ? /^(\d?)(>>?)(.+)$/.exec(operator) : null;
     if (redirect && redirect[1] !== '2' && redirect[3]) {
       current.stdout = { path: redirect[3], append: redirect[2] === '>>' };
       continue;
     }
-    current.argv.push(token);
+    current.argv.push(token.text);
+    current.quoted.push(token.quoted);
   }
 
   if (current.argv.length === 0) throw new ParseError('syntax error near unexpected token `newline\'');

@@ -132,10 +132,11 @@ export function applyAction(game: DoomGame, action: GameAction): boolean {
       tryMove(game, -game.dirX * STEP, -game.dirY * STEP);
       break;
     case 'strafeLeft':
-      tryMove(game, -game.dirY * STEP, game.dirX * STEP);
+      // screen-left is the negative of the camera plane, not of the direction
+      tryMove(game, game.dirY * STEP, -game.dirX * STEP);
       break;
     case 'strafeRight':
-      tryMove(game, game.dirY * STEP, -game.dirX * STEP);
+      tryMove(game, -game.dirY * STEP, game.dirX * STEP);
       break;
     case 'left':
     case 'right': {

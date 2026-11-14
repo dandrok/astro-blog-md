@@ -59,7 +59,7 @@ body {
   border: 0;
 }
 
-::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--bright); }
 
 /* ------------------------------------------------------------- header */
 
@@ -81,7 +81,7 @@ body {
   text-decoration: none;
   border: 0;
 }
-.site-header .brand:hover { color: #fff; }
+.site-header .brand:hover { color: var(--accent); }
 
 /* --------------------------------------------------------------- main */
 

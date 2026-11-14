@@ -29,6 +29,8 @@ type OverlayEntry = {
 type Overlay = {
   version: number;
   files: Record<string, OverlayEntry>;
+  /** Empty directories the reader made; a file-less dir has to be stored. */
+  dirs: string[];
   removed: string[];
 };
 
@@ -81,7 +83,7 @@ export class FileSystem {
   private seed: SeedEntry[];
   /** Published content by path, so an edit can be checked against its base. */
   private published = new Map<string, string>();
-  private overlay: Overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+  private overlay: Overlay = { version: OVERLAY_VERSION, files: {}, removed: [], dirs: [] };
   /** Saved edits thrown away because the published file changed under them. */
   droppedEdits = 0;
 
@@ -180,7 +182,7 @@ export class FileSystem {
     }
     const placed = this.putNode(p, dir());
     if (!placed.ok) return { ok: false, error: `mkdir: cannot create directory '${p}': Not a directory` };
-    this.track(p);
+    this.trackDir(p);
     return { ok: true };
   }
 
@@ -227,6 +229,7 @@ export class FileSystem {
     for (const key of Object.keys(this.overlay.files)) {
       if (key === p || key.startsWith(`${p}/`)) delete this.overlay.files[key];
     }
+    this.overlay.dirs = this.overlay.dirs.filter((dirPath) => dirPath !== p && !dirPath.startsWith(`${p}/`));
     this.persist();
     return { ok: true };
   }
@@ -241,9 +244,17 @@ export class FileSystem {
     const node = this.get(source);
     if (!node) return { ok: false, error: `cp: cannot stat '${from}': No such file or directory` };
     if (node.type === 'file') return this.writeFile(target, node.content);
-    // recursive directory copy
-    const placed = this.putNode(target, dir(node.mode));
-    if (!placed.ok) return { ok: false, error: `cp: ${placed.error}` };
+    // recursive directory copy: an existing target directory is merged, so its
+    // unrelated children survive
+    const existing = this.get(target);
+    if (existing && existing.type !== 'dir') {
+      return { ok: false, error: `cp: cannot overwrite non-directory '${to}' with directory '${from}'` };
+    }
+    if (!existing) {
+      const placed = this.putNode(target, dir(node.mode));
+      if (!placed.ok) return { ok: false, error: `cp: ${placed.error}` };
+      this.trackDir(target);
+    }
     for (const { name, node: child } of this.list(source)) {
       const result =
         child.type === 'file'
@@ -312,12 +323,12 @@ export class FileSystem {
       // text the site no longer says.
       if (parsed.version !== OVERLAY_VERSION) {
         this.droppedEdits = Object.keys(parsed.files ?? {}).length;
-        this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+        this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [], dirs: [] };
         this.persist();
         return;
       }
 
-      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: parsed.removed ?? [] };
+      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: parsed.removed ?? [], dirs: parsed.dirs ?? [] };
 
       // Keep only edits that still sit on top of the published text. An edit
       // made against a file that has since changed — or been withdrawn from the
@@ -336,6 +347,8 @@ export class FileSystem {
         const parent = this.dir(dirname(path));
         if (parent) delete parent.children[basename(path)];
       }
+      for (const path of this.overlay.dirs) this.putNode(path, dir());
+
       for (const [path, file] of Object.entries(this.overlay.files)) {
         const placed = this.putNode(path, {
           type: 'file',
@@ -345,9 +358,21 @@ export class FileSystem {
         });
         if (!placed.ok) this.droppedEdits++;
       }
+
+      // write the filtered overlay back: otherwise the discarded edit returns
+      // on the next load and is reported as newly dropped every time
+      if (this.droppedEdits) this.persist();
     } catch {
-      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+      this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [], dirs: [] };
     }
+  }
+
+  /** Remember a directory, so `mkdir` survives a reload. */
+  private trackDir(path: string): void {
+    const p = normalize(path);
+    if (this.overlay.dirs.includes(p)) return;
+    this.overlay.dirs.push(p);
+    this.persist();
   }
 
   /** Number of files changed vs the published site. */
@@ -366,7 +391,7 @@ export class FileSystem {
         mtime: entry.mtime ?? now(),
       });
     }
-    this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };
+    this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [], dirs: [] };
     this.droppedEdits = 0;
     if (this.storage) {
       try {

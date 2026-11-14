@@ -685,3 +685,120 @@ describe('review findings', () => {
     expect(rendered.replace(/\x1b\[[0-9;]*m/g, '')).toContain('word');
   });
 });
+
+describe('minor review findings', () => {
+  it('does not glob a quoted pattern', () => {
+    const shell = newShell();
+    expect(shell.exec("echo '*.md'").out).toContain('*.md');
+    expect(shell.exec('echo *.md').out).toContain('about.md');
+  });
+
+  it('treats a quoted operator as an argument', () => {
+    const shell = newShell();
+    const result = shell.exec('echo "|"');
+    expect(result.code).toBe(0);
+    expect(result.out.trim()).toBe('|');
+  });
+
+  it('does not pipe output that was redirected to a file', () => {
+    const shell = newShell();
+    const result = shell.exec('echo hi > ~/piped.txt | cat');
+    expect(result.out).toBe('');
+    expect(shell.fs.read('/home/dandrok/piped.txt')).toBe('hi\n');
+  });
+
+  it('keeps running the pipeline after a failing stage', () => {
+    const shell = newShell();
+    const result = shell.exec('sudo nope | echo after');
+    expect(result.out.trim()).toBe('after');
+    expect(result.code).toBe(0);
+  });
+
+  it('parses `head -n 2 file` without eating the count as a filename', () => {
+    const shell = newShell();
+    shell.exec('echo 1 > ~/n.txt');
+    shell.exec('echo 2 >> ~/n.txt');
+    shell.exec('echo 3 >> ~/n.txt');
+    expect(shell.exec('head -n 2 ~/n.txt').out).toBe('1\n2\n');
+    expect(shell.exec('tail -n 2 ~/n.txt').out).toBe('2\n3\n');
+    expect(shell.exec('head -n 0 ~/n.txt').out).toBe('');
+  });
+
+  it('does not print a blank line for `tail -1` on a newline-terminated file', () => {
+    const shell = newShell();
+    shell.exec('echo a > ~/t.txt');
+    shell.exec('echo b >> ~/t.txt');
+    expect(shell.exec('tail -1 ~/t.txt').out).toBe('b\n');
+  });
+
+  it('counts UTF-8 bytes, not UTF-16 code units', () => {
+    const shell = newShell();
+    shell.exec('echo é > ~/e.txt'); // 2 UTF-8 bytes plus the newline
+    expect(shell.exec('wc -c ~/e.txt').out.trim().startsWith('3')).toBe(true);
+  });
+
+  it('numbers plain text with `cat -n`', () => {
+    const shell = newShell();
+    shell.exec('echo a > ~/p.txt');
+    shell.exec('echo b >> ~/p.txt');
+    const out = shell.exec('cat -n ~/p.txt').out.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(out).toContain('1 a');
+    expect(out).toContain('2 b');
+  });
+
+  it('accepts an empty pipe as stdin', () => {
+    const shell = newShell();
+    expect(shell.exec('echo -n "" | cat').code).toBe(0);
+    expect(shell.exec('cat').code).toBe(1);
+  });
+
+  it('keeps equals signs inside a prompt value', () => {
+    const shell = newShell();
+    const result = shell.exec('theme set prompt={user}={path}$');
+    expect(result.code).toBe(0);
+    const config = result.effects.find((e) => e.type === 'theme') as { config: string };
+    expect(config.config).toContain('prompt={user}={path}$');
+  });
+
+  it('persists a directory the reader created', () => {
+    const storage = (() => {
+      const store = new Map<string, string>();
+      return {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+        removeItem: (k: string) => void store.delete(k),
+      } as Storage;
+    })();
+    const seed = [{ path: '/home/dandrok/README.md', content: 'hi' }];
+    const first = new FileSystem(seed, storage);
+    first.mkdir('/home/dandrok/empty');
+
+    const reopened = new FileSystem(seed, storage);
+    expect(reopened.isDir('/home/dandrok/empty')).toBe(true);
+  });
+
+  it('merges a directory copy into an existing directory', () => {
+    const shell = newShell();
+    shell.exec('mkdir -p ~/a ~/b');
+    shell.exec('echo one > ~/a/one.txt');
+    shell.exec('echo keep > ~/b/keep.txt');
+    shell.exec('cp -r ~/a ~/b');
+    // `cp -r a b` with b existing copies into b/a, keeping b's own children
+    expect(shell.fs.read('/home/dandrok/b/keep.txt')).toBe('keep\n');
+    expect(shell.fs.read('/home/dandrok/b/a/one.txt')).toBe('one\n');
+  });
+
+  it('only opens files that are published articles', () => {
+    const shell = newShell();
+    expect(shell.exec('open README.md').code).toBe(2);
+    expect(shell.exec('open ~/writing/vite-in-astro.md').code).toBe(0);
+  });
+
+  it('strafe left moves to screen left', () => {
+    const game = createGame({ cols: 80, rows: 24, accent: '#00ff41' });
+    const startY = game.y;
+    applyAction(game, 'strafeLeft');
+    // facing +x, screen left is -y
+    expect(game.y).toBeLessThan(startY);
+  });
+});

@@ -229,8 +229,12 @@ export const theme: Command = {
       };
     }
     const assignment = rest.join(' ');
-    const [key, value] = assignment.split('=');
-    if (!key || value === undefined) return { err: 'theme: usage: theme set key=value', code: 2 };
+    const split = assignment.indexOf('=');
+    if (split < 1) return { err: 'theme: usage: theme set key=value', code: 2 };
+    const key = assignment.slice(0, split).trim();
+    const rawValue = assignment.slice(split + 1);
+    // a prompt is allowed to contain '=' itself
+    const value = key === 'prompt' ? rawValue : rawValue.trim();
     if (key === 'theme' && !THEME_NAMES.includes(value as (typeof THEME_NAMES)[number])) {
       return { err: `theme: unknown theme '${value}'. try: ${THEME_NAMES.join(', ')}`, code: 2 };
     }

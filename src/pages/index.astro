@@ -213,7 +213,11 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
             break;
           case 'hints':
             if (suggestBar) suggestBar.hidden = !effect.visible;
-            storage?.setItem(SUGGEST_KEY, effect.visible ? 'shown' : 'hidden');
+            try {
+              storage?.setItem(SUGGEST_KEY, effect.visible ? 'shown' : 'hidden');
+            } catch {
+              // storage full or disabled: the hints still work for this visit
+            }
             break;
           case 'exit':
             sessionEnded = true;
@@ -444,8 +448,6 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
       let input = '';
       let caret = 0;
-      /** Rows the prompt+input block occupies right now (0 = single row). */
-      let blockRows = 0;
       let historyIndex = -1;
       let sessionEnded = false;
 
@@ -454,24 +456,38 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         if (el) el.textContent = `${shell.env.USER}@${shell.env.HOST ?? 'dotfile'}: ${shell.promptPath()}`;
       }
 
-      /** Draw prompt + input at the current position and remember its height. */
+      /**
+       * Rows a run of cells occupies above the row the cursor ends on. An exact
+       * multiple of the width leaves the cursor at the right margin (xterm wraps
+       * on the *next* character), so it is still one row, not two.
+       */
+      const rowsAbove = (cells: number) => (cells > 0 ? Math.floor((cells - 1) / term.cols) : 0);
+
+      /**
+       * Draw prompt + input from the cursor. The terminal's own save-cursor
+       * register (DECSC) anchors the first row of the block: a relative "move up
+       * N rows" breaks as soon as the screen scrolls, this does not.
+       */
       function drawBlock() {
         const prompt = shell.prompt();
+        term.write('\x1b7');
         write(fg.green(prompt));
         if (input) term.write(input);
-        blockRows = Math.floor((prompt.length + input.length) / term.cols);
       }
 
       /** Repaint the block in place and put the caret back inside it. */
       function repaint() {
-        if (blockRows > 0) term.write(`\x1b[${blockRows}A`);
+        term.write('\x1b8'); // back to the first row of the block
         term.write('\r\x1b[J');
         drawBlock();
+        // the block ended with the cursor exactly at the caret — leave it there
+        // (a full-width row would otherwise be addressed past the margin)
+        if (caret === input.length) return;
         const absolute = shell.prompt().length + caret;
-        const caretRow = Math.floor(absolute / term.cols);
+        const row = rowsAbove(absolute);
         const column = absolute % term.cols;
-        const back = blockRows - caretRow;
-        if (back > 0) term.write(`\x1b[${back}A`);
+        term.write('\x1b8');
+        if (row > 0) term.write(`\x1b[${row}B`);
         term.write('\r');
         if (column > 0) term.write(`\x1b[${column}C`);
       }
@@ -481,8 +497,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         syncTitle();
         input = '';
         caret = 0;
-        blockRows = 0;
-        if (!sessionEnded) write(fg.green(shell.prompt()));
+        if (!sessionEnded) drawBlock(); // anchors the block for the next repaint
       }
 
       function setInput(next: string, nextCaret = next.length) {
@@ -500,7 +515,6 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         if (atEnd) {
           // fast path: a plain append, xterm handles the wrapping itself
           term.write(clean);
-          blockRows = Math.floor((shell.prompt().length + input.length) / term.cols);
         } else {
           repaint();
         }
@@ -538,7 +552,6 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         term.write('\n');
         input = '';
         caret = 0;
-        blockRows = 0;
         historyIndex = -1;
         if (line.trim()) submit(line);
         else write(starterMenu());
@@ -567,8 +580,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         }
         if (hits.length > 1) {
           write('\n' + hits.join('  ') + '\n');
-          blockRows = 0;
-          drawBlock();
+            drawBlock();
         }
       }
 
@@ -605,14 +617,12 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
           term.write('^C\n');
           input = '';
           caret = 0;
-          blockRows = 0;
-          renderPrompt();
+            renderPrompt();
           return;
         }
         if (data === '\x0c') {
           term.write('\x1b[2J\x1b[H');
-          blockRows = 0;
-          drawBlock();
+            drawBlock();
           return;
         }
         if (data === '\x01') {
@@ -725,7 +735,11 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       let chipRuns = 0;
       const hideSuggest = () => {
         if (suggestBar) suggestBar.hidden = true;
-        storage?.setItem(SUGGEST_KEY, 'hidden');
+        try {
+          storage?.setItem(SUGGEST_KEY, 'hidden');
+        } catch {
+          // storage disabled — hiding still applies to this visit
+        }
       };
       if (suggestBar) {
         if (storage?.getItem(SUGGEST_KEY) === 'hidden') suggestBar.hidden = true;

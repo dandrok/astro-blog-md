@@ -349,13 +349,15 @@ export const cp: Command = {
   summary: 'Copy files or directories.',
   usage: 'cp <source...> <dest>',
   run({ argv, fs, cwd }: Ctx) {
-    if (argv.length < 2) return { err: 'cp: missing destination file operand', code: 1 };
-    const dest = normalize(argv[argv.length - 1], cwd);
-    const sources = argv.slice(0, -1);
+    // -r and -f are accepted for muscle memory: copying is recursive anyway
+    const words = argv.filter((arg) => !arg.startsWith('-'));
+    if (words.length < 2) return { err: 'cp: missing destination file operand', code: 1 };
+    const dest = normalize(words[words.length - 1], cwd);
+    const sources = words.slice(0, -1);
     const destIsDir = fs.isDir(dest);
     // several sources would all target the same name; only a directory can hold them
     if (sources.length > 1 && !destIsDir) {
-      return { err: `cp: target '${argv[argv.length - 1]}' is not a directory`, code: 1 };
+      return { err: `cp: target '${words[words.length - 1]}' is not a directory`, code: 1 };
     }
     for (const source of sources) {
       const from = normalize(source, cwd);
@@ -372,12 +374,13 @@ export const mv: Command = {
   summary: 'Move or rename.',
   usage: 'mv <source...> <dest>',
   run({ argv, fs, cwd }: Ctx) {
-    if (argv.length < 2) return { err: 'mv: missing destination file operand', code: 1 };
-    const dest = normalize(argv[argv.length - 1], cwd);
-    const sources = argv.slice(0, -1);
+    const words = argv.filter((arg) => !arg.startsWith('-'));
+    if (words.length < 2) return { err: 'mv: missing destination file operand', code: 1 };
+    const dest = normalize(words[words.length - 1], cwd);
+    const sources = words.slice(0, -1);
     const destIsDir = fs.isDir(dest);
     if (sources.length > 1 && !destIsDir) {
-      return { err: `mv: target '${argv[argv.length - 1]}' is not a directory`, code: 1 };
+      return { err: `mv: target '${words[words.length - 1]}' is not a directory`, code: 1 };
     }
     for (const source of sources) {
       const from = normalize(source, cwd);
