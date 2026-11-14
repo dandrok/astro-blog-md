@@ -75,6 +75,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       import { vim, Vim } from '@replit/codemirror-vim';
       import { createShell, type PostSeed, type Effect } from '../lib/terminal';
       import { palette, parseConfig, xtermTheme } from '../lib/terminal/theme';
+      import { actionFor, applyAction, createGame, render as renderGame, type DoomGame } from '../lib/terminal/doom';
       import { fg, style } from '../lib/terminal/format';
 
       const CONFIG_PATH = '/home/dandrok/.config/site.conf';
@@ -166,6 +167,9 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
             break;
           case 'reset':
             applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+            break;
+          case 'play':
+            startGame();
             break;
           case 'hints':
             if (suggestBar) suggestBar.hidden = !effect.visible;
@@ -366,6 +370,34 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       Vim.defineEx('q!', 'q!', () => closeEditor());
       Vim.defineEx('w!', 'w!', () => saveEditor());
 
+      // ------------------------------------------------------------ terminal game
+      // `doom` takes over the alternate screen, draws frames into the terminal
+      // itself and gives the prompt back on quit.
+
+      let game: DoomGame | null = null;
+
+      function drawGame() {
+        if (!game) return;
+        term.write('\x1b[H' + renderGame(game));
+      }
+
+      function startGame() {
+        const config = parseConfig(shell.fs.read(CONFIG_PATH) ?? '');
+        game = createGame({
+          cols: term.cols,
+          rows: term.rows,
+          accent: palette(config.theme).accent,
+        });
+        term.write('\x1b[?25l\x1b[2J\x1b[H');
+        drawGame();
+      }
+
+      function stopGame() {
+        game = null;
+        term.write('\x1b[0m\x1b[?25h\x1b[2J\x1b[H');
+        renderPrompt();
+      }
+
       // ------------------------------------------------------------- key input
       // One line editor owns the prompt: prompt + typed text are always
       // redrawn as a single block, so backspace, arrows, tab completion and
@@ -473,7 +505,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
         else write(starterMenu());
         // `vim file` opens the overlay — it prints the prompt on close, so
         // drawing one here would leave two of them stacked
-        if (!editingPath) renderPrompt();
+        if (!editingPath && !game) renderPrompt();
       }
 
       function historyStep(direction: -1 | 1) {
@@ -506,6 +538,12 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       function handleData(data: string) {
         if (sessionEnded) return;
         interacted = true;
+
+        if (game) {
+          if (applyAction(game, actionFor(data))) stopGame();
+          else drawGame();
+          return;
+        }
         if (editingPath && !term.element?.classList.contains('focus')) return;
 
         if (data === '\r' || data === '\n') {
@@ -574,6 +612,12 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
 
       addEventListener('resize', () => {
         fit.fit();
+        if (game) {
+          game.cols = term.cols;
+          game.rows = term.rows;
+          term.write('\x1b[2J\x1b[H');
+          drawGame();
+        }
         document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
       });
 

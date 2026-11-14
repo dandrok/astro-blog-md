@@ -130,4 +130,21 @@ export const fortune: Command = {
   },
 };
 
-export const eggCommands: Command[] = [sl, sudo, cowsay, matrix, fortune];
+export const doom: Command = {
+  name: 'doom',
+  summary: 'A tiny raycaster in the terminal — not the 1993 one.',
+  usage: 'doom',
+  man: [
+    'A DDA raycaster, the technique Doom made famous, drawn with half blocks',
+    'straight into this terminal. No WASM, no WAD, no download.',
+    '',
+    '  W A S D / arrows   walk and turn',
+    '  , .                strafe',
+    '  q                  quit',
+  ],
+  run() {
+    return { out: '', effect: { type: 'play', game: 'doom' } };
+  },
+};
+
+export const eggCommands: Command[] = [sl, sudo, cowsay, matrix, fortune, doom];

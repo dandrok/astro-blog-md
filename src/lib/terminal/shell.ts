@@ -28,6 +28,7 @@ export type Effect =
   | { type: 'reset' }
   | { type: 'theme'; config: string }
   | { type: 'hints'; visible: boolean }
+  | { type: 'play'; game: 'doom' }
   | { type: 'exit' }
   | { type: 'title'; value: string };
 

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { tokenize, parseLine, parseFlags, FlagError, ParseError } from '../../lib/terminal/args';
 import { FileSystem, normalize } from '../../lib/terminal/fs';
 import { createShell, slugify } from '../../lib/terminal';
+import { actionFor, applyAction, createGame, render as renderGame } from '../../lib/terminal/doom';
 import { parseConfig, palette, contrastRatio, THEME_NAMES } from '../../lib/terminal/theme';
 import type { PostSeed } from '../../lib/terminal';
 
@@ -513,5 +514,49 @@ describe('themes', () => {
       expect(contrastRatio(p.dim2, p.bg), `${name} dim2`).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio(p.text, p.bg), `${name} text`).toBeGreaterThanOrEqual(7);
     }
+  });
+});
+
+describe('doom', () => {
+  const strip = (text: string) => text.replace(/\x1b\[[0-9;]*m/g, '');
+
+  it('maps keys to actions', () => {
+    expect(actionFor('w')).toBe('forward');
+    expect(actionFor('\x1b[A')).toBe('forward');
+    expect(actionFor('a')).toBe('left');
+    expect(actionFor('\x1b[C')).toBe('right');
+    expect(actionFor('\\')).toBe('none');
+  });
+
+  it('quits on q, Q, ctrl-c and Escape', () => {
+    for (const key of ['q', 'Q', '\x03', '\x1b']) {
+      expect(applyAction(createGame({ cols: 80, rows: 24, accent: '#00ff41' }), actionFor(key))).toBe(true);
+    }
+  });
+
+  it('cannot walk through walls', () => {
+    const game = createGame({ cols: 80, rows: 24, accent: '#00ff41' });
+    game.x = 1.5;
+    game.y = 1.5;
+    game.dirX = 0;
+    game.dirY = -1; // north is solid wall at row 0
+    const before = { x: game.x, y: game.y };
+    for (let i = 0; i < 20; i++) applyAction(game, 'forward');
+    expect(game.y).toBeGreaterThan(1);
+    expect(game.y).toBeLessThan(before.y);
+    expect(game.x).toBe(before.x);
+  });
+
+  it('renders one absolutely positioned row per terminal row', () => {
+    const game = createGame({ cols: 60, rows: 20, accent: '#00ff41' });
+    const frame = renderGame(game);
+    expect(frame.match(/\x1b\[\d+;1H/g) ?? []).toHaveLength(20);
+    expect(strip(frame)).toMatch(/[█▀▄]/);
+    expect(strip(frame)).toContain('q quit');
+  });
+
+  it('is reachable from the shell', () => {
+    const shell = newShell();
+    expect(shell.exec('doom').effects).toEqual([{ type: 'play', game: 'doom' }]);
   });
 });
