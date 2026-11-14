@@ -15,6 +15,17 @@ const posts: PostSeed[] = (await getCollection('blog'))
     body: (post as { body?: string }).body ?? '',
   }));
 
+const enriched = posts.map((post) => ({
+  ...post,
+  day: new Date(post.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
+  year: post.date.slice(0, 4),
+  minutes: Math.max(1, Math.round(post.body.split(/\s+/).filter(Boolean).length / 220)),
+}));
+
+const yearGroups = [...new Set(enriched.map((post) => post.year))]
+  .sort((a, b) => b.localeCompare(a))
+  .map((year) => ({ year, posts: enriched.filter((post) => post.year === year) }));
+
 const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 ---
 
@@ -35,16 +46,25 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         --accent: #00ff41;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; height: 100%; }
+      html { margin: 0; background: var(--bg); }
+      body { margin: 0; min-height: 100%; }
       body {
         background:
           radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--bg) 60%, #0b1a0d) 0%, var(--bg) 60%, color-mix(in srgb, var(--bg) 85%, #000) 100%);
         color: var(--text);
         font-family: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
-        display: grid;
-        place-items: center;
-        padding: clamp(10px, 3vh, 40px);
-        overflow: hidden;
+        overflow-x: hidden;
+      }
+      .hero {
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        width: 100%;
+        padding: clamp(10px, 3vh, 40px) clamp(10px, 3vw, 32px) 26px;
       }
       body::after {
         content: '';
@@ -60,7 +80,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         position: relative;
         width: 100%;
         max-width: 1120px;
-        height: min(80vh, 760px);
+        height: min(78vh, 720px);
         display: flex;
         flex-direction: column;
         border: 1px solid var(--frame);
@@ -140,11 +160,134 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       }
       .editor-foot .save { color: var(--accent); }
 
+      .titlebar .door {
+        color: var(--dim);
+        border: 0;
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        padding: 2px 8px;
+        border: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
+        border-radius: 3px;
+        transition: color 120ms ease, border-color 120ms ease;
+      }
+      .titlebar .door:hover { color: var(--accent); border-color: var(--accent); }
+
+      /* starter chips: the beginner path, inside the window frame */
+      .suggest {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 10px;
+        padding: 9px 12px;
+        border-top: 1px solid color-mix(in srgb, var(--frame) 60%, transparent);
+        background: linear-gradient(0deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent);
+        font-size: 12px;
+        color: var(--dim);
+      }
+      .suggest .lead {
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-size: 10.5px;
+        color: color-mix(in srgb, var(--dim) 80%, transparent);
+        margin-right: 2px;
+      }
+      .suggest button,
+      .suggest a {
+        font: inherit;
+        font-size: 12px;
+        color: var(--text);
+        background: transparent;
+        border: 1px solid color-mix(in srgb, var(--frame) 55%, transparent);
+        border-radius: 3px;
+        padding: 3px 9px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+      .suggest button:hover,
+      .suggest a:hover {
+        color: var(--bg);
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .suggest .dismiss {
+        margin-left: auto;
+        border-color: transparent;
+        color: color-mix(in srgb, var(--dim) 70%, transparent);
+        font-size: 11px;
+      }
+      .suggest .dismiss:hover { background: transparent; color: var(--text); }
+      .suggest[hidden] { display: none; }
+
+      /* the reading section the hero scrolls into */
+      .reading {
+        width: 100%;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 clamp(14px, 4vw, 32px) 96px;
+      }
+      .reading .section-title {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        border-top: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
+        padding-top: 14px;
+        margin-bottom: 4px;
+        font-size: 11.5px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--dim);
+      }
+      .reading .section-title a { color: var(--text); border: 0; }
+      .reading .section-title a:hover { color: var(--accent); }
+      .reading .year {
+        margin: 26px 0 2px;
+        font-size: 11px;
+        letter-spacing: 0.24em;
+        color: color-mix(in srgb, var(--dim) 75%, transparent);
+      }
+      .reading .row {
+        display: grid;
+        grid-template-columns: 6.5ch minmax(0, 1fr);
+        gap: 3px 18px;
+        padding: 13px 0;
+        border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent);
+      }
+      .reading a { color: inherit; text-decoration: none; }
+      .reading .row:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+      .reading .row:hover .title { color: #fff; }
+      .reading .date { color: var(--dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+      .reading .row-main { min-width: 0; }
+      .reading .row .title { color: var(--text); font-size: 15.5px; }
+      .reading .row:hover a.title { color: #fff; }
+      .reading .row .meta { display: block; margin-top: 2px; font-size: 11.5px; color: color-mix(in srgb, var(--dim) 80%, transparent); }
+      .reading .row .desc {
+        margin: 4px 0 0;
+        font-size: 12.5px;
+        color: var(--dim);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .scroll-cue {
+        display: flex;
+        justify-content: center;
+        padding: 0 0 26px;
+        font-size: 11.5px;
+        letter-spacing: 0.16em;
+        color: color-mix(in srgb, var(--dim) 80%, transparent);
+      }
+      .scroll-cue a { color: inherit; border: 0; }
+      .scroll-cue a:hover { color: var(--accent); }
+
       @media (max-width: 680px) {
-        body { padding: 0; }
+        .hero { padding: 0; min-height: 0; }
         .shell { height: 100dvh; max-width: none; border: 0; border-radius: 0; }
-        .hint { display: none; }
+        .hint, .scroll-cue { display: none; }
         #term { padding: 6px; }
+        .suggest { padding: 8px 10px; gap: 6px; }
+        .suggest button, .suggest a { font-size: 11.5px; padding: 3px 7px; }
       }
       @media (prefers-reduced-motion: reduce) {
         body::after { display: none; }
@@ -152,14 +295,23 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
     </style>
   </head>
   <body>
-    <main style="display: contents">
+    <main class="hero">
       <div class="shell" id="shell">
         <div class="titlebar">
           <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
           <span class="name" id="win-title">dandrok@dotfile: ~</span>
+          <a class="door" href="/lab/read/">read →</a>
           <span class="stat" id="win-size">—</span>
         </div>
         <div id="term" role="application" aria-label="interactive terminal"></div>
+        <div class="suggest" id="suggest">
+          <span class="lead">start here</span>
+          <button type="button" data-run="ls ~/writing">ls ~/writing</button>
+          <button type="button" data-run="cat about.md">cat about.md</button>
+          <button type="button" data-run="help">help</button>
+          <a href="#reading">read the posts ↓</a>
+          <button type="button" class="dismiss" id="suggest-hide">hide hints</button>
+        </div>
 
         <div class="editor-layer" id="editor-layer" aria-hidden="true">
           <div class="editor-bar">
@@ -173,15 +325,44 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
           </div>
         </div>
       </div>
-    </main>
 
-    <p class="hint">
+      <p class="hint">
       <span><kbd>tab</kbd> complete</span>
       <span><kbd>↑</kbd> history</span>
       <span><kbd>ctrl-l</kbd> clear</span>
       <span><code>help</code> commands</span>
-      <a href="/">← back to the site</a>
-    </p>
+      <a href="/lab/read/">plain reading →</a>
+      </p>
+
+      <div class="scroll-cue"><a href="#reading">↓ reading — {posts.length} files</a></div>
+    </main>
+
+    <section class="reading" id="reading" aria-labelledby="reading-title">
+      <div class="section-title">
+        <span id="reading-title">reading · {posts.length} files</span>
+        <a href="/lab/read/">the plain index →</a>
+      </div>
+      {
+        yearGroups.map((group) => (
+          <>
+            <h2 class="year">{group.year}</h2>
+            {group.posts.map((post) => (
+              <a class="row" href={`/lab/read/${post.slug}/`}>
+                <span class="date">{post.day}</span>
+                <span class="row-main">
+                  <span class="title">{post.title}</span>
+                  <span class="meta">
+                    {post.tags.length ? `${post.tags.join(' · ')} · ` : ''}
+                    {post.minutes} min read
+                  </span>
+                  {post.description && <span class="desc">{post.description}</span>}
+                </span>
+              </a>
+            ))}
+          </>
+        ))
+      }
+    </section>
 
     <script is:inline type="application/json" id="post-data" set:html={data}></script>
 
@@ -460,6 +641,33 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         }
       }
 
+      /** Run a line as if it had been typed — the starter chips use this. */
+      function runLine(line: string) {
+        input = '';
+        caret = 0;
+        write(line + '\n');
+        submit(line);
+        renderPrompt();
+      }
+
+      /** What a stranger gets when they press Enter on an empty prompt. */
+      function starterMenu(): string {
+        const rows: [string, string][] = [
+          ['read the posts', 'scroll down, or /lab/read/'],
+          ['ls ~/writing', 'the articles as files'],
+          ['cat about.md', 'who writes this'],
+          ['help', 'every command'],
+          ['theme set theme=amber', 'if green is not your thing'],
+        ];
+        return (
+          '\n' +
+          fg.dim('not sure what to type? these all work:\n') +
+          rows.map(([command, what]) => `  ${fg.green(command.padEnd(24))}${fg.dim(what)}`).join('\n') +
+          '\n' +
+          fg.dim('or click one of the buttons under the window\n')
+        );
+      }
+
       function submitLine() {
         const line = input;
         term.write('\n');
@@ -468,6 +676,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         blockRows = 0;
         historyIndex = -1;
         if (line.trim()) submit(line);
+        else write(starterMenu());
         renderPrompt();
       }
 
@@ -496,8 +705,11 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         }
       }
 
+      let interacted = false;
+
       function handleData(data: string) {
         if (sessionEnded) return;
+        interacted = true;
         if (view && !term.element?.classList.contains('focus')) return;
 
         if (data === '\r' || data === '\n') {
@@ -575,33 +787,80 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       write(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
       const motd = shell.fs.read(MOTD_PATH);
       if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
+      write(style.bold(fg.bright('dandrok')) + fg.dim(' — frontend engineer, TypeScript and React.') + '\n');
       write(
-        fg.dim(`${posts.length} files in `) +
+        fg.dim(`${posts.length} articles in `) +
           fg.green('~/writing') +
-          fg.dim(' · ') +
+          fg.dim(', a shell you can actually use, and a plain reading view.') +
+          '\n',
+      );
+      write(
+        fg.dim('type ') +
+          fg.green('ls') +
+          fg.dim(' to look around · ') +
           fg.green('help') +
-          fg.dim(' for commands · ') +
-          fg.green('cat ~/writing/' + (posts[0]?.slug ?? 'file') + '.md') +
-          fg.dim(' to read one') +
+          fg.dim(' for everything · ') +
+          fg.green('enter') +
+          fg.dim(' on an empty line if you are stuck') +
           '\n\n',
       );
+
+      // the window opens on content, not on an empty screen
+      write(fg.dim('newest in ~/writing:\n'));
+      const newest = [...posts].slice(0, 5);
+      const nameWidth = 32;
+      for (const post of newest) {
+        const full = `${post.slug}.md`;
+        const file = full.length > nameWidth - 1 ? full.slice(0, nameWidth - 2) + '…' : full;
+        // narrow terminals get names only: a wrapped title reads like noise
+        const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(post.title);
+        write('  ' + label + '\n');
+      }
+      write(fg.dim('  … ') + fg.green(`${Math.max(0, posts.length - newest.length)} more`) + fg.dim(' — ') + fg.green('ls ~/writing') + '\n\n');
       renderPrompt();
+
+      // starter chips: clicking one types the command, so the metaphor lands
+      const suggestBar = document.getElementById('suggest');
+      const SUGGEST_KEY = 'dotfile.suggest.v1';
+      let chipRuns = 0;
+      const hideSuggest = () => {
+        if (suggestBar) suggestBar.hidden = true;
+        storage?.setItem(SUGGEST_KEY, 'hidden');
+      };
+      if (suggestBar) {
+        if (storage?.getItem(SUGGEST_KEY) === 'hidden') suggestBar.hidden = true;
+        suggestBar.querySelectorAll('[data-run]').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            runLine((chip as HTMLElement).dataset.run ?? '');
+            term.focus();
+            chipRuns += 1;
+            if (chipRuns >= 2) hideSuggest();
+          });
+        });
+        document.getElementById('suggest-hide')?.addEventListener('click', hideSuggest);
+      }
+
+      // a nudge for anyone who lands and freezes
+      setTimeout(() => {
+        if (!interacted && !sessionEnded) {
+          write(
+            '\n' +
+              fg.dim('  tip: ') +
+              fg.green('ls') +
+              fg.dim(' looks around · ') +
+              fg.green('help') +
+              fg.dim(' lists commands · the buttons below do it for you\n'),
+          );
+          renderPrompt();
+        }
+      }, 9000);
       document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
 
       // hooks used by the test harness and by `?cmd=` deep links
       (window as unknown as { dotfile: unknown }).dotfile = {
         shell,
         term,
-        run: (line: string) => {
-          input = line;
-          caret = line.length;
-          term.write(line + '\n');
-          input = '';
-          caret = 0;
-          blockRows = 0;
-          submit(line);
-          renderPrompt();
-        },
+        run: (line: string) => runLine(line),
         key: (data: string) => handleData(data),
         input: () => input,
         caret: () => caret,
