@@ -71,7 +71,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       import { oneDark } from '@codemirror/theme-one-dark';
       import { vim, Vim } from '@replit/codemirror-vim';
       import { createShell, type PostSeed, type Effect } from '../lib/terminal';
-      import { palette, parseConfig, xtermTheme } from '../lib/terminal/theme';
+      import { THEME_NAMES, palette, parseConfig, themeForScheme, xtermTheme, type ThemeName } from '../lib/terminal/theme';
       import { actionFor, applyAction, createGame, render as renderGame, type DoomGame } from '../lib/terminal/doom';
       import { fg, style } from '../lib/terminal/format';
 
@@ -113,19 +113,42 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
       // ---------------------------------------------------------------- theme
 
-      function applyTheme(configText: string) {
+      let activeTheme: ThemeName = 'matrix';
+
+      /** A theme the reader pinned explicitly, if any. */
+      function savedTheme(): ThemeName | null {
+        try {
+          const stored = storage?.getItem(THEME_KEY);
+          return stored && (THEME_NAMES as string[]).includes(stored) ? (stored as ThemeName) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      const prefersLight = () => matchMedia('(prefers-color-scheme: light)').matches;
+
+      /** Explicit choice first, then whatever the OS asks for. */
+      function initialTheme(): ThemeName {
+        return savedTheme() ?? themeForScheme(prefersLight() ? 'light' : 'dark');
+      }
+
+      function applyTheme(configText: string, opts: { theme?: ThemeName; persist?: boolean } = {}) {
         const config = parseConfig(configText);
+        const theme = opts.theme ?? config.theme;
+        activeTheme = theme;
         shell.env.PROMPT = config.prompt;
         // the palette is CSS-level, so articles pick it up too
-        document.documentElement.dataset.theme = config.theme;
-        document.documentElement.style.setProperty('--accent', palette(config.theme).accent);
-        try {
-          storage?.setItem(THEME_KEY, config.theme);
-        } catch {
-          // storage disabled — the page still themes for this visit
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--accent', palette(theme).accent);
+        if (opts.persist) {
+          try {
+            storage?.setItem(THEME_KEY, theme);
+          } catch {
+            // storage disabled — the page still themes for this visit
+          }
         }
         document.body.dataset.scanlines = config.scanlines ? 'on' : 'off';
-        term.options.theme = xtermTheme(config.theme);
+        term.options.theme = xtermTheme(theme);
         term.options.cursorStyle = config.cursor;
         term.options.fontFamily =
           config.font === 'vt323'
@@ -160,10 +183,15 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
             openEditor(effect.path, effect.editor);
             break;
           case 'theme':
-            applyTheme(effect.config);
+            applyTheme(effect.config, { persist: true });
             break;
           case 'reset':
-            applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+            try {
+              storage?.removeItem(THEME_KEY);
+            } catch {
+              // nothing stored, nothing to drop
+            }
+            applyTheme(shell.fs.read(CONFIG_PATH) ?? '', { theme: initialTheme() });
             break;
           case 'play':
             startGame();
@@ -263,7 +291,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
             if (flag) flag.textContent = '';
           }, 2000);
         }
-        if (editingPath === CONFIG_PATH) applyTheme(text);
+        if (editingPath === CONFIG_PATH) applyTheme(text, { persist: true });
       }
 
       function closeEditor() {
@@ -379,11 +407,10 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       }
 
       function startGame() {
-        const config = parseConfig(shell.fs.read(CONFIG_PATH) ?? '');
         game = createGame({
           cols: term.cols,
           rows: term.rows,
-          accent: palette(config.theme).accent,
+          accent: palette(activeTheme).accent,
         });
         term.write('\x1b[?25l\x1b[2J\x1b[H');
         drawGame();
@@ -620,7 +647,18 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
       // ------------------------------------------------------------------ boot
 
-      applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+      const bootConfig = shell.fs.read(CONFIG_PATH) ?? '';
+      applyTheme(bootConfig, { theme: initialTheme() });
+
+      // while no theme is pinned, keep following the OS
+      const scheme = matchMedia('(prefers-color-scheme: light)');
+      scheme.addEventListener('change', () => {
+        if (savedTheme()) return;
+        applyTheme(shell.fs.read(CONFIG_PATH) ?? '', {
+          theme: themeForScheme(scheme.matches ? 'light' : 'dark'),
+        });
+      });
+
       write(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
       const motd = shell.fs.read(MOTD_PATH);
       if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');

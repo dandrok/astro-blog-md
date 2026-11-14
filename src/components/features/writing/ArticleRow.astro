@@ -1,6 +1,6 @@
 ---
 import type { ReadPost } from '../../../lib/read';
-import { shortDay } from '../../../lib/read';
+import { listDate } from '../../../lib/read';
 
 type Props = { post: ReadPost };
 
@@ -10,7 +10,7 @@ const tags = data.tags ?? [];
 ---
 
 <a class="row" href={`/${post.slug}/`}>
-  <span class="date">{shortDay(data.pubDate)}</span>
+  <span class="date">{listDate(data.pubDate)}</span>
   <span class="row-body">
     <span class="title">{data.title}</span>
     <span class="meta">

@@ -1,17 +1,7 @@
 /* Article page. Tokens come from site.css. */
 
-.article-head .back {
-  display: inline-block;
-  margin-bottom: 20px;
-  font-size: 11.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--dim);
-}
-.article-head .back:hover,
-.article-head .back:focus-visible { color: var(--accent); }
-
 .article-head { margin-bottom: 32px; }
+.article-head > .back { margin-bottom: 20px; }
 .article-head h1 {
   font-size: clamp(27px, 3.2vw, 38px);
   line-height: 1.28;
@@ -116,8 +106,8 @@
   gap: 16px;
   flex-wrap: wrap;
 }
-.article-foot a { color: var(--dim); text-decoration: none; border: 0; }
-.article-foot a:hover { color: var(--bright); }
+.article-foot .shell-link { color: var(--dim); text-decoration: none; border: 0; }
+.article-foot .shell-link:hover { color: var(--bright); }
 
 @media (max-width: 680px) {
   .prose { font-size: 16.5px; }

@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import ArticleLayout from '../layouts/ArticleLayout.astro';
+import BackLink from '../components/site/BackLink.astro';
 import { readPosts, longDate } from '../lib/read';
 import type { ReadPost } from '../lib/read';
 
@@ -20,7 +21,7 @@ const tags = post.entry.data.tags ?? [];
 >
   <article>
     <header class="article-head">
-      <a class="back" href="/#writing">← all articles</a>
+      <BackLink />
       <h1>{post.entry.data.title}</h1>
       <p class="meta">
         <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
@@ -34,8 +35,8 @@ const tags = post.entry.data.tags ?? [];
     </div>
 
     <div class="article-foot">
-      <a href="/#writing">← all articles</a>
-      <a href="/">open this in the shell →</a>
+      <BackLink />
+      <a class="shell-link" href="/">open this in the shell →</a>
     </div>
   </article>
 </ArticleLayout>

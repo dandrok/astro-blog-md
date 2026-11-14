@@ -36,10 +36,7 @@ export function longDate(date: Date): string {
   return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-export function shortDay(date: Date): string {
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-}
-
-export function yearOf(date: Date): number {
-  return date.getFullYear();
+/** "11 Nov 2026" — the list gutter carries the year, not just the day. */
+export function listDate(date: Date): string {
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }

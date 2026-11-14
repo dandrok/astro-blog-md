@@ -81,5 +81,5 @@
 
 @media (max-width: 680px) {
   .writing { margin-top: 40px; }
-  .row { grid-template-columns: 5.5ch minmax(0, 1fr); }
+  .row { grid-template-columns: 10.5ch minmax(0, 1fr); }
 }

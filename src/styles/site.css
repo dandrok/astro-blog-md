@@ -1,6 +1,7 @@
 /* Shared tokens and page chrome. Every view imports this; nothing here is view-specific. */
 
 :root {
+  color-scheme: dark;
   --bg: #050805;
   --surface: #08130b;
   --text: #a3f2b0;
@@ -17,7 +18,7 @@
   --measure: 100%;
   --read-size: 19px;
   --pad: clamp(16px, 4vw, 32px);
-  --gutter: 6.5ch;
+  --gutter: 12ch;
 }
 
 *,

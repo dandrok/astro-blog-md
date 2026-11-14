@@ -9,6 +9,15 @@ export type ThemeName = 'matrix' | 'amber' | 'mono' | 'light' | 'nord';
 
 export const THEME_NAMES: ThemeName[] = ['matrix', 'amber', 'mono', 'light', 'nord'];
 
+/**
+ * What a first-time reader gets: their OS decides. A light system opens on the
+ * paper theme, a dark one on the green default; an explicit `theme set` wins
+ * over this from then on.
+ */
+export function themeForScheme(scheme: 'light' | 'dark'): ThemeName {
+  return scheme === 'light' ? 'light' : 'matrix';
+}
+
 export const THEMES: Record<ThemeName, { summary: string }> = {
   matrix: { summary: 'green on near-black — the default' },
   amber: { summary: 'amber phosphor, like an old VT' },
