@@ -23,7 +23,12 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
 <ShellLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <TerminalWindow title="dandrok@dotfile: ~" door="#writing" doorLabel="articles ↓">
-    <div id="term" role="application" aria-label="interactive terminal"></div>
+    <div id="term" role="application" aria-label="interactive terminal">
+      <div class="term-skeleton" id="term-skeleton" aria-hidden="true">
+        <p class="ps1">dandrok@dotfile:~$<span class="caret"></span></p>
+        <p class="note">opening a shell…</p>
+      </div>
+    </div>
 
     <div class="suggest" id="suggest">
       <span class="lead">start here</span>
@@ -65,16 +70,66 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       import { Terminal } from '@xterm/xterm';
       import { FitAddon } from '@xterm/addon-fit';
       import '@xterm/xterm/css/xterm.css';
-      import { EditorView, keymap } from '@codemirror/view';
-      import { EditorState, type Extension } from '@codemirror/state';
-      import { basicSetup } from 'codemirror';
-      import { markdown } from '@codemirror/lang-markdown';
-      import { oneDark } from '@codemirror/theme-one-dark';
-      import { vim, Vim } from '@replit/codemirror-vim';
       import { createShell, type PostSeed, type Effect } from '../lib/terminal';
       import { THEME_NAMES, palette, parseConfig, themeForScheme, xtermTheme, type ThemeName } from '../lib/terminal/theme';
       import { actionFor, applyAction, createGame, render as renderGame, type DoomGame } from '../lib/terminal/doom';
       import { fg, style } from '../lib/terminal/format';
+
+      // CodeMirror and vim are about half the page bundle and are only needed
+      // once someone opens a file, so they load on demand and the terminal can
+      // boot without waiting for them.
+      type CMView = import('@codemirror/view').EditorView;
+      type CMExtension = import('@codemirror/state').Extension;
+
+      type EditorKit = {
+        EditorView: typeof import('@codemirror/view').EditorView;
+        keymap: typeof import('@codemirror/view').keymap;
+        EditorState: typeof import('@codemirror/state').EditorState;
+        basicSetup: typeof import('codemirror').basicSetup;
+        markdown: typeof import('@codemirror/lang-markdown').markdown;
+        oneDark: typeof import('@codemirror/theme-one-dark').oneDark;
+        vim: typeof import('@replit/codemirror-vim').vim;
+        Vim: typeof import('@replit/codemirror-vim').Vim;
+        getCM: typeof import('@replit/codemirror-vim').getCM;
+      };
+
+      let kit: EditorKit | null = null;
+      let kitPromise: Promise<EditorKit> | null = null;
+
+      function editorKit(): Promise<EditorKit> {
+        if (kit) return Promise.resolve(kit);
+        kitPromise ??= Promise.all([
+          import('@codemirror/view'),
+          import('@codemirror/state'),
+          import('codemirror'),
+          import('@codemirror/lang-markdown'),
+          import('@codemirror/theme-one-dark'),
+          import('@replit/codemirror-vim'),
+        ]).then(([view, state, cm, md, dark, vimModule]) => {
+          kit = {
+            EditorView: view.EditorView,
+            keymap: view.keymap,
+            EditorState: state.EditorState,
+            basicSetup: cm.basicSetup,
+            markdown: md.markdown,
+            oneDark: dark.oneDark,
+            vim: vimModule.vim,
+            Vim: vimModule.Vim,
+            getCM: vimModule.getCM,
+          };
+          // ex commands, registered once on the shared module state
+          vimModule.Vim.defineEx('write', 'w', () => saveEditor());
+          vimModule.Vim.defineEx('wq', 'wq', () => {
+            saveEditor();
+            closeEditor();
+          });
+          vimModule.Vim.defineEx('quit', 'q', () => closeEditor());
+          vimModule.Vim.defineEx('q!', 'q!', () => closeEditor());
+          vimModule.Vim.defineEx('w!', 'w!', () => saveEditor());
+          return kit;
+        });
+        return kitPromise;
+      }
 
       const CONFIG_PATH = '/home/dandrok/.config/site.conf';
       const MOTD_PATH = '/etc/motd';
@@ -195,7 +250,10 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
             }, 320);
             break;
           case 'edit':
-            openEditor(effect.path, effect.editor);
+            // claim the prompt synchronously: the editor loads lazily, and a
+            // prompt drawn in that gap would survive next to the real one
+            editingPath = effect.path;
+            void openEditor(effect.path, effect.editor);
             break;
           case 'theme':
             applyTheme(effect.config, { persist: true });
@@ -243,16 +301,16 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
       type EditorMode = 'vim' | 'nano';
 
-      const views: Partial<Record<EditorMode, EditorView>> = {};
+      const views: Partial<Record<EditorMode, CMView>> = {};
       let editorMode: EditorMode = 'vim';
 
-      function editorExtensions(mode: EditorMode): Extension[] {
-        const base: Extension[] = [
-          basicSetup,
-          EditorView.lineWrapping,
-          markdown(),
-          oneDark,
-          EditorView.theme({
+      function editorExtensions(mode: EditorMode, k: EditorKit): CMExtension[] {
+        const base: CMExtension[] = [
+          k.basicSetup,
+          k.EditorView.lineWrapping,
+          k.markdown(),
+          k.oneDark,
+          k.EditorView.theme({
             '&': { backgroundColor: 'transparent', color: 'var(--text)' },
             '.cm-content': { caretColor: 'var(--accent)' },
             '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
@@ -260,7 +318,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
               backgroundColor: 'color-mix(in srgb, var(--accent) 22%, transparent)',
             },
           }),
-          EditorView.updateListener.of((update) => {
+          k.EditorView.updateListener.of((update) => {
             if (!update.docChanged) return;
             const flag = document.getElementById('ed-save');
             if (flag) flag.textContent = 'modified';
@@ -268,8 +326,8 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         ];
         if (mode === 'vim') {
           base.push(
-            vim({ status: true }),
-            EditorView.domEventHandlers({
+            k.vim({ status: true }),
+            k.EditorView.domEventHandlers({
               keyup: () => {
                 syncVimStatus();
                 return false;
@@ -283,7 +341,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         }
         else {
           base.push(
-            keymap.of([
+            k.keymap.of([
               { key: 'Ctrl-o', run: () => (saveEditor(), true) },
               { key: 'Ctrl-x', run: () => (closeEditor(), true) },
               { key: 'Escape', run: () => (closeEditor(), true) },
@@ -293,7 +351,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         return base;
       }
 
-      function editorView(): EditorView | undefined {
+      function editorView(): CMView | undefined {
         return views[editorMode];
       }
 
@@ -326,10 +384,17 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         renderPrompt();
       }
 
-      function openEditor(path: string, editor: EditorMode) {
+      async function openEditor(path: string, editor: EditorMode) {
         const content = shell.fs.read(path);
         if (content === undefined) {
           write(fg.error(`cannot open ${path}\n`));
+          return;
+        }
+        const k = await editorKit();
+        if (shell.fs.read(path) === undefined) {
+          // the file vanished while the editor was loading — give the prompt back
+          editingPath = null;
+          renderPrompt();
           return;
         }
         editingPath = path;
@@ -352,36 +417,48 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
           mount.classList.toggle('on', mount.id === `editor-${editor}`);
         });
 
-        const state = EditorState.create({ doc: content, extensions: editorExtensions(editor) });
-        const existing = views[editor];
-        if (existing) {
-          existing.setState(state);
-          existing.focus();
+        const state = k.EditorState.create({ doc: content, extensions: editorExtensions(editor, k) });
+        let view = views[editor];
+        if (view) {
+          view.setState(state);
         } else {
           const mount = document.getElementById(`editor-${editor}`)!;
-          const created = new EditorView({ state, parent: mount });
-          views[editor] = created;
-          created.focus();
+          view = new k.EditorView({ state, parent: mount });
+          views[editor] = view;
+        }
+        view.focus();
+        if (editor === 'vim') {
+          // vim opens in NORMAL. The plugin keeps its mode in module state, so
+          // without this a session left in INSERT makes the next one open in
+          // INSERT too, and Escape is the only way out.
+          const cm = k.getCM(view);
+          if (cm) k.Vim.handleKey(cm, '<Esc>', 'user');
+          setTimeout(syncVimStatus, 0);
         }
       }
 
-      type VimAware = EditorView & { cm?: { state?: { vim?: { mode?: string } } } };
+      /**
+       * Send a key straight to vim. `Vim.handleKey` needs the plugin's CM5
+       * adapter (`getCM`), not the EditorView — passing the view silently does
+       * nothing, which is why a lost Escape stayed lost.
+       */
+      function vimKey(view: CMView, key: string): void {
+        const cm = kit?.getCM(view);
+        if (cm) kit?.Vim.handleKey(cm, key, 'user');
+      }
 
-      /** Read vim's own mode and make the UI tell the truth. */
+      /** The plugin's own status panel is the only reliable source for the mode. */
+      function vimMode(): string | null {
+        const panel = document.querySelector('.cm-vim-panel');
+        return /--([A-Z]+)--/.exec(panel?.textContent ?? '')?.[1].toLowerCase() ?? null;
+      }
+
+      /** Make the editor footer tell the truth about the mode. */
       function syncVimStatus() {
-        const cm = (editorView() as VimAware | undefined)?.cm;
-        const mode = cm?.state?.vim?.mode;
+        const mode = vimMode();
         if (!mode) return;
-        const label = `--${mode.toUpperCase()}--`;
         const foot = document.getElementById('ed-foot');
         if (foot) foot.textContent = `vim — ${mode.toUpperCase()} · :w write · :q quit`;
-        // the plugin's status span can go stale after a mode change; correct it
-        // while no ex prompt is open (the prompt lives in the same panel)
-        const panel = document.querySelector('.cm-vim-panel');
-        if (panel && !panel.querySelector('input')) {
-          const first = panel.firstElementChild;
-          if (first && first.tagName === 'SPAN' && first.textContent !== label) first.textContent = label;
-        }
       }
 
       // Safety net: some Escape presses blur the content element instead of
@@ -390,29 +467,21 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         'keydown',
         (event) => {
           if (event.key !== 'Escape' || !editingPath) return;
-          const current = editorView() as VimAware | undefined;
+          const current = editorView();
           if (!current) return;
           if (!current.hasFocus) current.focus();
-          // run before vim's own keymap: one press leaves INSERT even when the
-          // key would otherwise be swallowed (blurred content, a tooltip, an
-          // operator waiting for a motion)
-          if (current.cm?.state?.vim?.mode === 'insert') {
-            Vim.handleKey(current.cm as never, '<Esc>', 'user');
+          // Deliver the Escape ourselves through the plugin's adapter. Whether
+          // the key reaches vim on its own depends on where focus drifted to
+          // (panel click, prompt, tooltip), and a swallowed Escape strands the
+          // editor in INSERT — one code path is one behaviour.
+          if (kit?.getCM(current)) {
+            event.preventDefault();
+            vimKey(current, '<Esc>');
+            setTimeout(syncVimStatus, 0);
           }
-          setTimeout(syncVimStatus, 0);
         },
         true,
       );
-
-      // registered once, on the shared module state
-      Vim.defineEx('write', 'w', () => saveEditor());
-      Vim.defineEx('wq', 'wq', () => {
-        saveEditor();
-        closeEditor();
-      });
-      Vim.defineEx('quit', 'q', () => closeEditor());
-      Vim.defineEx('q!', 'q!', () => closeEditor());
-      Vim.defineEx('w!', 'w!', () => saveEditor());
 
       // ------------------------------------------------------------ terminal game
       // `doom` takes over the alternate screen, draws frames into the terminal
@@ -680,52 +749,86 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         });
       });
 
-      write(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
-      const motd = shell.fs.read(MOTD_PATH);
-      if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
-      write(style.bold(fg.bright('dandrok')) + fg.dim(' — software engineer · Poland') + '\n');
-      if (shell.fs.droppedEdits > 0) {
-        write(fg.dim(`note: the published files changed since your last visit — dropped ${shell.fs.droppedEdits} saved edit(s)`) + '\n');
-      }
-      write(
-        fg.dim(`${posts.length} articles in `) +
-          fg.green('~/writing') +
-          fg.dim(', a shell you can actually use, and the articles underneath.') +
-          '\n',
-      );
-      write(
-        fg.dim('type ') +
-          fg.green('ls') +
-          fg.dim(' to look around · ') +
-          fg.green('help') +
-          fg.dim(' for everything · ') +
-          fg.green('enter') +
-          fg.dim(' on an empty line for a menu') +
-          '\n\n',
-      );
+      // Boot output is written line by line with a short pause. A terminal that
+      // dumps its whole scrollback in one frame reads like a screenshot; a login
+      // reads like a login. Reduced motion skips the pauses entirely.
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const bootPace = calm ? 0 : 26;
+      const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+      let skeletonGone = false;
 
-      // the window opens on content, not on an empty screen
-      write(fg.dim('newest in ~/writing:\n'));
-      const newest = [...posts].slice(0, 5);
-      const nameWidth = 32;
-      for (const post of newest) {
-        const full = `${post.slug}.md`;
-        const file = full.length > nameWidth - 1 ? full.slice(0, nameWidth - 2) + '…' : full;
-        // narrow terminals get names only: a wrapped title reads like noise
-        const room = Math.max(18, term.cols - nameWidth - 2);
-        const title = post.title.length > room ? post.title.slice(0, room - 1) + '…' : post.title;
-        const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(title);
-        write('  ' + label + '\n');
+      /** Write one boot line, dropping the skeleton on the first one. */
+      async function say(text: string) {
+        if (!skeletonGone) {
+          document.getElementById('term-skeleton')?.remove();
+          skeletonGone = true;
+        }
+        write(text);
+        if (bootPace) await pause(bootPace);
       }
-      write(fg.dim('  … ') + fg.green(`${Math.max(0, posts.length - newest.length)} more`) + fg.dim(' — ') + fg.green('ls ~/writing') + '\n\n');
-      // A deep link may prefill a command, never run one: a shared URL must not
-      // be able to execute anything (`?cmd=reset -y` used to wipe saved edits).
-      const rawCommand = new URLSearchParams(location.search).getAll('cmd').join(' ').trim();
-      // control characters have no business in a prefilled command line
-      const requested = /[\u0000-\u001f\u007f-\u009f]/.test(rawCommand) ? '' : rawCommand;
-      if (requested) write(fg.dim('from the link — press enter to run it') + '\n');
-      renderPrompt();
-      if (requested) setInput(requested.replace(/[\r\n]+/g, ' '));
+
+      async function boot() {
+        await say(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
+        const motd = shell.fs.read(MOTD_PATH);
+        if (motd) await say(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
+        await say(style.bold(fg.bright('dandrok')) + fg.dim(' — software engineer · Poland') + '\n');
+        if (shell.fs.droppedEdits > 0) {
+          await say(
+            fg.dim(
+              `note: the published files changed since your last visit — dropped ${shell.fs.droppedEdits} saved edit(s)`,
+            ) + '\n',
+          );
+        }
+        await say(
+          fg.dim(`${posts.length} articles in `) +
+            fg.green('~/writing') +
+            fg.dim(', a shell you can actually use, and the articles underneath.') +
+            '\n',
+        );
+        await say(
+          fg.dim('type ') +
+            fg.green('ls') +
+            fg.dim(' to look around · ') +
+            fg.green('help') +
+            fg.dim(' for everything · ') +
+            fg.green('enter') +
+            fg.dim(' on an empty line for a menu') +
+            '\n\n',
+        );
+
+        // the window opens on content, not on an empty screen
+        await say(fg.dim('newest in ~/writing:\n'));
+        const newest = [...posts].slice(0, 5);
+        const nameWidth = 32;
+        for (const post of newest) {
+          const full = `${post.slug}.md`;
+          const file = full.length > nameWidth - 1 ? full.slice(0, nameWidth - 2) + '…' : full;
+          // narrow terminals get names only: a wrapped title reads like noise
+          const room = Math.max(18, term.cols - nameWidth - 2);
+          const title = post.title.length > room ? post.title.slice(0, room - 1) + '…' : post.title;
+          const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(title);
+          await say('  ' + label + '\n');
+        }
+        await say(
+          fg.dim('  … ') +
+            fg.green(`${Math.max(0, posts.length - newest.length)} more`) +
+            fg.dim(' — ') +
+            fg.green('ls ~/writing') +
+            '\n\n',
+        );
+
+        // A deep link may prefill a command, never run one: a shared URL must not
+        // be able to execute anything (`?cmd=reset -y` used to wipe saved edits).
+        const rawCommand = new URLSearchParams(location.search).getAll('cmd').join(' ').trim();
+        // control characters have no business in a prefilled command line
+        const requested = /[\u0000-\u001f\u007f-\u009f]/.test(rawCommand) ? '' : rawCommand;
+        if (requested) await say(fg.dim('from the link — press enter to run it') + '\n');
+
+        renderPrompt();
+        if (requested) setInput(requested.replace(/[\r\n]+/g, ' '));
+      }
+
+      void boot();
 
       // starter chips: clicking one types the command, so the metaphor lands
       const suggestBar = document.getElementById('suggest');
@@ -785,10 +888,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         input: () => input,
         caret: () => caret,
         editorDoc: () => editorView()?.state.doc.toString() ?? null,
-        vimMode: () => {
-          const cm = (editorView() as unknown as { cm?: { state?: { vim?: { mode?: string } } } })?.cm;
-          return cm?.state?.vim?.mode ?? null;
-        },
+        vimMode,
         editorOpen: () => views[editorMode] !== undefined && document.getElementById('editor-layer')?.classList.contains('on') === true,
         applyTheme,
         closeEditor: () => document.getElementById('editor-layer')?.classList.remove('on'),

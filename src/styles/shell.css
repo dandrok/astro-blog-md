@@ -49,8 +49,39 @@
 }
 .titlebar .door:hover { color: var(--accent); border-color: var(--accent); }
 
-#term { flex: 1; min-height: 0; padding: 8px 10px 4px; }
+#term { position: relative; flex: 1; min-height: 0; padding: 8px 10px 4px; }
 #term .xterm { height: 100%; }
+
+/* Shown until the shell module has parsed; the boot text replaces it. */
+.term-skeleton {
+  position: absolute;
+  inset: 0;
+  padding: 8px 10px 4px;
+  font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  pointer-events: none;
+  user-select: none;
+  color: var(--dim);
+}
+.term-skeleton p { margin: 0; }
+.term-skeleton .ps1 { color: var(--text); }
+.term-skeleton .caret {
+  display: inline-block;
+  width: 8px;
+  height: 1.05em;
+  margin-left: 4px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: skeleton-caret 1.05s steps(1) infinite;
+}
+.term-skeleton .note { margin-top: 6px; color: var(--dim-2); }
+@keyframes skeleton-caret {
+  50% { opacity: 0.15; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .term-skeleton .caret { animation: none; }
+}
 
 .hint {
   margin: 12px auto 0;
