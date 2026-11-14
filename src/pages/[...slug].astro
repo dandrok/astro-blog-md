@@ -1,0 +1,42 @@
+---
+import { render } from 'astro:content';
+import ArticleLayout from '../layouts/ArticleLayout.astro';
+import ShellLink from '../components/site/ShellLink.astro';
+import { readPosts, longDate } from '../lib/read';
+import type { ReadPost } from '../lib/read';
+
+export async function getStaticPaths() {
+  const posts = await readPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
+}
+
+const { post } = Astro.props as { post: ReadPost };
+const { Content } = await render(post.entry);
+const tags = post.entry.data.tags ?? [];
+---
+
+<ArticleLayout
+  title={post.entry.data.title}
+  description={post.entry.data.description ?? ''}
+>
+  <article>
+    <header class="article-head">
+      <ShellLink href="/#writing" command="cd .." label="back to the article list" />
+      <h1>{post.entry.data.title}</h1>
+      <p class="meta">
+        <time datetime={post.entry.data.pubDate.toISOString()}>{longDate(post.entry.data.pubDate)}</time>
+        <span class="sep">·</span><span>{post.readingMinutes} min read</span>
+        {tags.length > 0 && <><span class="sep">·</span><span>{tags.join(', ')}</span></>}
+      </p>
+    </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <div class="article-foot">
+      <ShellLink href="/#writing" command="cd .." label="back to the article list" />
+      <ShellLink href="/" command="cd ~" label="back to the shell" />
+    </div>
+  </article>
+</ArticleLayout>

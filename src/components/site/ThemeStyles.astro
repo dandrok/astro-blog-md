@@ -1,0 +1,50 @@
+---
+// One palette table drives the terminal and every page. This component turns it
+// into CSS so an article page picks up `theme set theme=nord` from localStorage
+// without loading the shell, and stamps the choice before first paint.
+import { THEME_NAMES, palette } from '../../lib/terminal/theme';
+
+const vars = (name: (typeof THEME_NAMES)[number]) => {
+  const p = palette(name);
+  const scheme = name === 'light' ? 'light' : 'dark';
+  return [
+    `--bg:${p.bg}`,
+    `--surface:${p.surface}`,
+    `--text:${p.text}`,
+    `--bright:${p.bright}`,
+    `--dim:${p.dim}`,
+    `--dim-2:${p.dim2}`,
+    `--accent:${p.accent}`,
+    `--edge:${p.edge}`,
+    `--line:${p.line}`,
+    `--line-soft:${p.lineSoft}`,
+    `color-scheme:${scheme}`,
+  ].join(';');
+};
+
+const themes = THEME_NAMES.filter((name) => name !== 'matrix');
+const css = themes.map((name) => `:root[data-theme='${name}']{${vars(name)}}`).join('\n');
+export const THEME_STORAGE_KEY = 'dotfile.theme.v1';
+---
+
+<style is:inline set:html={css}></style>
+<script is:inline define:vars={{ key: THEME_STORAGE_KEY, names: THEME_NAMES }}>
+  // Before the first paint: an explicit choice wins, otherwise follow the OS.
+  // The shell re-applies the same rule to the terminal on boot.
+  const stamp = (theme) => {
+    document.documentElement.dataset.theme = theme;
+  };
+  try {
+    const light = matchMedia('(prefers-color-scheme: light)');
+    const stored = localStorage.getItem(key);
+    const saved = stored && names.includes(stored) ? stored : null;
+    stamp(saved || (light.matches ? 'light' : 'matrix'));
+    if (!saved) {
+      light.addEventListener('change', (event) => {
+        if (!localStorage.getItem(key)) stamp(event.matches ? 'light' : 'matrix');
+      });
+    }
+  } catch {
+    stamp('matrix');
+  }
+</script>

@@ -1,146 +1,74 @@
-# .file
+# ~/.file
 
-Personal notes, projects, and write-ups presented like a Unix home directory.
+A personal site that behaves like a Unix home directory: a working shell over a
+virtual filesystem, the articles underneath it, and one plain reading view.
 
-This repository powers [thedotfile.com](https://thedotfile.com/), an Astro-based blog with a dotfile-inspired interface, terminal-flavored typography, and light/night theme support.
+Live at [thedotfile.com](https://thedotfile.com/).
 
-## Features
+## What it is
 
-- Dotfile-style branding built around `~/.file`
-- Markdown and MDX blog posts with Astro Content Collections
-- Reusable layouts for homepage, blog archive, and post pages
-- Terminal-inspired visual language without a real terminal emulator
-- Theme toggle with `light` and `night` modes
-- Default theme follows system color preference until the user picks one
-- UI Mode toggle between `terminal` (styled retro terminal interface with glitchy transitions) and `regular` (clean modern layout)
-- Dynamic client-side Mermaid.js diagram support with strict security configuration and CSS overrides matching theme/UI states
-- RSS feed and sitemap generation
+One page (`/`) plus one page per article (`/<slug>/`). Nothing else.
 
-## Project Structure
+- **The shell** — a real (small) shell in the browser: `ls`, `cd`, `cat`, `grep`,
+  `vim`, pipelines, redirection, globs, history, tab completion, `man`, themes.
+  The filesystem is generated at build time from the content collection, and
+  writes are kept in a localStorage overlay (`reset -y` drops them).
+- **The article list** — every post, server-rendered, revealed six at a time
+  behind `load more`.
+- **The article view** — 940px page, prose at `--measure`, no cards, no shadows.
+- **Themes** — `matrix`, `amber`, `mono`, `light`, `nord`, all of them colouring
+  the terminal and the page from one palette (`theme set theme=nord`).
+- **Easter eggs** — `sl`, `sudo`, `cowsay`, `matrix`, `fortune`, and `doom`
+  (a DDA raycaster drawn in the terminal).
 
-```text
+## Structure
+
+```
 src/
-├── components/
-│   ├── common/
-│   └── features/blog/
-├── content/blog/
-├── layouts/
-│   ├── BlogPost.astro
-│   └── SiteLayout.astro
 ├── pages/
-│   ├── [...page].astro
-│   ├── about.astro
-│   └── blog/
+│   ├── index.astro          the site: shell + article list
+│   ├── [...slug].astro      one article
+│   └── rss.xml.js
+├── layouts/
+│   ├── ShellLayout.astro    head + header + frame + footer
+│   └── ArticleLayout.astro
+├── components/
+│   ├── site/                SiteHead, SiteHeader, SiteFooter, ThemeStyles
+│   └── features/
+│       ├── terminal/        TerminalWindow
+│       └── writing/         ArticleList, ArticleRow
+├── lib/
+│   ├── read.ts              the post model (slugs, dedupe, reading time)
+│   └── terminal/            shell core
+│       ├── fs.ts            virtual filesystem + overlay
+│       ├── args.ts          tokenizer, pipelines, flags
+│       ├── shell.ts         env, cwd, exec, history, completion
+│       ├── commands/        one object per command, grouped by area
+│       ├── theme.ts         palettes (terminal + page)
+│       ├── doom.ts          the raycaster
+│       └── format.ts        ANSI helpers, markdown-to-terminal
 ├── styles/
-│   ├── global.css
-│   └── regular-ui.css
-└── content.config.ts
+│   ├── site.css             tokens + header/footer/frame
+│   ├── shell.css            the terminal window
+│   ├── writing.css          the article list
+│   └── article.css          article + prose
+└── content/blog/            the posts (Markdown)
 ```
 
-## Tech Stack
-
-- Astro
-- Markdown / MDX
-- Tailwind CSS 4
-- Vite
-- Astro Content Collections
-- Vitest
-- Mermaid.js (types-only devDependency, CDN lazy runtime loading)
+Rules the code follows: one palette table drives terminal and page; one post
+model feeds the shell and the list; `--page` / `--measure` are the only widths;
+components never import each other's CSS.
 
 ## Development
 
 ```bash
 npm install
-npm run dev
+npm run dev        # localhost:4321
+npm run build
+npm run test       # shell core, in node, no browser needed
+npm run lint
+npm run type-check
 ```
 
-The local dev server runs at `http://localhost:4321`.
-
-## Available Commands
-
-| Command              | Action                                 |
-| :------------------- | :------------------------------------- |
-| `npm run dev`        | Start the local Astro dev server       |
-| `npm run build`      | Build the production site into `dist/` |
-| `npm run preview`    | Preview the production build locally   |
-| `npm run test`       | Run Vitest in interactive watch mode   |
-| `npm run test:run`   | Run tests once with Vitest             |
-| `npm run type-check` | Run TypeScript checks                  |
-| `npm run lint`       | Lint codebase with ESLint              |
-| `npm run lint:fix`   | Auto-fix ESLint issues                 |
-| `npm run format`     | Format code style with Prettier        |
-
-## Writing Posts
-
-Add new posts in `src/content/blog/` as `.md` or `.mdx` files.
-
-Example:
-
-```markdown
----
-title: 'My New Post'
-description: 'Short summary of the post'
-pubDate: 2026-04-07
----
-
-## Overview
-
-Post content goes here.
-```
-
-Supported frontmatter fields:
-
-- `title`
-- `description`
-- `pubDate`
-- `updatedDate` (optional)
-- `heroImage` (optional)
-
-## Theme
-
-The site supports:
-
-- `night`
-- `light`
-
-The default theme follows the user's system preference through `prefers-color-scheme`.  
-Once a user toggles the theme manually, the choice is stored in `localStorage`.
-
-The main theme logic lives in:
-
-- `src/layouts/SiteLayout.astro`
-- `src/components/common/ThemeToggle.astro`
-- `src/styles/global.css`
-
-## UI Mode
-
-The site supports toggling the presentation layout:
-
-- `terminal`: Retro CLI-themed layout with matrix-green accents and glitchy CRT-style transition effects.
-- `regular`: A clean, readable, conventional site layout with standard margins, typography, and elements.
-
-The active mode is saved to `localStorage` under the key `ui-mode`.
-
-The UI mode implementation resides in:
-
-- `src/components/common/UiToggle.astro`
-- `src/styles/regular-ui.css`
-
-## Diagrams (Mermaid)
-
-The site supports rendering Mermaid.js diagrams directly within Markdown/MDX files using `pre` blocks with `data-language="mermaid"` (generated by code blocks labeled `mermaid`):
-
-- **Dynamic CDN Import**: To keep core bundle size small, Mermaid is dynamically imported from `jsdelivr` CDN _only_ if the current page contains diagrams.
-- **Strict Security Settings**: Configured with `securityLevel: 'strict'` to prevent XSS script injection in user-supplied diagram content.
-- **Full Type Safety**: Local type references are imported from the `mermaid` npm devDependency to provide autocomplete and check builds without bundling the actual source.
-
-## Content and Layout
-
-- `src/pages/[...page].astro` is the homepage
-- `src/pages/blog/index.astro` is the archive page
-- `src/pages/about.astro` is the about page
-- `src/layouts/BlogPost.astro` handles blog post pages
-
-## Notes
-
-This project used to include a more literal terminal-mode concept. The current version is intentionally simpler: it keeps the dotfile and terminal feel, but focuses on readable static pages and maintainable content.
+The shell is DOM-free by design (`src/lib/terminal`), so its behaviour is tested
+in node; the page is verified with real keyboard events against the built HTML.

@@ -1,0 +1,917 @@
+---
+// The site: a terminal window over a virtual filesystem, with the articles
+// underneath it. The shell and the list share one post model (src/lib/read).
+import { readPosts } from '../lib/read';
+import type { PostSeed } from '../lib/terminal';
+import ShellLayout from '../layouts/ShellLayout.astro';
+import TerminalWindow from '../components/features/terminal/TerminalWindow.astro';
+import ArticleList from '../components/features/writing/ArticleList.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+
+const model = await readPosts();
+const posts: PostSeed[] = model.map(({ slug, entry }) => ({
+  slug,
+  title: entry.data.title,
+  description: entry.data.description ?? '',
+  date: entry.data.pubDate.toISOString().slice(0, 10),
+  tags: entry.data.tags ?? [],
+  body: (entry as { body?: string }).body ?? '',
+}));
+
+const data = JSON.stringify(posts).replace(/</g, '\\u003c');
+---
+
+<ShellLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
+  <TerminalWindow title="dandrok@dotfile: ~" door="#writing" doorLabel="articles ↓">
+    <div id="term" role="application" aria-label="interactive terminal">
+      <div class="term-skeleton" id="term-skeleton" aria-hidden="true">
+        <p class="ps1">dandrok@dotfile:~$<span class="caret"></span></p>
+        <p class="note">opening a shell…</p>
+      </div>
+    </div>
+
+    <div class="suggest" id="suggest">
+      <span class="lead">start here</span>
+      <button type="button" data-run="ls ~/writing">ls ~/writing</button>
+      <button type="button" data-run="cat about.md">cat about.md</button>
+      <button type="button" data-run="help">help</button>
+      <button type="button" class="dismiss" id="suggest-hide">hide hints</button>
+    </div>
+
+    <div class="editor-layer" id="editor-layer" aria-hidden="true">
+      <div class="editor-bar">
+        <span class="path" id="ed-file">—</span>
+        <span class="flag" id="ed-hint"></span>
+      </div>
+      <div class="editor-mounts">
+        <div class="editor-mount" id="editor-vim"></div>
+        <div class="editor-mount" id="editor-nano"></div>
+      </div>
+      <div class="editor-foot">
+        <span id="ed-foot">— NORMAL —</span>
+        <span id="ed-save"></span>
+      </div>
+    </div>
+  </TerminalWindow>
+
+  <p class="hint">
+    <span><kbd>tab</kbd> complete</span>
+    <span><kbd>↑</kbd> history</span>
+    <span><kbd>ctrl-l</kbd> clear</span>
+    <span><kbd>shift-tab</kbd> leave</span>
+    <span><code>help</code> commands</span>
+  </p>
+
+  <ArticleList posts={model} />
+
+  <script is:inline type="application/json" id="post-data" set:html={data}></script>
+
+  <script>
+      import { Terminal } from '@xterm/xterm';
+      import { FitAddon } from '@xterm/addon-fit';
+      import '@xterm/xterm/css/xterm.css';
+      import { createShell, type PostSeed, type Effect } from '../lib/terminal';
+      import { THEME_NAMES, palette, parseConfig, themeForScheme, xtermTheme, type ThemeName } from '../lib/terminal/theme';
+      import { actionFor, applyAction, createGame, render as renderGame, type DoomGame } from '../lib/terminal/doom';
+      import { fg, style } from '../lib/terminal/format';
+
+      // CodeMirror and vim are about half the page bundle and are only needed
+      // once someone opens a file, so they load on demand and the terminal can
+      // boot without waiting for them.
+      type CMView = import('@codemirror/view').EditorView;
+      type CMExtension = import('@codemirror/state').Extension;
+
+      type EditorKit = {
+        EditorView: typeof import('@codemirror/view').EditorView;
+        keymap: typeof import('@codemirror/view').keymap;
+        EditorState: typeof import('@codemirror/state').EditorState;
+        basicSetup: typeof import('codemirror').basicSetup;
+        markdown: typeof import('@codemirror/lang-markdown').markdown;
+        oneDark: typeof import('@codemirror/theme-one-dark').oneDark;
+        vim: typeof import('@replit/codemirror-vim').vim;
+        Vim: typeof import('@replit/codemirror-vim').Vim;
+        getCM: typeof import('@replit/codemirror-vim').getCM;
+      };
+
+      let kit: EditorKit | null = null;
+      let kitPromise: Promise<EditorKit> | null = null;
+
+      function editorKit(): Promise<EditorKit> {
+        if (kit) return Promise.resolve(kit);
+        kitPromise ??= Promise.all([
+          import('@codemirror/view'),
+          import('@codemirror/state'),
+          import('codemirror'),
+          import('@codemirror/lang-markdown'),
+          import('@codemirror/theme-one-dark'),
+          import('@replit/codemirror-vim'),
+        ]).then(([view, state, cm, md, dark, vimModule]) => {
+          kit = {
+            EditorView: view.EditorView,
+            keymap: view.keymap,
+            EditorState: state.EditorState,
+            basicSetup: cm.basicSetup,
+            markdown: md.markdown,
+            oneDark: dark.oneDark,
+            vim: vimModule.vim,
+            Vim: vimModule.Vim,
+            getCM: vimModule.getCM,
+          };
+          // ex commands, registered once on the shared module state
+          vimModule.Vim.defineEx('write', 'w', () => saveEditor());
+          vimModule.Vim.defineEx('wq', 'wq', () => {
+            saveEditor();
+            closeEditor();
+          });
+          vimModule.Vim.defineEx('quit', 'q', () => closeEditor());
+          vimModule.Vim.defineEx('q!', 'q!', () => closeEditor());
+          vimModule.Vim.defineEx('w!', 'w!', () => saveEditor());
+          return kit;
+        });
+        return kitPromise;
+      }
+
+      const CONFIG_PATH = '/home/dandrok/.config/site.conf';
+      const MOTD_PATH = '/etc/motd';
+      const THEME_KEY = 'dotfile.theme.v1';
+      const HINTS_KEY = 'dotfile.suggest.v1';
+
+      const posts: PostSeed[] = JSON.parse(document.getElementById('post-data')?.textContent ?? '[]');
+
+      const storage = (() => {
+        try {
+          localStorage.setItem('dotfile.probe', '1');
+          localStorage.removeItem('dotfile.probe');
+          return localStorage;
+        } catch {
+          return null;
+        }
+      })();
+
+      const shell = createShell({ posts, storage });
+      const term = new Terminal({
+        convertEol: true,
+        cursorBlink: true,
+        cursorStyle: 'bar',
+        fontSize: 14,
+        lineHeight: 1.3,
+        letterSpacing: 0.2,
+        scrollback: 5000,
+        fontFamily: "ui-monospace, 'JetBrains Mono', Menlo, monospace",
+        allowProposedApi: true,
+        theme: xtermTheme('matrix'),
+      });
+      const fit = new FitAddon();
+      term.loadAddon(fit);
+      term.open(document.getElementById('term')!);
+      fit.fit();
+      term.focus();
+
+      // Tab completes a command inside the shell, which leaves a keyboard user
+      // with no way out. Shift+Tab is handed back to the browser so focus can
+      // reach the article list and the starter buttons.
+      term.attachCustomKeyEventHandler((event) => {
+        if (event.type === 'keydown' && event.key === 'Tab' && event.shiftKey) {
+          event.preventDefault();
+          const focusables = [...document.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex="0"]')];
+          const index = focusables.indexOf(document.activeElement as HTMLElement);
+          (focusables[index - 1] ?? focusables[0])?.focus();
+          return false;
+        }
+        return true;
+      });
+
+      // ---------------------------------------------------------------- theme
+
+      let activeTheme: ThemeName = 'matrix';
+
+      /** A theme the reader pinned explicitly, if any. */
+      function savedTheme(): ThemeName | null {
+        try {
+          const stored = storage?.getItem(THEME_KEY);
+          return stored && (THEME_NAMES as string[]).includes(stored) ? (stored as ThemeName) : null;
+        } catch {
+          return null;
+        }
+      }
+
+      const prefersLight = () => matchMedia('(prefers-color-scheme: light)').matches;
+
+      /** Explicit choice first, then whatever the OS asks for. */
+      function initialTheme(): ThemeName {
+        return savedTheme() ?? themeForScheme(prefersLight() ? 'light' : 'dark');
+      }
+
+      function applyTheme(configText: string, opts: { theme?: ThemeName; persist?: boolean } = {}) {
+        const config = parseConfig(configText);
+        const theme = opts.theme ?? config.theme;
+        activeTheme = theme;
+        shell.env.PROMPT = config.prompt;
+        // the palette is CSS-level, so articles pick it up too
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.setProperty('--accent', palette(theme).accent);
+        if (opts.persist) {
+          try {
+            storage?.setItem(THEME_KEY, theme);
+          } catch {
+            // storage disabled — the page still themes for this visit
+          }
+        }
+        document.body.dataset.scanlines = config.scanlines ? 'on' : 'off';
+        term.options.theme = xtermTheme(theme);
+        term.options.cursorStyle = config.cursor;
+        term.options.fontFamily =
+          config.font === 'vt323'
+            ? "'VT323', ui-monospace, monospace"
+            : "ui-monospace, 'JetBrains Mono', Menlo, monospace";
+        term.options.fontSize = config.font === 'vt323' ? 18 : 14;
+        fit.fit();
+        term.refresh(0, term.rows - 1);
+      }
+
+      // ------------------------------------------------------------------ io
+
+      const write = (text: string) => term.write(text.replace(/\n/g, '\r\n'));
+
+
+      // --------------------------------------------------------------- effects
+
+      let editingPath: string | null = null;
+
+      function handleEffect(effect: Effect) {
+        switch (effect.type) {
+          case 'clear':
+            term.write('\x1b[2J\x1b[H');
+            break;
+          case 'navigate':
+            setTimeout(() => {
+              if (effect.url.startsWith('http') || effect.url.startsWith('mailto:')) window.open(effect.url, '_blank', 'noopener');
+              else window.location.href = effect.url;
+            }, 320);
+            break;
+          case 'edit':
+            // claim the prompt synchronously: the editor loads lazily, and a
+            // prompt drawn in that gap would survive next to the real one
+            editingPath = effect.path;
+            void openEditor(effect.path, effect.editor);
+            break;
+          case 'theme':
+            applyTheme(effect.config, { persist: true });
+            break;
+          case 'reset':
+            try {
+              storage?.removeItem(THEME_KEY);
+            } catch {
+              // nothing stored, nothing to drop
+            }
+            applyTheme(shell.fs.read(CONFIG_PATH) ?? '', { theme: initialTheme() });
+            break;
+          case 'play':
+            startGame();
+            break;
+          case 'hints':
+            if (suggestBar) suggestBar.hidden = !effect.visible;
+            try {
+              storage?.setItem(SUGGEST_KEY, effect.visible ? 'shown' : 'hidden');
+            } catch {
+              // storage full or disabled: the hints still work for this visit
+            }
+            break;
+          case 'exit':
+            sessionEnded = true;
+            write(fg.dim('\nlogout\n[session closed — reload the page to start again]\n'));
+            break;
+          case 'title':
+            break;
+        }
+      }
+
+      function submit(line: string) {
+        const result = shell.exec(line);
+        if (result.out) write(result.out.endsWith('\n') ? result.out : result.out + '\n');
+        if (result.err) write(fg.error(result.err) + '\n');
+        for (const effect of result.effects) handleEffect(effect);
+      }
+
+      // ---------------------------------------------------------------- editor
+      // One CodeMirror instance per editor mode, reused for every file. Calling
+      // view.destroy() corrupts @replit/codemirror-vim's module state (its
+      // cleanup throws on `searchState_`), and the next session then opens in
+      // INSERT with `:` dead — so the view is never destroyed, only repointed.
+
+      type EditorMode = 'vim' | 'nano';
+
+      const views: Partial<Record<EditorMode, CMView>> = {};
+      let editorMode: EditorMode = 'vim';
+
+      function editorExtensions(mode: EditorMode, k: EditorKit): CMExtension[] {
+        const base: CMExtension[] = [
+          k.basicSetup,
+          k.EditorView.lineWrapping,
+          k.markdown(),
+          k.oneDark,
+          k.EditorView.theme({
+            '&': { backgroundColor: 'transparent', color: 'var(--text)' },
+            '.cm-content': { caretColor: 'var(--accent)' },
+            '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
+            '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
+              backgroundColor: 'color-mix(in srgb, var(--accent) 22%, transparent)',
+            },
+          }),
+          k.EditorView.updateListener.of((update) => {
+            if (!update.docChanged) return;
+            const flag = document.getElementById('ed-save');
+            if (flag) flag.textContent = 'modified';
+          }),
+        ];
+        if (mode === 'vim') {
+          base.push(
+            k.vim({ status: true }),
+            k.EditorView.domEventHandlers({
+              keyup: () => {
+                syncVimStatus();
+                return false;
+              },
+              focus: () => {
+                syncVimStatus();
+                return false;
+              },
+            }),
+          );
+        }
+        else {
+          base.push(
+            k.keymap.of([
+              { key: 'Ctrl-o', run: () => (saveEditor(), true) },
+              { key: 'Ctrl-x', run: () => (closeEditor(), true) },
+              { key: 'Escape', run: () => (closeEditor(), true) },
+            ]),
+          );
+        }
+        return base;
+      }
+
+      function editorView(): CMView | undefined {
+        return views[editorMode];
+      }
+
+      function saveEditor() {
+        const current = editorView();
+        if (!current || !editingPath) return;
+        const text = current.state.doc.toString();
+        const written = shell.fs.writeFile(editingPath, text);
+        const flag = document.getElementById('ed-save');
+        const lines = text.split('\n').length;
+        if (flag) {
+          flag.textContent = written.ok ? `${lines}L written` : (written.error ?? 'write failed');
+          setTimeout(() => {
+            if (flag) flag.textContent = '';
+          }, 2000);
+        }
+        if (editingPath === CONFIG_PATH) applyTheme(text, { persist: true });
+      }
+
+      function closeEditor() {
+        const layer = document.getElementById('editor-layer');
+        if (layer) {
+          layer.classList.remove('on');
+          layer.setAttribute('aria-hidden', 'true');
+        }
+        document.querySelectorAll('.editor-mount').forEach((mount) => mount.classList.remove('on'));
+        editingPath = null;
+        term.focus();
+        fit.fit();
+        renderPrompt();
+      }
+
+      async function openEditor(path: string, editor: EditorMode) {
+        const content = shell.fs.read(path);
+        if (content === undefined) {
+          write(fg.error(`cannot open ${path}\n`));
+          return;
+        }
+        const k = await editorKit();
+        if (shell.fs.read(path) === undefined) {
+          // the file vanished while the editor was loading — give the prompt back
+          editingPath = null;
+          renderPrompt();
+          return;
+        }
+        editingPath = path;
+        editorMode = editor;
+
+        const layer = document.getElementById('editor-layer')!;
+        const file = document.getElementById('ed-file')!;
+        const foot = document.getElementById('ed-foot')!;
+        const saveFlag = document.getElementById('ed-save')!;
+        const hint = document.getElementById('ed-hint')!;
+
+        layer.classList.add('on');
+        layer.setAttribute('aria-hidden', 'false');
+        file.textContent = path.replace('/home/dandrok', '~');
+        hint.textContent = editor === 'vim' ? ':w write · :q quit · :wq both' : '^O write · ^X exit';
+        foot.textContent = editor === 'vim' ? 'vim — :w write · :q quit' : 'nano — arrows, no modes';
+        saveFlag.textContent = '';
+
+        document.querySelectorAll('.editor-mount').forEach((mount) => {
+          mount.classList.toggle('on', mount.id === `editor-${editor}`);
+        });
+
+        const state = k.EditorState.create({ doc: content, extensions: editorExtensions(editor, k) });
+        let view = views[editor];
+        if (view) {
+          view.setState(state);
+        } else {
+          const mount = document.getElementById(`editor-${editor}`)!;
+          view = new k.EditorView({ state, parent: mount });
+          views[editor] = view;
+        }
+        view.focus();
+        if (editor === 'vim') {
+          // vim opens in NORMAL. The plugin keeps its mode in module state, so
+          // without this a session left in INSERT makes the next one open in
+          // INSERT too, and Escape is the only way out.
+          const cm = k.getCM(view);
+          if (cm) k.Vim.handleKey(cm, '<Esc>', 'user');
+          setTimeout(syncVimStatus, 0);
+        }
+      }
+
+      /**
+       * Send a key straight to vim. `Vim.handleKey` needs the plugin's CM5
+       * adapter (`getCM`), not the EditorView — passing the view silently does
+       * nothing, which is why a lost Escape stayed lost.
+       */
+      function vimKey(view: CMView, key: string): void {
+        const cm = kit?.getCM(view);
+        if (cm) kit?.Vim.handleKey(cm, key, 'user');
+      }
+
+      /** The plugin's own status panel is the only reliable source for the mode. */
+      function vimMode(): string | null {
+        const panel = document.querySelector('.cm-vim-panel');
+        return /--([A-Z]+)--/.exec(panel?.textContent ?? '')?.[1].toLowerCase() ?? null;
+      }
+
+      /** Make the editor footer tell the truth about the mode. */
+      function syncVimStatus() {
+        const mode = vimMode();
+        if (!mode) return;
+        const foot = document.getElementById('ed-foot');
+        if (foot) foot.textContent = `vim — ${mode.toUpperCase()} · :w write · :q quit`;
+      }
+
+      // Safety net: some Escape presses blur the content element instead of
+      // reaching vim, which left the editor stuck in INSERT with no cursor.
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key !== 'Escape' || !editingPath) return;
+          const current = editorView();
+          if (!current) return;
+          if (!current.hasFocus) current.focus();
+          // Deliver the Escape ourselves through the plugin's adapter. Whether
+          // the key reaches vim on its own depends on where focus drifted to
+          // (panel click, prompt, tooltip), and a swallowed Escape strands the
+          // editor in INSERT — one code path is one behaviour.
+          if (kit?.getCM(current)) {
+            event.preventDefault();
+            vimKey(current, '<Esc>');
+            setTimeout(syncVimStatus, 0);
+          }
+        },
+        true,
+      );
+
+      // ------------------------------------------------------------ terminal game
+      // `doom` takes over the alternate screen, draws frames into the terminal
+      // itself and gives the prompt back on quit.
+
+      let game: DoomGame | null = null;
+
+      function drawGame() {
+        if (!game) return;
+        term.write('\x1b[H' + renderGame(game));
+      }
+
+      function startGame() {
+        game = createGame({
+          cols: term.cols,
+          rows: term.rows,
+          accent: palette(activeTheme).accent,
+        });
+        term.write('\x1b[?25l\x1b[2J\x1b[H');
+        drawGame();
+      }
+
+      function stopGame() {
+        game = null;
+        term.write('\x1b[0m\x1b[?25h\x1b[2J\x1b[H');
+        renderPrompt();
+      }
+
+      // ------------------------------------------------------------- key input
+      // One line editor owns the prompt: prompt + typed text are always
+      // redrawn as a single block, so backspace, arrows, tab completion and
+      // history cannot leave stray prompts or half-erased characters behind.
+
+      let input = '';
+      let caret = 0;
+      let historyIndex = -1;
+      let sessionEnded = false;
+
+      function syncTitle() {
+        const el = document.getElementById('win-title');
+        if (el) el.textContent = `${shell.env.USER}@${shell.env.HOST ?? 'dotfile'}: ${shell.promptPath()}`;
+      }
+
+      /**
+       * Draw prompt + input from the cursor. The terminal's own save-cursor
+       * register (DECSC) anchors the first row of the block: a relative "move up
+       * N rows" breaks as soon as the screen scrolls, this does not.
+       */
+      function drawBlock() {
+        const prompt = shell.prompt();
+        term.write('\x1b7');
+        write(fg.green(prompt));
+        if (input) term.write(input);
+      }
+
+      /** Repaint the block in place and put the caret back inside it. */
+      function repaint() {
+        term.write('\x1b8'); // back to the first row of the block
+        term.write('\r\x1b[J');
+        drawBlock();
+        // the block ended with the cursor exactly at the caret — leave it there
+        // (a full-width row would otherwise be addressed past the margin)
+        if (caret === input.length) return;
+        const absolute = shell.prompt().length + caret;
+        // interior caret: landing exactly on the margin means the start of the
+        // next row, so plain division is right here (the end-of-input case
+        // returned above, where xterm's pending wrap must be left alone)
+        const row = Math.floor(absolute / term.cols);
+        const column = absolute % term.cols;
+        term.write('\x1b8');
+        if (row > 0) term.write(`\x1b[${row}B`);
+        term.write('\r');
+        if (column > 0) term.write(`\x1b[${column}C`);
+      }
+
+      /** Fresh prompt with an empty line. */
+      function renderPrompt() {
+        syncTitle();
+        input = '';
+        caret = 0;
+        if (!sessionEnded) drawBlock(); // anchors the block for the next repaint
+      }
+
+      function setInput(next: string, nextCaret = next.length) {
+        input = next;
+        caret = Math.max(0, Math.min(nextCaret, next.length));
+        repaint();
+      }
+
+      function insert(text: string) {
+        const clean = text.replace(/[\r\n]+/g, ' ');
+        if (!clean) return;
+        const atEnd = caret === input.length;
+        input = input.slice(0, caret) + clean + input.slice(caret);
+        caret += clean.length;
+        if (atEnd) {
+          // fast path: a plain append, xterm handles the wrapping itself
+          term.write(clean);
+        } else {
+          repaint();
+        }
+      }
+
+      /** Run a line as if it had been typed — the starter chips use this. */
+      function runLine(line: string) {
+        input = '';
+        caret = 0;
+        write(line + '\n');
+        submit(line);
+        renderPrompt();
+      }
+
+      /** What a stranger gets when they press Enter on an empty prompt. */
+      function starterMenu(): string {
+        const rows: [string, string][] = [
+          ['read the posts', 'scroll down — they are all below'],
+          ['ls ~/writing', 'the articles as files'],
+          ['cat about.md', 'who writes this'],
+          ['help', 'every command'],
+          ['theme set theme=amber', 'if green is not your thing'],
+        ];
+        return (
+          '\n' +
+          fg.dim('not sure what to type? these all work:\n') +
+          rows.map(([command, what]) => `  ${fg.green(command.padEnd(24))}${fg.dim(what)}`).join('\n') +
+          '\n' +
+          fg.dim('or click one of the buttons under the window\n')
+        );
+      }
+
+      function submitLine() {
+        const line = input;
+        term.write('\n');
+        input = '';
+        caret = 0;
+        historyIndex = -1;
+        if (line.trim()) submit(line);
+        else write(starterMenu());
+        // `vim file` opens the overlay — it prints the prompt on close, so
+        // drawing one here would leave two of them stacked
+        if (!editingPath && !game) renderPrompt();
+      }
+
+      function historyStep(direction: -1 | 1) {
+        const entries = shell.history;
+        if (!entries.length) return;
+        if (historyIndex === -1) historyIndex = entries.length;
+        historyIndex = Math.max(0, Math.min(entries.length, historyIndex + direction));
+        const next = historyIndex >= entries.length ? '' : entries[historyIndex];
+        setInput(next);
+      }
+
+      function completeInput() {
+        const hits = shell.complete(input);
+        const parts = input.split(/(\s+)/);
+        const lastIndex = parts.length - 1;
+        if (hits.length === 1) {
+          parts[lastIndex] = hits[0];
+          setInput(parts.join('') + (hits[0].endsWith('/') ? '' : ' '));
+          return;
+        }
+        if (hits.length > 1) {
+          write('\n' + hits.join('  ') + '\n');
+            drawBlock();
+        }
+      }
+
+      let interacted = false;
+
+      function handleData(data: string) {
+        if (sessionEnded) return;
+        interacted = true;
+
+        if (game) {
+          if (applyAction(game, actionFor(data))) stopGame();
+          else drawGame();
+          return;
+        }
+        if (editingPath && !term.element?.classList.contains('focus')) return;
+
+        if (data === '\r' || data === '\n') {
+          submitLine();
+          return;
+        }
+        if (data === '\x7f' || data === '\x08') {
+          if (caret > 0) setInput(input.slice(0, caret - 1) + input.slice(caret), caret - 1);
+          return;
+        }
+        if (data === '\x1b[3~') {
+          if (caret < input.length) setInput(input.slice(0, caret) + input.slice(caret + 1), caret);
+          return;
+        }
+        if (data === '\t') {
+          completeInput();
+          return;
+        }
+        if (data === '\x03') {
+          term.write('^C\n');
+          input = '';
+          caret = 0;
+            renderPrompt();
+          return;
+        }
+        if (data === '\x0c') {
+          term.write('\x1b[2J\x1b[H');
+            drawBlock();
+          return;
+        }
+        if (data === '\x01') {
+          setInput(input, 0);
+          return;
+        }
+        if (data === '\x05') {
+          setInput(input, input.length);
+          return;
+        }
+        if (data === '\x04') {
+          if (!input) write(fg.dim('\n[use `exit` to leave]\n'));
+          return;
+        }
+        if (data === '\x1b[A') {
+          historyStep(-1);
+          return;
+        }
+        if (data === '\x1b[B') {
+          historyStep(1);
+          return;
+        }
+        if (data === '\x1b[D' || data === '\x1b[H') {
+          if (caret > 0) setInput(input, caret - 1);
+          return;
+        }
+        if (data === '\x1b[C' || data === '\x1b[F') {
+          if (caret < input.length) setInput(input, caret + 1);
+          return;
+        }
+        // printable text, including multi-character pastes
+        if (data >= ' ' || /[^\x00-\x1f]/.test(data)) insert(data);
+      }
+
+      term.onData(handleData);
+
+      addEventListener('resize', () => {
+        fit.fit();
+        if (game) {
+          game.cols = term.cols;
+          game.rows = term.rows;
+          term.write('\x1b[2J\x1b[H');
+          drawGame();
+        }
+        document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
+      });
+
+      // ------------------------------------------------------------------ boot
+
+      const bootConfig = shell.fs.read(CONFIG_PATH) ?? '';
+      applyTheme(bootConfig, { theme: initialTheme() });
+
+      // while no theme is pinned, keep following the OS
+      const scheme = matchMedia('(prefers-color-scheme: light)');
+      scheme.addEventListener('change', () => {
+        if (savedTheme()) return;
+        applyTheme(shell.fs.read(CONFIG_PATH) ?? '', {
+          theme: themeForScheme(scheme.matches ? 'light' : 'dark'),
+        });
+      });
+
+      // Boot output is written line by line with a short pause. A terminal that
+      // dumps its whole scrollback in one frame reads like a screenshot; a login
+      // reads like a login. Reduced motion skips the pauses entirely.
+      const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const bootPace = calm ? 0 : 26;
+      const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+      let skeletonGone = false;
+
+      /** Write one boot line, dropping the skeleton on the first one. */
+      async function say(text: string) {
+        if (!skeletonGone) {
+          document.getElementById('term-skeleton')?.remove();
+          skeletonGone = true;
+        }
+        write(text);
+        if (bootPace) await pause(bootPace);
+      }
+
+      async function boot() {
+        await say(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
+        const motd = shell.fs.read(MOTD_PATH);
+        if (motd) await say(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
+        await say(style.bold(fg.bright('dandrok')) + fg.dim(' — software engineer · Poland') + '\n');
+        if (shell.fs.droppedEdits > 0) {
+          await say(
+            fg.dim(
+              `note: the published files changed since your last visit — dropped ${shell.fs.droppedEdits} saved edit(s)`,
+            ) + '\n',
+          );
+        }
+        await say(
+          fg.dim(`${posts.length} articles in `) +
+            fg.green('~/writing') +
+            fg.dim(', a shell you can actually use, and the articles underneath.') +
+            '\n',
+        );
+        await say(
+          fg.dim('type ') +
+            fg.green('ls') +
+            fg.dim(' to look around · ') +
+            fg.green('help') +
+            fg.dim(' for everything · ') +
+            fg.green('enter') +
+            fg.dim(' on an empty line for a menu') +
+            '\n\n',
+        );
+
+        // the window opens on content, not on an empty screen
+        await say(fg.dim('newest in ~/writing:\n'));
+        const newest = [...posts].slice(0, 5);
+        const nameWidth = 32;
+        for (const post of newest) {
+          const full = `${post.slug}.md`;
+          const file = full.length > nameWidth - 1 ? full.slice(0, nameWidth - 2) + '…' : full;
+          // narrow terminals get names only: a wrapped title reads like noise
+          const room = Math.max(18, term.cols - nameWidth - 2);
+          const title = post.title.length > room ? post.title.slice(0, room - 1) + '…' : post.title;
+          const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(title);
+          await say('  ' + label + '\n');
+        }
+        await say(
+          fg.dim('  … ') +
+            fg.green(`${Math.max(0, posts.length - newest.length)} more`) +
+            fg.dim(' — ') +
+            fg.green('ls ~/writing') +
+            '\n\n',
+        );
+
+        // A deep link may prefill a command, never run one: a shared URL must not
+        // be able to execute anything (`?cmd=reset -y` used to wipe saved edits).
+        const rawCommand = new URLSearchParams(location.search).getAll('cmd').join(' ').trim();
+        // control characters have no business in a prefilled command line
+        const requested = /[\u0000-\u001f\u007f-\u009f]/.test(rawCommand) ? '' : rawCommand;
+        if (requested) await say(fg.dim('from the link — press enter to run it') + '\n');
+
+        renderPrompt();
+        if (requested) setInput(requested.replace(/[\r\n]+/g, ' '));
+      }
+
+      void boot();
+
+      // starter chips: clicking one types the command, so the metaphor lands
+      const suggestBar = document.getElementById('suggest');
+      const SUGGEST_KEY = HINTS_KEY;
+      let chipRuns = 0;
+      const hideSuggest = () => {
+        if (suggestBar) suggestBar.hidden = true;
+        try {
+          storage?.setItem(SUGGEST_KEY, 'hidden');
+        } catch {
+          // storage disabled — hiding still applies to this visit
+        }
+      };
+      if (suggestBar) {
+        if (storage?.getItem(SUGGEST_KEY) === 'hidden') suggestBar.hidden = true;
+        suggestBar.querySelectorAll('[data-run]').forEach((chip) => {
+          chip.addEventListener('click', () => {
+            runLine((chip as HTMLElement).dataset.run ?? '');
+            term.focus();
+            chipRuns += 1;
+            if (chipRuns >= 2) hideSuggest();
+          });
+        });
+        document.getElementById('suggest-hide')?.addEventListener('click', () => {
+          hideSuggest();
+          write(
+            fg.dim('hints hidden — ') +
+              fg.green('hints on') +
+              fg.dim(' brings the buttons back\n'),
+          );
+          renderPrompt();
+        });
+      }
+
+      // a nudge for anyone who lands and freezes
+      setTimeout(() => {
+        if (!interacted && !sessionEnded && !input) {
+          write(
+            '\n' +
+              fg.dim('  tip: ') +
+              fg.green('ls') +
+              fg.dim(' looks around · ') +
+              fg.green('help') +
+              fg.dim(' lists commands · the buttons below do it for you\n'),
+          );
+          renderPrompt();
+        }
+      }, 9000);
+      document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
+
+      // Smooth anchor landing: the browser scrolls (CSS) and the section greets
+      // the reader with a short highlight, so "you are here" is visible.
+      document.addEventListener('click', (event) => {
+        const link = (event.target as HTMLElement | null)?.closest?.<HTMLAnchorElement>('a[href^="#"]');
+        const hash = link?.getAttribute('href');
+        if (!hash || hash === '#') return;
+        const target = document.querySelector<HTMLElement>(hash);
+        if (!target) return;
+        const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        target.classList.remove('arrived');
+        setTimeout(
+          () => {
+            target.classList.add('arrived');
+            setTimeout(() => target.classList.remove('arrived'), 1200);
+          },
+          calm ? 0 : 650,
+        );
+      });
+
+      // hooks used by the test harness and by `?cmd=` deep links
+      (window as unknown as { dotfile: unknown }).dotfile = {
+        shell,
+        term,
+        run: (line: string) => runLine(line),
+        key: (data: string) => handleData(data),
+        input: () => input,
+        caret: () => caret,
+        editorDoc: () => editorView()?.state.doc.toString() ?? null,
+        vimMode,
+        editorOpen: () => views[editorMode] !== undefined && document.getElementById('editor-layer')?.classList.contains('on') === true,
+        applyTheme,
+        closeEditor: () => document.getElementById('editor-layer')?.classList.remove('on'),
+      };
+
+    </script>
+</ShellLayout>

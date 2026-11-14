@@ -11,7 +11,7 @@ tags: ['react', 'hooks', 'javascript']
 
 More and more I've been using AI as a tool to generate code — orchestrating it to write whole features, preparing MCP servers, writing long todo lists, letting it help with research and architecture. It's not "vibe coding" — it's more like being a technical director.
 
-But here's the thing: the more AI writes for me, the less I touch the raw fundamentals. And at some point I realized — I know _how_ to use React hooks, but I'd struggle to _explain_ them. So I wrote this article. Same coffee shop analogy I used in my [async/await article](/blog/event-loop-promises-async-await), same goal: build a mental model that actually sticks.
+But here's the thing: the more AI writes for me, the less I touch the raw fundamentals. And at some point I realized — I know _how_ to use React hooks, but I'd struggle to _explain_ them. So I wrote this article. Same coffee shop analogy I used in my [async/await article](/event-loop-promises-async-await/), same goal: build a mental model that actually sticks.
 
 Let's go.
 
