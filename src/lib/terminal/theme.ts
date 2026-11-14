@@ -21,16 +21,19 @@ const DEFAULTS: SiteConfig = {
 export function parseConfig(text: string): SiteConfig {
   const config = { ...DEFAULTS };
   for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const [rawKey, ...rest] = trimmed.split('=');
-    const key = rawKey.trim();
-    const value = rest.join('=').trim();
+    // trimStart only: the prompt's trailing space separates it from the input
+    const text = line.trimStart();
+    if (!text || text.startsWith('#')) continue;
+    const split = text.indexOf('=');
+    if (split < 0) continue;
+    const key = text.slice(0, split).trim();
+    const rawValue = text.slice(split + 1).replace(/\r$/, '');
+    const value = key === 'prompt' ? rawValue : rawValue.trim();
     if (key === 'theme' && ['matrix', 'amber', 'mono', 'light'].includes(value)) config.theme = value as ThemeName;
     else if (key === 'font' && ['mono', 'vt323'].includes(value)) config.font = value as SiteConfig['font'];
     else if (key === 'scanlines') config.scanlines = value === 'on';
     else if (key === 'cursor' && ['block', 'bar', 'underline'].includes(value)) config.cursor = value as SiteConfig['cursor'];
-    else if (key === 'prompt') config.prompt = rest.join('=');
+    else if (key === 'prompt') config.prompt = rawValue;
   }
   return config;
 }

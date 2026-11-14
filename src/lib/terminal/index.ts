@@ -1,6 +1,7 @@
 /** Command registry + the seeded filesystem for the terminal site. */
 
 import { FileSystem, type SeedEntry } from './fs';
+import { slugify } from './slug';
 import { Shell, type Command, type Env } from './shell';
 import { filesystemCommands } from './commands/filesystem';
 import { textCommands } from './commands/text';
@@ -69,7 +70,7 @@ export function buildSeed(posts: PostSeed[]): SeedEntry[] {
   for (const post of posts) {
     const mtime = Date.parse(post.date) || Date.parse('2026-01-01');
     seed.push({
-      path: `/home/dandrok/writing/${post.slug}.md`,
+      path: `/home/dandrok/writing/${slugify(post.slug)}.md`,
       content: post.body || `# ${post.title}\n\n${post.description}\n`,
       mode: 0o444,
       mtime,
@@ -111,5 +112,6 @@ export function createShell(opts: {
 }
 
 export { FileSystem, Shell };
+export { slugify } from './slug';
 export type { Command, CmdResult, Ctx, Effect, Env } from './shell';
 export type { Node, SeedEntry } from './fs';

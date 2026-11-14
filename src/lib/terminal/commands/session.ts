@@ -16,7 +16,7 @@ export const help: Command = {
       if (!target) return { err: `help: no such command: ${ctx.argv[0]}`, code: 1 };
       return { out: ctx.shell.helpText(target) };
     }
-    const rows = [['', ''], [fg.dim('command'), fg.dim('what it does')], ['', '']];
+    const rows = [[fg.dim('command'), fg.dim('what it does')]];
     for (const command of ctx.shell.allCommands()) {
       rows.push([` ${fg.green(command.name)}`, command.summary]);
     }

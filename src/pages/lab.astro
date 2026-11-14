@@ -2,12 +2,12 @@
 // /lab — the terminal site: a centred terminal window running a real shell
 // over a virtual filesystem generated from the content collection.
 import { getCollection } from 'astro:content';
-import type { PostSeed } from '../lib/terminal';
+import { slugify, type PostSeed } from '../lib/terminal';
 
 const posts: PostSeed[] = (await getCollection('blog'))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
   .map((post) => ({
-    slug: post.id.replace(/\.mdx?$/, ''),
+    slug: slugify(post.id),
     title: post.data.title,
     description: post.data.description ?? '',
     date: post.data.pubDate.toISOString().slice(0, 10),
@@ -260,23 +260,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       // ------------------------------------------------------------------ io
 
       const write = (text: string) => term.write(text.replace(/\n/g, '\r\n'));
-      let buffer = '';
-      let cursor = 0;
 
-      function renderPrompt() {
-        const el = document.getElementById('win-title');
-        if (el) el.textContent = `${shell.env.USER}@${shell.env.HOST ?? 'dotfile'}: ${shell.promptPath()}`;
-        write(fg.green(shell.prompt().replace(/\$$/, '')) + fg.green('$ '));
-      }
-
-      function redrawInput(previous: string) {
-        // redraw from the prompt: cheap approach — erase the typed text only
-        const width = Math.max(previous.length, buffer.length);
-        term.write('\r\x1b[2K');
-        renderPrompt();
-        term.write(buffer);
-        void width;
-      }
 
       // --------------------------------------------------------------- effects
 
@@ -304,6 +288,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
             applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
             break;
           case 'exit':
+            sessionEnded = true;
             write(fg.dim('\nlogout\n[session closed — reload the page to start again]\n'));
             break;
           case 'title':
@@ -389,10 +374,6 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
           Vim.defineEx('quit', 'q', () => close());
           Vim.defineEx('q!', 'q!', () => close());
           Vim.defineEx('w!', 'w!', () => save());
-          Vim.defineEx('reset', 'reset', () => {
-            const original = shell.fs.read(editingPath ?? '');
-            void original;
-          });
         } else {
           extensions.push(
             keymap.of([
@@ -411,97 +392,177 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       }
 
       // ------------------------------------------------------------- key input
+      // One line editor owns the prompt: prompt + typed text are always
+      // redrawn as a single block, so backspace, arrows, tab completion and
+      // history cannot leave stray prompts or half-erased characters behind.
 
-      term.onData((data) => {
-        if (!term.element?.classList.contains('focus') && view) return;
+      let input = '';
+      let caret = 0;
+      /** Rows the prompt+input block occupies right now (0 = single row). */
+      let blockRows = 0;
+      let historyIndex = -1;
+      let sessionEnded = false;
 
-        if (data === '\r') {
-          const line = buffer;
-          buffer = '';
-          write('\n');
-          if (line.trim()) submit(line);
-          renderPrompt();
+      function syncTitle() {
+        const el = document.getElementById('win-title');
+        if (el) el.textContent = `${shell.env.USER}@${shell.env.HOST ?? 'dotfile'}: ${shell.promptPath()}`;
+      }
+
+      /** Draw prompt + input at the current position and remember its height. */
+      function drawBlock() {
+        const prompt = shell.prompt();
+        write(fg.green(prompt));
+        if (input) term.write(input);
+        blockRows = Math.floor((prompt.length + input.length) / term.cols);
+      }
+
+      /** Repaint the block in place and put the caret back inside it. */
+      function repaint() {
+        if (blockRows > 0) term.write(`\x1b[${blockRows}A`);
+        term.write('\r\x1b[J');
+        drawBlock();
+        const absolute = shell.prompt().length + caret;
+        const caretRow = Math.floor(absolute / term.cols);
+        const column = absolute % term.cols;
+        const back = blockRows - caretRow;
+        if (back > 0) term.write(`\x1b[${back}A`);
+        term.write('\r');
+        if (column > 0) term.write(`\x1b[${column}C`);
+      }
+
+      /** Fresh prompt with an empty line. */
+      function renderPrompt() {
+        syncTitle();
+        input = '';
+        caret = 0;
+        blockRows = 0;
+        if (!sessionEnded) write(fg.green(shell.prompt()));
+      }
+
+      function setInput(next: string, nextCaret = next.length) {
+        input = next;
+        caret = Math.max(0, Math.min(nextCaret, next.length));
+        repaint();
+      }
+
+      function insert(text: string) {
+        const clean = text.replace(/[\r\n]+/g, ' ');
+        if (!clean) return;
+        const atEnd = caret === input.length;
+        input = input.slice(0, caret) + clean + input.slice(caret);
+        caret += clean.length;
+        if (atEnd) {
+          // fast path: a plain append, xterm handles the wrapping itself
+          term.write(clean);
+          blockRows = Math.floor((shell.prompt().length + input.length) / term.cols);
+        } else {
+          repaint();
+        }
+      }
+
+      function submitLine() {
+        const line = input;
+        term.write('\n');
+        input = '';
+        caret = 0;
+        blockRows = 0;
+        historyIndex = -1;
+        if (line.trim()) submit(line);
+        renderPrompt();
+      }
+
+      function historyStep(direction: -1 | 1) {
+        const entries = shell.history;
+        if (!entries.length) return;
+        if (historyIndex === -1) historyIndex = entries.length;
+        historyIndex = Math.max(0, Math.min(entries.length, historyIndex + direction));
+        const next = historyIndex >= entries.length ? '' : entries[historyIndex];
+        setInput(next);
+      }
+
+      function completeInput() {
+        const hits = shell.complete(input);
+        const parts = input.split(/(\s+)/);
+        const lastIndex = parts.length - 1;
+        if (hits.length === 1) {
+          parts[lastIndex] = hits[0];
+          setInput(parts.join('') + (hits[0].endsWith('/') ? '' : ' '));
           return;
         }
-        if (data === '\x7f') {
-          if (cursor > 0) {
-            buffer = buffer.slice(0, cursor - 1) + buffer.slice(cursor);
-            cursor--;
-            redrawInput(buffer + 'x');
-            term.write('\x1b[' + (buffer.length - cursor + 1) + 'D');
-          }
+        if (hits.length > 1) {
+          write('\n' + hits.join('  ') + '\n');
+          blockRows = 0;
+          drawBlock();
+        }
+      }
+
+      function handleData(data: string) {
+        if (sessionEnded) return;
+        if (view && !term.element?.classList.contains('focus')) return;
+
+        if (data === '\r' || data === '\n') {
+          submitLine();
+          return;
+        }
+        if (data === '\x7f' || data === '\x08') {
+          if (caret > 0) setInput(input.slice(0, caret - 1) + input.slice(caret), caret - 1);
+          return;
+        }
+        if (data === '\x1b[3~') {
+          if (caret < input.length) setInput(input.slice(0, caret) + input.slice(caret + 1), caret);
           return;
         }
         if (data === '\t') {
-          const hits = shell.complete(buffer);
-          if (hits.length === 1) {
-            const parts = buffer.split(/(\s+)/);
-            parts[parts.length - 1] = hits[0];
-            buffer = parts.join('');
-            cursor = buffer.length;
-            redrawInput(buffer + ' ');
-            return;
-          }
-          if (hits.length > 1) {
-            write('\n' + hits.join('  ') + '\n');
-            renderPrompt();
-            term.write(buffer);
-          }
+          completeInput();
           return;
         }
         if (data === '\x03') {
-          buffer = '';
-          cursor = 0;
-          write('^C\n');
+          term.write('^C\n');
+          input = '';
+          caret = 0;
+          blockRows = 0;
           renderPrompt();
           return;
         }
         if (data === '\x0c') {
           term.write('\x1b[2J\x1b[H');
-          renderPrompt();
-          term.write(buffer);
+          blockRows = 0;
+          drawBlock();
+          return;
+        }
+        if (data === '\x01') {
+          setInput(input, 0);
+          return;
+        }
+        if (data === '\x05') {
+          setInput(input, input.length);
           return;
         }
         if (data === '\x04') {
-          if (!buffer) write(fg.dim('\n[use `exit` to leave]\n'));
+          if (!input) write(fg.dim('\n[use `exit` to leave]\n'));
           return;
         }
-        if (data === '\x1b[A' || data === '\x1b[B' || data === '\x1b[D' || data === '\x1b[C') {
-          const history = shell.history;
-          if (data === '\x1b[A') {
-            const previous = history[history.length - 1] ?? '';
-            if (previous && !buffer) {
-              buffer = previous;
-              cursor = buffer.length;
-              renderPrompt();
-              term.write(buffer);
-            }
-          } else if (data === '\x1b[B') {
-            buffer = '';
-            cursor = 0;
-            renderPrompt();
-          } else if (data === '\x1b[D') {
-            if (cursor > 0) {
-              cursor--;
-              term.write('\x1b[D');
-            }
-          } else if (cursor < buffer.length) {
-            cursor++;
-            term.write('\x1b[C');
-          }
+        if (data === '\x1b[A') {
+          historyStep(-1);
           return;
         }
-        if (data >= ' ') {
-          buffer = buffer.slice(0, cursor) + data + buffer.slice(cursor);
-          cursor += data.length;
-          const tail = buffer.slice(cursor - data.length);
-          write(tail);
-          const rest = buffer.length - cursor;
-          if (rest) {
-            term.write(buffer.slice(cursor) + '\x1b[' + rest + 'D');
-          }
+        if (data === '\x1b[B') {
+          historyStep(1);
+          return;
         }
-      });
+        if (data === '\x1b[D' || data === '\x1b[H') {
+          if (caret > 0) setInput(input, caret - 1);
+          return;
+        }
+        if (data === '\x1b[C' || data === '\x1b[F') {
+          if (caret < input.length) setInput(input, caret + 1);
+          return;
+        }
+        // printable text, including multi-character pastes
+        if (data >= ' ' || /[^\x00-\x1f]/.test(data)) insert(data);
+      }
+
+      term.onData(handleData);
 
       addEventListener('resize', () => {
         fit.fit();
@@ -532,13 +593,18 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         shell,
         term,
         run: (line: string) => {
-          if (buffer) write(buffer);
-          buffer = '';
-          write(line + '\n');
+          input = line;
+          caret = line.length;
+          term.write(line + '\n');
+          input = '';
+          caret = 0;
+          blockRows = 0;
           submit(line);
           renderPrompt();
         },
-        buffer: () => buffer,
+        key: (data: string) => handleData(data),
+        input: () => input,
+        caret: () => caret,
         editorDoc: () => view?.state.doc.toString() ?? null,
         editorOpen: () => view !== null,
         applyTheme,

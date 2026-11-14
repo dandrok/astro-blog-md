@@ -6,7 +6,8 @@
 import { describe, expect, it } from 'vitest';
 import { tokenize, parseLine, parseFlags, FlagError, ParseError } from '../../lib/terminal/args';
 import { FileSystem, normalize } from '../../lib/terminal/fs';
-import { createShell } from '../../lib/terminal';
+import { createShell, slugify } from '../../lib/terminal';
+import { parseConfig } from '../../lib/terminal/theme';
 import type { PostSeed } from '../../lib/terminal';
 
 const posts: PostSeed[] = [
@@ -341,5 +342,40 @@ describe('commands', () => {
     expect(shell.exec('grep -i nothing-matches-this ~/writing/vite-in-astro.md').code).toBe(1);
     // a directory without -r is an error, like the real grep (exit 2)
     expect(shell.exec('grep -i vite ~/writing').code).toBe(2);
+  });
+});
+
+describe('site.conf', () => {
+  it('keeps the prompt trailing space but trims other values', () => {
+    const config = parseConfig('prompt={user}@{host}: {path}$ \ntheme=  amber  \n');
+    expect(config.prompt).toBe('{user}@{host}: {path}$ ');
+    expect(config.theme).toBe('amber');
+  });
+
+  it('falls back to defaults for unknown values', () => {
+    const config = parseConfig('theme=neon\ncursor=sideways\nscanlines=maybe\n');
+    expect(config.theme).toBe('matrix');
+    expect(config.cursor).toBe('bar');
+    expect(config.scanlines).toBe(false);
+  });
+});
+
+describe('slugs', () => {
+  it('normalises names that are not URL safe', () => {
+    expect(slugify('hermes --tui impression')).toBe('hermes-tui-impression');
+    expect(slugify('post_with_underscores.md')).toBe('post-with-underscores');
+    expect(slugify('Event Loop Promises.md')).toBe('event-loop-promises');
+  });
+
+  it('seeds and opens odd file names with the same slug', () => {
+    const odd: PostSeed[] = [
+      ...posts,
+      { slug: 'hermes --tui impression', title: 'Hermes TUI', description: 'd', date: '2025-12-01', tags: [], body: '# Hermes\n' },
+    ];
+    const shell = createShell({ posts: odd, storage: null });
+    expect(shell.fs.exists('/home/dandrok/writing/hermes-tui-impression.md')).toBe(true);
+    expect(shell.exec('open ~/writing/hermes-tui-impression.md').effects).toEqual([
+      { type: 'navigate', url: '/blog/hermes-tui-impression/' },
+    ]);
   });
 });

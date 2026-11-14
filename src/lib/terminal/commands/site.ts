@@ -2,9 +2,10 @@
 
 import { normalize } from '../fs';
 import { fg } from '../format';
+import { slugify } from '../slug';
 import type { Command, Ctx } from '../shell';
 
-const slugOf = (path: string) => path.split('/').pop()!.replace(/\.mdx?$/, '');
+const slugOf = (path: string) => slugify(path.split('/').pop() ?? '');
 
 export const open: Command = {
   name: 'open',
