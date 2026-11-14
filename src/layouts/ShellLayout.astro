@@ -2,27 +2,20 @@
 import '../styles/site.css';
 import '../styles/shell.css';
 import '../styles/writing.css';
+import SiteHead from '../components/site/SiteHead.astro';
 import SiteHeader from '../components/site/SiteHeader.astro';
 import SiteFooter from '../components/site/SiteFooter.astro';
 import ThemeStyles from '../components/site/ThemeStyles.astro';
 
-type Props = {
-  title: string;
-  description?: string;
-};
+type Props = { title?: string; description?: string };
 
-const { title, description = '' } = Astro.props;
+const { title, description } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark light" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <meta name="robots" content="noindex" />
+    <SiteHead title={title} description={description} />
     <ThemeStyles />
   </head>
   <body class="view-shell">

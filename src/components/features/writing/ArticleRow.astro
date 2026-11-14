@@ -9,7 +9,7 @@ const { data } = post.entry;
 const tags = data.tags ?? [];
 ---
 
-<a class="row" href={`/lab/read/${post.slug}/`}>
+<a class="row" href={`/${post.slug}/`}>
   <span class="date">{shortDay(data.pubDate)}</span>
   <span class="row-body">
     <span class="title">{data.title}</span>

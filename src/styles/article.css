@@ -1,13 +1,17 @@
 /* Article page. Tokens come from site.css. */
 
-.article-head { margin-bottom: 32px; }
-.article-head .kicker {
-  font-size: 11px;
-  letter-spacing: 0.22em;
+.article-head .back {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--dim-2);
-  margin: 0 0 14px;
+  color: var(--dim);
 }
+.article-head .back:hover,
+.article-head .back:focus-visible { color: var(--accent); }
+
+.article-head { margin-bottom: 32px; }
 .article-head h1 {
   font-size: clamp(27px, 3.2vw, 38px);
   line-height: 1.28;

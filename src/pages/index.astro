@@ -1,10 +1,13 @@
 ---
-// /lab — the terminal site: a centred terminal window running a real shell
-// over a virtual filesystem generated from the content collection.
+// The site: a terminal window over a virtual filesystem, with the articles
+// underneath it. The shell and the list share one post model (src/lib/read).
 import { readPosts } from '../lib/read';
 import type { PostSeed } from '../lib/terminal';
+import ShellLayout from '../layouts/ShellLayout.astro';
+import TerminalWindow from '../components/features/terminal/TerminalWindow.astro';
+import ArticleList from '../components/features/writing/ArticleList.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 
-// the same model the reading views use: normalised slugs, one entry per slug
 const model = await readPosts();
 const posts: PostSeed[] = model.map(({ slug, entry }) => ({
   slug,
@@ -16,15 +19,9 @@ const posts: PostSeed[] = model.map(({ slug, entry }) => ({
 }));
 
 const data = JSON.stringify(posts).replace(/</g, '\\u003c');
-import ShellLayout from '../layouts/ShellLayout.astro';
-import TerminalWindow from '../components/features/terminal/TerminalWindow.astro';
-import ArticleList from '../components/features/writing/ArticleList.astro';
 ---
 
-<ShellLayout
-  title="~/.file — terminal"
-  description="A personal site that behaves like a Unix home directory: a working shell, a virtual filesystem, and the articles as files you can read and edit."
->
+<ShellLayout title={SITE_TITLE} description={SITE_DESCRIPTION}>
   <TerminalWindow title="dandrok@dotfile: ~" door="#writing" doorLabel="articles ↓">
     <div id="term" role="application" aria-label="interactive terminal"></div>
 
@@ -479,7 +476,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       /** What a stranger gets when they press Enter on an empty prompt. */
       function starterMenu(): string {
         const rows: [string, string][] = [
-          ['read the posts', 'scroll down, or /lab/read/'],
+          ['read the posts', 'scroll down — they are all below'],
           ['ls ~/writing', 'the articles as files'],
           ['cat about.md', 'who writes this'],
           ['help', 'every command'],

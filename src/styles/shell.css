@@ -5,7 +5,7 @@
   width: 100%;
   max-width: var(--page);
   margin: 0 auto;
-  height: min(64vh, 600px);
+  height: min(52vh, 520px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--edge);

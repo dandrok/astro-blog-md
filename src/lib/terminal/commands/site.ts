@@ -22,8 +22,8 @@ export const open: Command = {
     if (!/\.mdx?$/.test(path)) return { err: `open: ${target}: not an article`, code: 2 };
     const slug = slugOf(path);
     return {
-      out: fg.dim(`opening /lab/read/${slug}/ …`) + '\n',
-      effect: { type: 'navigate', url: `/lab/read/${slug}/` },
+      out: fg.dim(`opening /${slug}/ …`) + '\n',
+      effect: { type: 'navigate', url: `/${slug}/` },
     };
   },
 };

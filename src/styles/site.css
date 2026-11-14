@@ -81,7 +81,6 @@ body {
   border: 0;
 }
 .site-header .brand:hover { color: #fff; }
-.site-header .tagline { color: var(--dim); font-size: 12.5px; letter-spacing: 0.04em; }
 
 /* --------------------------------------------------------------- main */
 
