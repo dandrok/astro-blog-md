@@ -1,0 +1,559 @@
+---
+// /lab — the terminal site: a centred terminal window running a real shell
+// over a virtual filesystem generated from the content collection.
+import { getCollection } from 'astro:content';
+import type { PostSeed } from '../lib/terminal';
+
+const posts: PostSeed[] = (await getCollection('blog'))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .map((post) => ({
+    slug: post.id.replace(/\.mdx?$/, ''),
+    title: post.data.title,
+    description: post.data.description ?? '',
+    date: post.data.pubDate.toISOString().slice(0, 10),
+    tags: post.data.tags ?? [],
+    body: (post as { body?: string }).body ?? '',
+  }));
+
+const data = JSON.stringify(posts).replace(/</g, '\\u003c');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>~/.file — terminal</title>
+    <meta name="description" content="A personal site that behaves like a Unix home directory: a working shell, a virtual filesystem and the articles as files you can read and edit." />
+    <style is:global>
+      :root {
+        --bg: #030804;
+        --frame: rgba(0, 255, 65, 0.3);
+        --text: #a3f2b0;
+        --dim: #2f7a3d;
+        --accent: #00ff41;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background:
+          radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--bg) 60%, #0b1a0d) 0%, var(--bg) 60%, color-mix(in srgb, var(--bg) 85%, #000) 100%);
+        color: var(--text);
+        font-family: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+        display: grid;
+        place-items: center;
+        padding: clamp(10px, 3vh, 40px);
+        overflow: hidden;
+      }
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
+        opacity: 0;
+        transition: opacity 160ms ease;
+      }
+      body[data-scanlines='on']::after { opacity: 1; }
+      .shell {
+        position: relative;
+        width: 100%;
+        max-width: 1120px;
+        height: min(80vh, 760px);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid var(--frame);
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--bg) 92%, transparent);
+        box-shadow:
+          0 0 0 1px color-mix(in srgb, var(--frame) 40%, transparent),
+          0 30px 90px -24px color-mix(in srgb, var(--accent) 22%, transparent),
+          inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+        overflow: hidden;
+      }
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 14px;
+        border-bottom: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent);
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        color: var(--dim);
+        user-select: none;
+      }
+      .dots { display: flex; gap: 7px; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.85; }
+      .dot.r { background: #ff5f57; }
+      .dot.y { background: #febc2e; }
+      .dot.g { background: #28c840; }
+      .titlebar .name { flex: 1; text-align: center; color: var(--text); opacity: 0.8; }
+      .titlebar .stat { color: var(--dim); font-variant-numeric: tabular-nums; }
+      #term { flex: 1; min-height: 0; padding: 8px 10px 4px; }
+      #term .xterm { height: 100%; }
+      .hint {
+        margin: 12px auto 0;
+        max-width: 1120px;
+        font-size: 11.5px;
+        letter-spacing: 0.05em;
+        color: var(--dim);
+        text-align: center;
+        display: flex;
+        gap: 18px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .hint kbd {
+        border: 1px solid color-mix(in srgb, var(--frame) 80%, transparent);
+        border-bottom-width: 2px;
+        border-radius: 3px;
+        padding: 1px 5px;
+        font: inherit;
+        color: var(--text);
+      }
+      .hint code { color: var(--text); }
+      .hint a { color: var(--text); text-decoration: none; border-bottom: 1px dashed currentColor; }
+
+      /* editor overlay */
+      .editor-layer { position: absolute; inset: 0; display: none; flex-direction: column; background: color-mix(in srgb, var(--bg) 97%, #000); z-index: 5; }
+      .editor-layer.on { display: flex; }
+      .editor-bar {
+        display: flex; justify-content: space-between; gap: 12px; align-items: center;
+        padding: 8px 14px; font-size: 12px; letter-spacing: 0.06em;
+        border-bottom: 1px solid color-mix(in srgb, var(--frame) 90%, transparent);
+        color: var(--accent);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent);
+      }
+      .editor-bar .path { color: var(--text); }
+      .editor-bar .flag { color: var(--dim); }
+      #editor { flex: 1; min-height: 0; overflow: auto; }
+      #editor .cm-editor { height: 100%; background: transparent; }
+      #editor .cm-scroller { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; font-size: 14px; line-height: 1.5; }
+      #editor .cm-gutters { background: transparent; border-right: 1px solid color-mix(in srgb, var(--frame) 40%, transparent); color: var(--dim); }
+      .cm-vim-panel, .cm-vim-panel input { color: var(--accent) !important; background: transparent !important; font-family: inherit !important; }
+      .editor-foot {
+        display: flex; justify-content: space-between; gap: 12px;
+        padding: 6px 14px; font-size: 11.5px; color: var(--dim);
+        border-top: 1px solid color-mix(in srgb, var(--frame) 50%, transparent);
+      }
+      .editor-foot .save { color: var(--accent); }
+
+      @media (max-width: 680px) {
+        body { padding: 0; }
+        .shell { height: 100dvh; max-width: none; border: 0; border-radius: 0; }
+        .hint { display: none; }
+        #term { padding: 6px; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        body::after { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main style="display: contents">
+      <div class="shell" id="shell">
+        <div class="titlebar">
+          <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+          <span class="name" id="win-title">dandrok@dotfile: ~</span>
+          <span class="stat" id="win-size">—</span>
+        </div>
+        <div id="term" role="application" aria-label="interactive terminal"></div>
+
+        <div class="editor-layer" id="editor-layer" aria-hidden="true">
+          <div class="editor-bar">
+            <span class="path" id="ed-file">—</span>
+            <span class="flag" id="ed-hint"></span>
+          </div>
+          <div id="editor"></div>
+          <div class="editor-foot">
+            <span id="ed-foot">— NORMAL —</span>
+            <span id="ed-save"></span>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <p class="hint">
+      <span><kbd>tab</kbd> complete</span>
+      <span><kbd>↑</kbd> history</span>
+      <span><kbd>ctrl-l</kbd> clear</span>
+      <span><code>help</code> commands</span>
+      <a href="/">← back to the site</a>
+    </p>
+
+    <script is:inline type="application/json" id="post-data" set:html={data}></script>
+
+    <script>
+      import { Terminal } from '@xterm/xterm';
+      import { FitAddon } from '@xterm/addon-fit';
+      import '@xterm/xterm/css/xterm.css';
+      import { EditorView, keymap } from '@codemirror/view';
+      import { EditorState } from '@codemirror/state';
+      import { basicSetup } from 'codemirror';
+      import { markdown } from '@codemirror/lang-markdown';
+      import { oneDark } from '@codemirror/theme-one-dark';
+      import { vim, Vim } from '@replit/codemirror-vim';
+      import { createShell, type PostSeed, type Effect } from '../lib/terminal';
+      import { pageColors, parseConfig, xtermTheme } from '../lib/terminal/theme';
+      import { fg, style } from '../lib/terminal/format';
+
+      const CONFIG_PATH = '/home/dandrok/.config/site.conf';
+      const MOTD_PATH = '/etc/motd';
+
+      const posts: PostSeed[] = JSON.parse(document.getElementById('post-data')?.textContent ?? '[]');
+
+      const storage = (() => {
+        try {
+          localStorage.setItem('dotfile.probe', '1');
+          localStorage.removeItem('dotfile.probe');
+          return localStorage;
+        } catch {
+          return null;
+        }
+      })();
+
+      const shell = createShell({ posts, storage });
+      const term = new Terminal({
+        convertEol: true,
+        cursorBlink: true,
+        cursorStyle: 'bar',
+        fontSize: 14,
+        lineHeight: 1.3,
+        letterSpacing: 0.2,
+        scrollback: 5000,
+        fontFamily: "ui-monospace, 'JetBrains Mono', Menlo, monospace",
+        allowProposedApi: true,
+        theme: xtermTheme('matrix'),
+      });
+      const fit = new FitAddon();
+      term.loadAddon(fit);
+      term.open(document.getElementById('term')!);
+      fit.fit();
+      term.focus();
+
+      // ---------------------------------------------------------------- theme
+
+      function applyTheme(configText: string) {
+        const config = parseConfig(configText);
+        shell.env.PROMPT = config.prompt;
+        const colors = pageColors(config.theme);
+        const root = document.documentElement.style;
+        root.setProperty('--bg', colors.bg);
+        root.setProperty('--frame', colors.frame);
+        root.setProperty('--text', colors.text);
+        root.setProperty('--dim', colors.dim);
+        root.setProperty('--accent', xtermTheme(config.theme).cursor);
+        document.body.dataset.scanlines = config.scanlines ? 'on' : 'off';
+        term.options.theme = xtermTheme(config.theme);
+        term.options.cursorStyle = config.cursor;
+        term.options.fontFamily =
+          config.font === 'vt323'
+            ? "'VT323', ui-monospace, monospace"
+            : "ui-monospace, 'JetBrains Mono', Menlo, monospace";
+        term.options.fontSize = config.font === 'vt323' ? 18 : 14;
+        fit.fit();
+        term.refresh(0, term.rows - 1);
+      }
+
+      // ------------------------------------------------------------------ io
+
+      const write = (text: string) => term.write(text.replace(/\n/g, '\r\n'));
+      let buffer = '';
+      let cursor = 0;
+
+      function renderPrompt() {
+        const el = document.getElementById('win-title');
+        if (el) el.textContent = `${shell.env.USER}@${shell.env.HOST ?? 'dotfile'}: ${shell.promptPath()}`;
+        write(fg.green(shell.prompt().replace(/\$$/, '')) + fg.green('$ '));
+      }
+
+      function redrawInput(previous: string) {
+        // redraw from the prompt: cheap approach — erase the typed text only
+        const width = Math.max(previous.length, buffer.length);
+        term.write('\r\x1b[2K');
+        renderPrompt();
+        term.write(buffer);
+        void width;
+      }
+
+      // --------------------------------------------------------------- effects
+
+      let editingPath: string | null = null;
+      let view: EditorView | null = null;
+
+      function handleEffect(effect: Effect) {
+        switch (effect.type) {
+          case 'clear':
+            term.write('\x1b[2J\x1b[H');
+            break;
+          case 'navigate':
+            setTimeout(() => {
+              if (effect.url.startsWith('http') || effect.url.startsWith('mailto:')) window.open(effect.url, '_blank', 'noopener');
+              else window.location.href = effect.url;
+            }, 320);
+            break;
+          case 'edit':
+            openEditor(effect.path, effect.editor);
+            break;
+          case 'theme':
+            applyTheme(effect.config);
+            break;
+          case 'reset':
+            applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+            break;
+          case 'exit':
+            write(fg.dim('\nlogout\n[session closed — reload the page to start again]\n'));
+            break;
+          case 'title':
+            break;
+        }
+      }
+
+      function submit(line: string) {
+        const result = shell.exec(line);
+        if (result.out) write(result.out.endsWith('\n') ? result.out : result.out + '\n');
+        if (result.err) write(fg.error(result.err) + '\n');
+        for (const effect of result.effects) handleEffect(effect);
+      }
+
+      // ---------------------------------------------------------------- editor
+
+      function openEditor(path: string, editor: 'vim' | 'nano') {
+        const content = shell.fs.read(path);
+        if (content === undefined) {
+          write(fg.error(`cannot open ${path}\n`));
+          return;
+        }
+        editingPath = path;
+        const layer = document.getElementById('editor-layer')!;
+        const file = document.getElementById('ed-file')!;
+        const foot = document.getElementById('ed-foot')!;
+        const saveFlag = document.getElementById('ed-save')!;
+        const hint = document.getElementById('ed-hint')!;
+        layer.classList.add('on');
+        layer.setAttribute('aria-hidden', 'false');
+        file.textContent = path.replace('/home/dandrok', '~');
+        hint.textContent = editor === 'vim' ? ':w write · :q quit · :wq both' : '^O write · ^X exit';
+        foot.textContent = editor === 'vim' ? 'vim — :w write · :q quit' : 'nano — arrows, no modes';
+        saveFlag.textContent = '';
+
+        const save = () => {
+          if (!view || !editingPath) return;
+          const text = view.state.doc.toString();
+          const written = shell.fs.writeFile(editingPath, text);
+          const lines = text.split('\n').length;
+          saveFlag.textContent = written.ok ? `${lines}L written` : (written.error ?? 'write failed');
+          setTimeout(() => (saveFlag.textContent = ''), 2000);
+          if (editingPath === CONFIG_PATH) applyTheme(text);
+        };
+
+        const close = () => {
+          layer.classList.remove('on');
+          layer.setAttribute('aria-hidden', 'true');
+          view?.destroy();
+          view = null;
+          editingPath = null;
+          term.focus();
+          fit.fit();
+          renderPrompt();
+        };
+
+        const extensions = [
+          basicSetup,
+          markdown(),
+          oneDark,
+          EditorView.theme({
+            '&': { backgroundColor: 'transparent', color: 'var(--text)' },
+            '.cm-content': { caretColor: 'var(--accent)' },
+            '.cm-cursor, .cm-dropCursor': { borderLeftColor: 'var(--accent)' },
+            '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
+              backgroundColor: 'color-mix(in srgb, var(--accent) 22%, transparent)',
+            },
+          }),
+        ];
+
+        if (editor === 'vim') {
+          extensions.push(
+            vim({ status: true }),
+            EditorView.updateListener.of((update) => {
+              if (update.docChanged) saveFlag.textContent = 'modified';
+            }),
+          );
+          Vim.defineEx('write', 'w', () => save());
+          Vim.defineEx('wq', 'wq', () => {
+            save();
+            close();
+          });
+          Vim.defineEx('quit', 'q', () => close());
+          Vim.defineEx('q!', 'q!', () => close());
+          Vim.defineEx('w!', 'w!', () => save());
+          Vim.defineEx('reset', 'reset', () => {
+            const original = shell.fs.read(editingPath ?? '');
+            void original;
+          });
+        } else {
+          extensions.push(
+            keymap.of([
+              { key: 'Ctrl-o', run: () => (save(), true) },
+              { key: 'Ctrl-x', run: () => (close(), true) },
+              { key: 'Escape', run: () => (close(), true) },
+            ]),
+          );
+        }
+
+        view = new EditorView({
+          state: EditorState.create({ doc: content, extensions }),
+          parent: document.getElementById('editor')!,
+        });
+        view.focus();
+      }
+
+      // ------------------------------------------------------------- key input
+
+      term.onData((data) => {
+        if (!term.element?.classList.contains('focus') && view) return;
+
+        if (data === '\r') {
+          const line = buffer;
+          buffer = '';
+          write('\n');
+          if (line.trim()) submit(line);
+          renderPrompt();
+          return;
+        }
+        if (data === '\x7f') {
+          if (cursor > 0) {
+            buffer = buffer.slice(0, cursor - 1) + buffer.slice(cursor);
+            cursor--;
+            redrawInput(buffer + 'x');
+            term.write('\x1b[' + (buffer.length - cursor + 1) + 'D');
+          }
+          return;
+        }
+        if (data === '\t') {
+          const hits = shell.complete(buffer);
+          if (hits.length === 1) {
+            const parts = buffer.split(/(\s+)/);
+            parts[parts.length - 1] = hits[0];
+            buffer = parts.join('');
+            cursor = buffer.length;
+            redrawInput(buffer + ' ');
+            return;
+          }
+          if (hits.length > 1) {
+            write('\n' + hits.join('  ') + '\n');
+            renderPrompt();
+            term.write(buffer);
+          }
+          return;
+        }
+        if (data === '\x03') {
+          buffer = '';
+          cursor = 0;
+          write('^C\n');
+          renderPrompt();
+          return;
+        }
+        if (data === '\x0c') {
+          term.write('\x1b[2J\x1b[H');
+          renderPrompt();
+          term.write(buffer);
+          return;
+        }
+        if (data === '\x04') {
+          if (!buffer) write(fg.dim('\n[use `exit` to leave]\n'));
+          return;
+        }
+        if (data === '\x1b[A' || data === '\x1b[B' || data === '\x1b[D' || data === '\x1b[C') {
+          const history = shell.history;
+          if (data === '\x1b[A') {
+            const previous = history[history.length - 1] ?? '';
+            if (previous && !buffer) {
+              buffer = previous;
+              cursor = buffer.length;
+              renderPrompt();
+              term.write(buffer);
+            }
+          } else if (data === '\x1b[B') {
+            buffer = '';
+            cursor = 0;
+            renderPrompt();
+          } else if (data === '\x1b[D') {
+            if (cursor > 0) {
+              cursor--;
+              term.write('\x1b[D');
+            }
+          } else if (cursor < buffer.length) {
+            cursor++;
+            term.write('\x1b[C');
+          }
+          return;
+        }
+        if (data >= ' ') {
+          buffer = buffer.slice(0, cursor) + data + buffer.slice(cursor);
+          cursor += data.length;
+          const tail = buffer.slice(cursor - data.length);
+          write(tail);
+          const rest = buffer.length - cursor;
+          if (rest) {
+            term.write(buffer.slice(cursor) + '\x1b[' + rest + 'D');
+          }
+        }
+      });
+
+      addEventListener('resize', () => {
+        fit.fit();
+        document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
+      });
+
+      // ------------------------------------------------------------------ boot
+
+      applyTheme(shell.fs.read(CONFIG_PATH) ?? '');
+      write(fg.dim(`Last login: ${new Date().toDateString()} on pts/0`) + '\n');
+      const motd = shell.fs.read(MOTD_PATH);
+      if (motd) write(style.bold(fg.bright(motd.replace(/\n$/, ''))) + '\n');
+      write(
+        fg.dim(`${posts.length} files in `) +
+          fg.green('~/writing') +
+          fg.dim(' · ') +
+          fg.green('help') +
+          fg.dim(' for commands · ') +
+          fg.green('cat ~/writing/' + (posts[0]?.slug ?? 'file') + '.md') +
+          fg.dim(' to read one') +
+          '\n\n',
+      );
+      renderPrompt();
+      document.getElementById('win-size')!.textContent = `${term.cols}×${term.rows}`;
+
+      // hooks used by the test harness and by `?cmd=` deep links
+      (window as unknown as { dotfile: unknown }).dotfile = {
+        shell,
+        term,
+        run: (line: string) => {
+          if (buffer) write(buffer);
+          buffer = '';
+          write(line + '\n');
+          submit(line);
+          renderPrompt();
+        },
+        buffer: () => buffer,
+        editorDoc: () => view?.state.doc.toString() ?? null,
+        editorOpen: () => view !== null,
+        applyTheme,
+        closeEditor: () => document.getElementById('editor-layer')?.classList.remove('on'),
+      };
+
+      const params = new URLSearchParams(location.search);
+      const scripted = params.getAll('cmd');
+      if (scripted.length) {
+        for (const line of scripted) {
+          write(line + '\n');
+          submit(line);
+        }
+        renderPrompt();
+      }
+    </script>
+  </body>
+</html>
