@@ -457,13 +457,6 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       }
 
       /**
-       * Rows a run of cells occupies above the row the cursor ends on. An exact
-       * multiple of the width leaves the cursor at the right margin (xterm wraps
-       * on the *next* character), so it is still one row, not two.
-       */
-      const rowsAbove = (cells: number) => (cells > 0 ? Math.floor((cells - 1) / term.cols) : 0);
-
-      /**
        * Draw prompt + input from the cursor. The terminal's own save-cursor
        * register (DECSC) anchors the first row of the block: a relative "move up
        * N rows" breaks as soon as the screen scrolls, this does not.
@@ -484,7 +477,10 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         // (a full-width row would otherwise be addressed past the margin)
         if (caret === input.length) return;
         const absolute = shell.prompt().length + caret;
-        const row = rowsAbove(absolute);
+        // interior caret: landing exactly on the margin means the start of the
+        // next row, so plain division is right here (the end-of-input case
+        // returned above, where xterm's pending wrap must be left alone)
+        const row = Math.floor(absolute / term.cols);
         const column = absolute % term.cols;
         term.write('\x1b8');
         if (row > 0) term.write(`\x1b[${row}B`);
@@ -724,7 +720,9 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
       write(fg.dim('  … ') + fg.green(`${Math.max(0, posts.length - newest.length)} more`) + fg.dim(' — ') + fg.green('ls ~/writing') + '\n\n');
       // A deep link may prefill a command, never run one: a shared URL must not
       // be able to execute anything (`?cmd=reset -y` used to wipe saved edits).
-      const requested = new URLSearchParams(location.search).getAll('cmd').join(' ').trim();
+      const rawCommand = new URLSearchParams(location.search).getAll('cmd').join(' ').trim();
+      // control characters have no business in a prefilled command line
+      const requested = /[\u0000-\u001f\u007f-\u009f]/.test(rawCommand) ? '' : rawCommand;
       if (requested) write(fg.dim('from the link — press enter to run it') + '\n');
       renderPrompt();
       if (requested) setInput(requested.replace(/[\r\n]+/g, ' '));
@@ -764,7 +762,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
 
       // a nudge for anyone who lands and freezes
       setTimeout(() => {
-        if (!interacted && !sessionEnded) {
+        if (!interacted && !sessionEnded && !input) {
           write(
             '\n' +
               fg.dim('  tip: ') +

@@ -16,7 +16,13 @@ export type Segment = {
   stdin: string | null;
 };
 
-export type Token = { text: string; /** the word contained quotes or escapes */ quoted: boolean };
+export type Token = {
+  text: string;
+  /** the word contained quotes or escapes anywhere */
+  quoted: boolean;
+  /** the word *began* with a quote or escape, so a leading operator is literal */
+  leading: boolean;
+};
 
 export type ParsedLine = {
   segments: Segment[];
@@ -36,6 +42,7 @@ export function tokenizeTokens(line: string): Token[] {
   let current = '';
   let started = false;
   let sawQuote = false;
+  let leadingQuote = false;
   let quote: '"' | "'" | null = null;
 
   for (let i = 0; i < line.length; i++) {
@@ -54,22 +61,25 @@ export function tokenizeTokens(line: string): Token[] {
     }
     if (char === '"' || char === "'") {
       quote = char;
+      if (!started) leadingQuote = true;
       started = true;
       sawQuote = true;
       continue;
     }
     if (char === '\\' && i + 1 < line.length) {
       current += line[++i];
+      if (!started) leadingQuote = true;
       started = true;
       sawQuote = true;
       continue;
     }
     if (/\s/.test(char)) {
       if (started) {
-        tokens.push({ text: current, quoted: sawQuote });
+        tokens.push({ text: current, quoted: sawQuote, leading: leadingQuote });
         current = '';
         started = false;
         sawQuote = false;
+        leadingQuote = false;
       }
       continue;
     }
@@ -78,7 +88,7 @@ export function tokenizeTokens(line: string): Token[] {
   }
 
   if (quote) throw new ParseError(`unexpected EOF while looking for matching ${quote}`);
-  if (started) tokens.push({ text: current, quoted: sawQuote });
+  if (started) tokens.push({ text: current, quoted: sawQuote, leading: leadingQuote });
   return tokens;
 }
 
@@ -99,8 +109,9 @@ export function parseLine(line: string): ParsedLine {
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-    // a quoted `|`, `>` or `>>` is an argument, not an operator
-    const operator = token.quoted ? null : token.text;
+    // a `|`, `>` or `>>` that *starts* quoted is an argument, but a quoted
+    // destination after an unquoted operator (`>"out file"`) is still a redirect
+    const operator = token.leading ? null : token.text;
     if (operator === '|') {
       if (current.argv.length === 0) throw new ParseError('syntax error near unexpected token `|\'');
       segments.push(current);

@@ -162,9 +162,11 @@ export class Shell {
   }
 
   /** Why a redirection target cannot be written, if it cannot. */
-  private redirectProblem(segment: { stdout?: { path: string } | null } | undefined): string | null {
-    if (!segment?.stdout) return null;
-    const path = this.resolvePath(segment.stdout.path);
+  private redirectProblem(
+    segment: { stdout?: { path: string } | null } | undefined,
+    path: string | null,
+  ): string | null {
+    if (!segment?.stdout || !path) return null;
     if (this.fs.isDir(path)) return `bash: ${segment.stdout.path}: Is a directory`;
     if (!this.fs.isDir(dirname(path))) return `bash: ${segment.stdout.path}: No such file or directory`;
     return null;
@@ -190,15 +192,24 @@ export class Shell {
     for (let index = 0; index < parsed.segments.length; index++) {
       const segment = parsed.segments[index];
       const isLast = index === parsed.segments.length - 1;
+      // resolve the target before the command runs: `cd` moves this.cwd, and the
+      // redirect must land where the line was typed, not where the command left us
+      const redirectPath = segment.stdout ? this.resolvePath(segment.stdout.path) : null;
       // a redirect that cannot be written must stop the command before it runs,
       // or `rm note > /` deletes the file and only then reports the failure
-      const blocked = this.redirectProblem(segment);
+      const blocked = this.redirectProblem(segment, redirectPath);
       if (blocked) {
         result.err += (result.err ? '\n' : '') + blocked;
         result.code = 1;
         return result;
       }
-      const outcome = this.runSegment(segment.argv, segment.quoted, segment.stdin, stdin, index > 0);
+      const outcome = this.runSegment(
+        segment.argv,
+        segment.quoted,
+        segment.stdin,
+        stdin,
+        index > 0 || Boolean(segment.stdin),
+      );
       if (outcome.effect) result.effects.push(outcome.effect);
       if (outcome.cwd && outcome.cwd !== this.cwd) {
         this.env.OLDPWD = this.cwd;
@@ -208,23 +219,24 @@ export class Shell {
       }
       if (outcome.err) result.err += (result.err ? '\n' : '') + outcome.err;
 
-      if (segment.stdout) {
-        const path = this.resolvePath(segment.stdout.path);
-        const written = segment.stdout.append
-          ? this.fs.appendFile(path, outcome.out ?? '')
-          : this.fs.writeFile(path, outcome.out ?? '');
+      // every stage runs, like a real shell: the status is the last stage's,
+      // and output that went to a file is not piped onward
+      let stageCode = outcome.code ?? 0;
+
+      if (redirectPath) {
+        const written = segment.stdout?.append
+          ? this.fs.appendFile(redirectPath, outcome.out ?? '')
+          : this.fs.writeFile(redirectPath, outcome.out ?? '');
         if (!written.ok) {
           result.err += (result.err ? '\n' : '') + (written.error ?? 'redirection failed');
-          result.code = 1;
+          stageCode = 1;
         }
       } else if (isLast) {
         // a pipeline only prints the last stage, like a real shell
         result.out += outcome.out ?? '';
       }
 
-      // every stage runs, like a real shell: the status is the last stage's,
-      // and output that went to a file is not piped onward
-      result.code = outcome.code ?? 0;
+      result.code = stageCode;
       stdin = segment.stdout ? '' : (outcome.out ?? '');
     }
     return result;

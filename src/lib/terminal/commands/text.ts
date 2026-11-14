@@ -9,7 +9,8 @@ function operands(argv: string[], valueFlags: string[] = []): string[] {
   const out: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (valueFlags.includes(arg.slice(1))) {
+    // compare the whole token: `-n` takes a value, `-in` or a file named `in` do not
+    if (valueFlags.some((name) => arg === `-${name}`)) {
       i += 1; // the next word belongs to this flag (`head -n 2 file`)
       continue;
     }
@@ -146,7 +147,7 @@ export const wc: Command = {
     const files = readTargets(ctx.argv, ctx);
     if ('error' in files) return { err: `wc: ${files.error}`, code: files.code };
     const rows = files.map((entry) => {
-      const lines = entry.content.split('\n').length - (entry.content.endsWith('\n') ? 1 : 0);
+      const lines = entry.content === '' ? 0 : entry.content.split('\n').length - (entry.content.endsWith('\n') ? 1 : 0);
       const words = entry.content.split(/\s+/).filter(Boolean).length;
       const bytes = new TextEncoder().encode(entry.content).length;
       const cells: string[] = [];
@@ -192,7 +193,9 @@ export const grep: Command = {
       const haystack = flags.has('i') ? line.toLowerCase() : line;
       if (!flags.has('w')) return haystack.includes(needle);
       const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`\\b${escaped}\\b`, flags.has('i') ? 'i' : '').test(line);
+      // lookarounds, not \b: `useState()` ends in a non-word character, where a
+      // word boundary would never match
+      return new RegExp(`(?<![\\w])${escaped}(?![\\w])`, flags.has('i') ? 'i' : '').test(line);
     };
 
     const files: { path: string; content: string }[] = [];

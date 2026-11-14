@@ -344,13 +344,37 @@ export const rm: Command = {
   },
 };
 
+/**
+ * Operands for cp/mv: `-r`/`-f` are accepted for muscle memory, `--` ends the
+ * options, a lone `-` is a path, and anything else is rejected rather than
+ * silently dropped.
+ */
+function operandsOrError(argv: string[], allowed: string, name: string): string[] | { error: string } {
+  const out: string[] = [];
+  let endOfFlags = false;
+  for (const arg of argv) {
+    if (endOfFlags || arg === '-' || !arg.startsWith('-')) {
+      out.push(arg);
+      continue;
+    }
+    if (arg === '--') {
+      endOfFlags = true;
+      continue;
+    }
+    const unknown = [...arg.slice(1)].find((char) => !allowed.includes(char));
+    if (unknown) return { error: `${name}: invalid option -- '${unknown}'` };
+  }
+  return out;
+}
+
 export const cp: Command = {
   name: 'cp',
   summary: 'Copy files or directories.',
   usage: 'cp <source...> <dest>',
   run({ argv, fs, cwd }: Ctx) {
-    // -r and -f are accepted for muscle memory: copying is recursive anyway
-    const words = argv.filter((arg) => !arg.startsWith('-'));
+    const parsed = operandsOrError(argv, 'rRfv', 'cp');
+    if (!Array.isArray(parsed)) return { err: parsed.error, code: 1 };
+    const words = parsed; // copying is recursive anyway
     if (words.length < 2) return { err: 'cp: missing destination file operand', code: 1 };
     const dest = normalize(words[words.length - 1], cwd);
     const sources = words.slice(0, -1);
@@ -374,7 +398,9 @@ export const mv: Command = {
   summary: 'Move or rename.',
   usage: 'mv <source...> <dest>',
   run({ argv, fs, cwd }: Ctx) {
-    const words = argv.filter((arg) => !arg.startsWith('-'));
+    const parsed = operandsOrError(argv, 'fv', 'mv');
+    if (!Array.isArray(parsed)) return { err: parsed.error, code: 1 };
+    const words = parsed;
     if (words.length < 2) return { err: 'mv: missing destination file operand', code: 1 };
     const dest = normalize(words[words.length - 1], cwd);
     const sources = words.slice(0, -1);

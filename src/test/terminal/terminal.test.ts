@@ -658,8 +658,10 @@ describe('review findings', () => {
 
   it('refuses to copy or move a directory onto itself', () => {
     const shell = shellFor();
-    expect(shell.exec('cp -r ~/work ~/work').code).toBe(1);
-    expect(shell.exec('cp -r ~/work ~/work/backup').code).toBe(1);
+    expect(shell.exec('cp ~/work ~/work').code).toBe(1);
+    const inside = shell.exec('cp ~/work ~/work/backup');
+    expect(inside.code).toBe(1);
+    expect(inside.err).toContain('into itself');
     expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
   });
 
@@ -800,5 +802,63 @@ describe('minor review findings', () => {
     applyAction(game, 'strafeLeft');
     // facing +x, screen left is -y
     expect(game.y).toBeLessThan(startY);
+  });
+});
+
+describe('third review round', () => {
+  it('keeps an unquoted operator with a quoted destination', () => {
+    const shell = newShell();
+    const result = shell.exec('echo hi > "my notes.txt"');
+    expect(result.code).toBe(0);
+    expect(shell.fs.read('/home/dandrok/my notes.txt')).toBe('hi\n');
+  });
+
+  it('treats a leading quoted operator as literal', () => {
+    const shell = newShell();
+    expect(shell.exec('echo ">"').out.trim()).toBe('>');
+  });
+
+  it('counts zero lines for empty content', () => {
+    const shell = newShell();
+    shell.exec('touch ~/empty.txt');
+    expect(shell.exec('wc -l ~/empty.txt').out.trim().startsWith('0')).toBe(true);
+  });
+
+  it('matches grep -w patterns that end in punctuation', () => {
+    const shell = newShell();
+    shell.exec('echo useState() > ~/hook.txt');
+    shell.exec('echo useStateValue >> ~/hook.txt');
+    // punctuation after the word is still a word match, like GNU grep -w
+    expect(shell.exec("grep -w 'useState()' ~/hook.txt").code).toBe(0);
+    expect(shell.exec("grep -w 'useState' ~/hook.txt").out).toContain('useState()');
+    expect(shell.exec("grep -w 'useState' ~/hook.txt").out).not.toContain('useStateValue');
+  });
+
+  it('accepts an empty redirected file as stdin', () => {
+    const shell = newShell();
+    shell.exec('touch ~/empty.txt');
+    expect(shell.exec('cat < ~/empty.txt').code).toBe(0);
+  });
+
+  it('keeps the failure status when the redirect cannot be written', () => {
+    const shell = newShell();
+    const result = shell.exec('echo hi > /nope/deeper.txt');
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('No such file or directory');
+  });
+
+  it('writes the redirect where the line was typed, not where cd left us', () => {
+    const shell = newShell();
+    const result = shell.exec('cd ~/writing > after-cd.txt');
+    expect(result.code).toBe(0);
+    expect(shell.fs.read('/home/dandrok/after-cd.txt')).toBe('');
+  });
+
+  it('rejects unknown options instead of treating them as paths', () => {
+    const shell = newShell();
+    shell.exec('echo hi > ~/f.txt');
+    expect(shell.exec('cp -z ~/f.txt ~/g.txt').code).toBe(1);
+    expect(shell.exec('cp -r ~/f.txt ~/g.txt').code).toBe(0);
+    expect(shell.fs.read('/home/dandrok/g.txt')).toBe('hi\n');
   });
 });
