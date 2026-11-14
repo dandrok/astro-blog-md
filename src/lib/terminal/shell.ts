@@ -159,6 +159,15 @@ export class Shell {
       .replace('{path}', this.promptPath());
   }
 
+  /** Why a redirection target cannot be written, if it cannot. */
+  private redirectProblem(segment: { stdout?: { path: string } | null } | undefined): string | null {
+    if (!segment?.stdout) return null;
+    const path = this.resolvePath(segment.stdout.path);
+    if (this.fs.isDir(path)) return `bash: ${segment.stdout.path}: Is a directory`;
+    if (!this.fs.isDir(dirname(path))) return `bash: ${segment.stdout.path}: No such file or directory`;
+    return null;
+  }
+
   exec(line: string): ExecResult {
     const result: ExecResult = { out: '', err: '', code: 0, cwd: this.cwd, effects: [] };
     const trimmed = line.trim();
@@ -179,6 +188,14 @@ export class Shell {
     for (let index = 0; index < parsed.segments.length; index++) {
       const segment = parsed.segments[index];
       const isLast = index === parsed.segments.length - 1;
+      // a redirect that cannot be written must stop the command before it runs,
+      // or `rm note > /` deletes the file and only then reports the failure
+      const blocked = this.redirectProblem(segment);
+      if (blocked) {
+        result.err += (result.err ? '\n' : '') + blocked;
+        result.code = 1;
+        return result;
+      }
       const outcome = this.runSegment(segment.argv, segment.stdin, stdin);
       if (outcome.effect) result.effects.push(outcome.effect);
       if (outcome.cwd && outcome.cwd !== this.cwd) {

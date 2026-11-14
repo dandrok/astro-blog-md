@@ -142,24 +142,33 @@ export class FileSystem {
 
   // -------------------------------------------------------------- mutation
 
-  /** Internal insert that creates parent directories as needed. */
-  private putNode(path: string, node: Node): void {
+  /**
+   * Internal insert. Missing parents are created, but an existing *file* in a
+   * parent position is an error: `touch note/child` must not silently turn the
+   * saved `note` into a directory.
+   */
+  private putNode(path: string, node: Node): { ok: boolean; error?: string } {
     const p = normalize(path);
     const parts = p.split('/').filter(Boolean);
     const name = parts.pop();
-    if (!name) return;
+    if (!name) return { ok: false, error: `Not a directory: ${p}` };
     let parent = this.root;
+    const walked: string[] = [];
     for (const segment of parts) {
+      walked.push(segment);
       const next = parent.children[segment];
-      if (!next || next.type !== 'dir') {
+      if (!next) {
         const created = dir();
         parent.children[segment] = created;
         parent = created;
+      } else if (next.type !== 'dir') {
+        return { ok: false, error: `Not a directory: /${walked.join('/')}` };
       } else {
         parent = next;
       }
     }
     parent.children[name] = node;
+    return { ok: true };
   }
 
   mkdir(path: string, parents = false): { ok: boolean; error?: string } {
@@ -169,7 +178,8 @@ export class FileSystem {
     if (!parent && !parents) {
       return { ok: false, error: `mkdir: cannot create directory '${p}': No such file or directory` };
     }
-    this.putNode(p, dir());
+    const placed = this.putNode(p, dir());
+    if (!placed.ok) return { ok: false, error: `mkdir: cannot create directory '${p}': Not a directory` };
     this.track(p);
     return { ok: true };
   }
@@ -178,7 +188,13 @@ export class FileSystem {
     const p = normalize(path);
     const existing = this.get(p);
     if (existing?.type === 'dir') return { ok: false, error: `Is a directory: ${p}` };
-    this.putNode(p, { type: 'file', content, mode: existing?.type === 'file' ? existing.mode : 0o644, mtime: now() });
+    const placed = this.putNode(p, {
+      type: 'file',
+      content,
+      mode: existing?.type === 'file' ? existing.mode : 0o644,
+      mtime: now(),
+    });
+    if (!placed.ok) return { ok: false, error: `cannot write ${p}: ${placed.error}` };
     this.track(p);
     return { ok: true };
   }
@@ -216,26 +232,35 @@ export class FileSystem {
   }
 
   copy(from: string, to: string): { ok: boolean; error?: string } {
-    const source = this.get(from);
-    if (!source) return { ok: false, error: `cp: cannot stat '${from}': No such file or directory` };
-    if (source.type === 'file') return this.writeFile(to, source.content);
-    // recursive directory copy
+    const source = normalize(from);
     const target = normalize(to);
-    this.putNode(target, dir(source.mode));
-    for (const { name, node } of this.list(from)) {
+    if (source === target) return { ok: false, error: `cp: '${from}' and '${to}' are the same file` };
+    if (target.startsWith(`${source}/`)) {
+      return { ok: false, error: `cp: cannot copy '${from}' into itself, '${to}'` };
+    }
+    const node = this.get(source);
+    if (!node) return { ok: false, error: `cp: cannot stat '${from}': No such file or directory` };
+    if (node.type === 'file') return this.writeFile(target, node.content);
+    // recursive directory copy
+    const placed = this.putNode(target, dir(node.mode));
+    if (!placed.ok) return { ok: false, error: `cp: ${placed.error}` };
+    for (const { name, node: child } of this.list(source)) {
       const result =
-        node.type === 'file'
-          ? this.writeFile(`${target}/${name}`, node.content)
-          : this.copy(`${normalize(from)}/${name}`, `${target}/${name}`);
+        child.type === 'file'
+          ? this.writeFile(`${target}/${name}`, child.content)
+          : this.copy(`${source}/${name}`, `${target}/${name}`);
       if (!result.ok) return result;
     }
     return { ok: true };
   }
 
   move(from: string, to: string): { ok: boolean; error?: string } {
-    const copied = this.copy(from, to);
+    const source = normalize(from);
+    const target = normalize(to);
+    if (source === target) return { ok: true }; // `mv a a` keeps `a`, like a real mv
+    const copied = this.copy(source, target);
     if (!copied.ok) return copied;
-    return this.remove(normalize(from), true);
+    return this.remove(source, true);
   }
 
   /** Sum of file contents under a path, in bytes. */
@@ -312,7 +337,13 @@ export class FileSystem {
         if (parent) delete parent.children[basename(path)];
       }
       for (const [path, file] of Object.entries(this.overlay.files)) {
-        this.putNode(path, { type: 'file', content: file.content, mode: 0o644, mtime: file.mtime });
+        const placed = this.putNode(path, {
+          type: 'file',
+          content: file.content,
+          mode: 0o644,
+          mtime: file.mtime,
+        });
+        if (!placed.ok) this.droppedEdits++;
       }
     } catch {
       this.overlay = { version: OVERLAY_VERSION, files: {}, removed: [] };

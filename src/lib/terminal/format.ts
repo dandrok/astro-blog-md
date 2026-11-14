@@ -30,16 +30,19 @@ export function columns(): number {
 }
 
 function wrap(text: string, width: number): string[] {
+  // A width of 0 (deep indentation on a narrow terminal) would never consume
+  // the paragraph and `cat` would hang the tab.
+  const limit = Math.max(1, Math.floor(width) || 0);
   const lines: string[] = [];
   for (const paragraph of text.split('\n')) {
-    if (paragraph.length <= width) {
+    if (paragraph.length <= limit) {
       lines.push(paragraph);
       continue;
     }
     let rest = paragraph;
-    while (rest.length > width) {
-      const cut = rest.lastIndexOf(' ', width);
-      const at = cut > width * 0.5 ? cut : width;
+    while (rest.length > limit) {
+      const cut = rest.lastIndexOf(' ', limit);
+      const at = cut > limit * 0.5 ? cut : limit;
       lines.push(rest.slice(0, at));
       rest = rest.slice(at).trimStart();
     }
@@ -87,7 +90,7 @@ export function renderMarkdown(text: string, opts: { width?: number; numbers?: b
       continue;
     }
     if (/^\s*>\s?/.test(line)) {
-      for (const wrapped of wrap(line.replace(/^\s*>\s?/, ''), width - 4)) {
+      for (const wrapped of wrap(line.replace(/^\s*>\s?/, ''), Math.max(8, width - 4))) {
         out.push(prefix + fg.dim('│ ') + fg.dim(wrapped));
       }
       continue;
@@ -96,11 +99,13 @@ export function renderMarkdown(text: string, opts: { width?: number; numbers?: b
     if (listItem) {
       const bullet = /\d/.test(listItem[2]) ? listItem[2] : '•';
       const body = inline(listItem[3]);
-      const wrapped = wrap(stripAnsi(body), width - listItem[1].length - 3);
+      // deep nesting must not squeeze the text column down to one character
+      const indent = listItem[1].slice(0, Math.max(0, Math.floor(width / 3)));
+      const wrapped = wrap(stripAnsi(body), Math.max(8, width - indent.length - 3));
       wrapped.forEach((chunk, index) => {
         out.push(
           prefix +
-            listItem[1] +
+            indent +
             (index === 0 ? fg.green(bullet + ' ') : '  ') +
             wrapKeepAnsi(body, chunk),
         );

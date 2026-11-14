@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { tokenize, parseLine, parseFlags, FlagError, ParseError } from '../../lib/terminal/args';
 import { FileSystem, normalize } from '../../lib/terminal/fs';
+import { renderMarkdown } from '../../lib/terminal/format';
 import { createShell, slugify } from '../../lib/terminal';
 import { actionFor, applyAction, createGame, render as renderGame } from '../../lib/terminal/doom';
 import { parseConfig, palette, contrastRatio, THEME_NAMES } from '../../lib/terminal/theme';
@@ -616,5 +617,71 @@ describe('overlay durability', () => {
 
     const reopened = new FileSystem([{ path: '/home/dandrok/about.md', content: 'changed' }], storage);
     expect(reopened.read('/home/dandrok/notes.md')).toBe('mine');
+  });
+});
+
+describe('review findings', () => {
+  const shellFor = () => {
+    const shell = newShell();
+    shell.exec('mkdir -p ~/work');
+    shell.exec('echo a > ~/work/a.txt');
+    shell.exec('echo b > ~/work/b.txt');
+    return shell;
+  };
+
+  it('refuses cp/mv with several sources and a file destination', () => {
+    const shell = shellFor();
+    const cp = shell.exec('cp ~/work/a.txt ~/work/b.txt ~/one.txt');
+    expect(cp.code).toBe(1);
+    expect(cp.err).toContain('is not a directory');
+    expect(shell.fs.read('/home/dandrok/one.txt')).toBeUndefined();
+    expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
+
+    const mv = shell.exec('mv ~/work/a.txt ~/work/b.txt ~/one.txt');
+    expect(mv.code).toBe(1);
+    expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
+    expect(shell.fs.read('/home/dandrok/work/b.txt')).toBe('b\n');
+  });
+
+  it('does not turn a saved file into a directory for a child', () => {
+    const shell = shellFor();
+    shell.exec('echo keep > ~/note');
+    const touch = shell.exec('touch ~/note/child');
+    expect(touch.code).toBe(1);
+    expect(touch.err).toContain('Not a directory');
+    expect(shell.fs.read('/home/dandrok/note')).toBe('keep\n');
+
+    const mkdir = shell.exec('mkdir -p ~/note/deeper/still');
+    expect(mkdir.code).toBe(1);
+    expect(shell.fs.read('/home/dandrok/note')).toBe('keep\n');
+  });
+
+  it('refuses to copy or move a directory onto itself', () => {
+    const shell = shellFor();
+    expect(shell.exec('cp -r ~/work ~/work').code).toBe(1);
+    expect(shell.exec('cp -r ~/work ~/work/backup').code).toBe(1);
+    expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
+  });
+
+  it('treats `mv a a` as a no-op instead of deleting the file', () => {
+    const shell = shellFor();
+    const result = shell.exec('mv ~/work/a.txt ~/work/a.txt');
+    expect(result.code).toBe(0);
+    expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
+  });
+
+  it('does not run the command when the redirect cannot be written', () => {
+    const shell = shellFor();
+    const result = shell.exec('rm ~/work/a.txt > /');
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('Is a directory');
+    expect(shell.fs.read('/home/dandrok/work/a.txt')).toBe('a\n');
+  });
+
+  it('wraps a deeply indented list item instead of hanging', () => {
+    const text = `${' '.repeat(37)}- ${'word '.repeat(40)}`;
+    const rendered = renderMarkdown(text, { width: 40 });
+    expect(rendered.length).toBeGreaterThan(0);
+    expect(rendered.replace(/\x1b\[[0-9;]*m/g, '')).toContain('word');
   });
 });

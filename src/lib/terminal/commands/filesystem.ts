@@ -353,6 +353,10 @@ export const cp: Command = {
     const dest = normalize(argv[argv.length - 1], cwd);
     const sources = argv.slice(0, -1);
     const destIsDir = fs.isDir(dest);
+    // several sources would all target the same name; only a directory can hold them
+    if (sources.length > 1 && !destIsDir) {
+      return { err: `cp: target '${argv[argv.length - 1]}' is not a directory`, code: 1 };
+    }
     for (const source of sources) {
       const from = normalize(source, cwd);
       const to = destIsDir ? `${dest}/${basename(from)}` : dest;
@@ -372,6 +376,9 @@ export const mv: Command = {
     const dest = normalize(argv[argv.length - 1], cwd);
     const sources = argv.slice(0, -1);
     const destIsDir = fs.isDir(dest);
+    if (sources.length > 1 && !destIsDir) {
+      return { err: `mv: target '${argv[argv.length - 1]}' is not a directory`, code: 1 };
+    }
     for (const source of sources) {
       const from = normalize(source, cwd);
       const to = destIsDir ? `${dest}/${basename(from)}` : dest;
