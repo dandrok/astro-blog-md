@@ -90,6 +90,23 @@ export class Shell {
     this.loadHistory();
   }
 
+  /** Closest command name, for a typo hint. Null when nothing is close. */
+  suggest(name: string): string | null {
+    const scored = [...this.commands.keys()]
+      .map((candidate) => ({
+        candidate,
+        distance: editDistance(name, candidate),
+        // ties go to the same initial letter, then to the closest length
+        initial: candidate[0] === name[0] ? 0 : 1,
+        lengthGap: Math.abs(candidate.length - name.length),
+      }))
+      .sort((a, b) => a.distance - b.distance || a.initial - b.initial || a.lengthGap - b.lengthGap);
+    const best = scored[0];
+    if (!best) return null;
+    const limit = Math.max(2, Math.floor(name.length / 3));
+    return best.distance <= limit ? best.candidate : null;
+  }
+
   command(name: string): Command | undefined {
     return this.commands.get(name);
   }
@@ -162,7 +179,8 @@ export class Shell {
       const isLast = index === parsed.segments.length - 1;
       const outcome = this.runSegment(segment.argv, segment.stdin, stdin);
       if (outcome.effect) result.effects.push(outcome.effect);
-      if (outcome.cwd) {
+      if (outcome.cwd && outcome.cwd !== this.cwd) {
+        this.env.OLDPWD = this.cwd;
         this.cwd = outcome.cwd;
         this.env.PWD = outcome.cwd;
         result.cwd = outcome.cwd;
@@ -197,7 +215,11 @@ export class Shell {
     const name = argv[0];
     const command = this.commands.get(name);
     if (!command) {
-      return { err: `bash: ${name}: command not found`, code: 127 };
+      const hint = this.suggest(name);
+      return {
+        err: `bash: ${name}: command not found` + (hint ? `\ndid you mean ${fg.green(hint)}?` : ''),
+        code: 127,
+      };
     }
 
     if (argv[1] === '--help' || (argv[1] === '-h' && !command.flags?.h)) {
@@ -302,4 +324,30 @@ export class Shell {
   name(path: string): string {
     return basename(path);
   }
+}
+
+/**
+ * Optimal-string-alignment distance: insert, delete, substitute, and swap of
+ * two adjacent characters ("gerp" -> "grep" is one edit, not two).
+ */
+export function editDistance(a: string, b: string): number {
+  const rows = a.length + 1;
+  const cols = b.length + 1;
+  const matrix: number[][] = Array.from({ length: rows }, (_, i) =>
+    Array.from({ length: cols }, (_, j) => (i === 0 ? j : j === 0 ? i : 0)),
+  );
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(
+        matrix[i - 1][j] + 1,
+        matrix[i][j - 1] + 1,
+        matrix[i - 1][j - 1] + cost,
+      );
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        matrix[i][j] = Math.min(matrix[i][j], matrix[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return matrix[rows - 1][cols - 1];
 }

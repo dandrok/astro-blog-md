@@ -7,6 +7,7 @@ import { filesystemCommands } from './commands/filesystem';
 import { textCommands } from './commands/text';
 import { sessionCommands } from './commands/session';
 import { siteCommands } from './commands/site';
+import { eggCommands } from './commands/eggs';
 
 export type PostSeed = {
   slug: string;
@@ -22,6 +23,7 @@ export const allCommands: Command[] = [
   ...textCommands,
   ...sessionCommands,
   ...siteCommands,
+  ...eggCommands,
 ].sort((a, b) => a.name.localeCompare(b.name));
 
 const README = `# ~/.file

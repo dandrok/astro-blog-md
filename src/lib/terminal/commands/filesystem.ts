@@ -16,68 +16,130 @@ const sortEntries = (
   return list;
 };
 
+const LS_FLAGS = {
+  a: 'bool',
+  '1': 'bool',
+  l: 'bool',
+  t: 'bool',
+  r: 'bool',
+  h: 'bool',
+  icons: 'bool',
+} as const;
+
+/**
+ * Nerd-font glyphs, used by --icons. They only render on a patched font, so
+ * the default listing is icon-free.
+ */
+const ICONS: Record<string, string> = {
+  dir: '\uf07b',
+  default: '\uf15b',
+  md: '\uf48a',
+  mdx: '\uf48a',
+  txt: '\uf15c',
+  json: '\ue60b',
+  js: '\ue74e',
+  mjs: '\ue74e',
+  cjs: '\ue74e',
+  ts: '\ue628',
+  tsx: '\ue7ba',
+  jsx: '\ue7ba',
+  css: '\ue749',
+  html: '\ue736',
+  pdf: '\uf1c1',
+  png: '\uf1c5',
+  jpg: '\uf1c5',
+  jpeg: '\uf1c5',
+  webp: '\uf1c5',
+  gif: '\uf1c5',
+  svg: '\uf1c5',
+  db: '\uf1c0',
+  lock: '\uf023',
+  sh: '\uf489',
+  zsh: '\uf489',
+  conf: '\ue615',
+};
+
+function iconFor(name: string, isDir: boolean): string {
+  if (isDir) return ICONS.dir;
+  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : '';
+  return ICONS[ext] ?? ICONS.default;
+}
+
+/** `18 Oct 08:49` — the eza/lsd date shape. */
+function shortDate(mtime: number): string {
+  const date = new Date(mtime);
+  const month = date.toLocaleString('en-GB', { month: 'short' });
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(date.getDate())} ${month} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 export const ls: Command = {
   name: 'ls',
-  summary: 'List directory contents.',
-  usage: 'ls [-altrh] [path...]',
-  flags: { a: 'bool', l: 'bool', t: 'bool', r: 'bool', h: 'bool' },
+  summary: 'List directory contents (eza-style: mode, size, owner, date).',
+  usage: 'ls [-a] [-1] [-t] [-r] [--icons] [path...]',
+  flags: LS_FLAGS,
   man: [
-    'Lists files. Directories are printed in green with a trailing slash.',
+    'The default view is the long one, like `eza -l`: permissions, size,',
+    'owner, modification time, name. Directories sort first.',
     '',
-    '  -a  include entries starting with a dot',
-    '  -l  long format: mode, size, mtime, name',
-    '  -t  sort by modification time, newest first',
-    '  -r  reverse the sort order',
-    '  -h  human-readable sizes (with -l)',
+    '  -a       include dotfiles',
+    '  -1       names only, one per line',
+    '  -l       long view (the default; kept for muscle memory)',
+    '  -t       sort by modification time, newest first',
+    '  -r       reverse the sort',
+    '  -h       accepted, sizes are human-readable anyway',
+    '  --icons  nerd-font glyphs (needs a patched font; off by default)',
   ],
-  run({ argv, fs, cwd }: Ctx) {
-    const { flags, operands } = { flags: new Set(argv.filter((a) => a.startsWith('-')).join('').replace(/-/g, '').split('')), operands: argv.filter((a) => !a.startsWith('-')) };
+  run(ctx: Ctx) {
+    const { flags, operands } = ctx.shell.parse(ctx.argv, LS_FLAGS);
+    const showIcons = flags.has('icons');
     const targets = operands.length ? operands : ['.'];
     const chunks: string[] = [];
 
     for (const target of targets) {
-      const path = normalize(target, cwd);
-      const node = fs.get(path);
+      const path = normalize(target, ctx.cwd);
+      const node = ctx.fs.get(path);
       if (!node) return { err: `ls: cannot access '${target}': No such file or directory`, code: 2 };
 
       if (node.type === 'file') {
-        chunks.push(flags.has('l') ? longLine(basename(path), node, flags.has('h')) : fg.bright(basename(path)));
+        chunks.push(flags.has('1') ? fg.bright(basename(path)) : table([ezaRow(basename(path), node, ctx, showIcons)], 2));
         continue;
       }
 
-      const entries = sortEntries(fs.list(path), {
-        byTime: flags.has('t'),
-        reverse: flags.has('r'),
-        all: flags.has('a'),
+      let entries = ctx.fs.list(path);
+      if (!flags.has('a')) entries = entries.filter((entry) => !entry.name.startsWith('.'));
+      entries = [...entries].sort((a, b) => {
+        // directories first, then whatever sort was asked for
+        if (a.node.type !== b.node.type) return a.node.type === 'dir' ? -1 : 1;
+        return flags.has('t') ? b.node.mtime - a.node.mtime : a.name.localeCompare(b.name);
       });
+      if (flags.has('r')) entries.reverse();
+
       if (targets.length > 1) chunks.push(fg.dim(`${path}:`));
 
-      if (flags.has('l')) {
-        const rows = entries.map((entry) => [
-          fg.dim(permissionString(entry.node.mode, entry.node.type === 'dir')),
-          fg.dim(String(entry.node.type === 'dir' ? fs.size(`${path}/${entry.name}`) : entry.node.content.length).padStart(6)),
-          fg.muted(formatDate(entry.node.mtime)),
-          entry.node.type === 'dir' ? fg.green(`${entry.name}/`) : fg.bright(entry.name),
-        ]);
-        if (flags.has('h')) {
-          rows.forEach((row) => {
-            const bytes = row[1].replace(/\x1b\[[0-9;]*m/g, '').trim();
-            row[1] = fg.dim(humanSize(Number(bytes)).padStart(6));
-          });
-        }
-        chunks.push(table(rows));
+      if (flags.has('1')) {
+        chunks.push(entries.map((entry) => (entry.node.type === 'dir' ? fg.green(`${entry.name}/`) : fg.bright(entry.name))).join('\n'));
       } else {
-        chunks.push(entries.map((entry) => (entry.node.type === 'dir' ? fg.green(`${entry.name}/`) : fg.bright(entry.name))).join('  '));
+        chunks.push(table(entries.map((entry) => ezaRow(entry.name, entry.node, ctx, showIcons)), 2));
       }
     }
     return { out: chunks.join('\n') + '\n' };
   },
 };
 
-function longLine(name: string, node: Node, human: boolean): string {
-  if (node.type === 'dir') return `${fg.dim(permissionString(node.mode, true))} ${fg.dim('     -')} ${fg.muted(formatDate(node.mtime))} ${fg.green(`${name}/`)}`;
-  const size = human ? humanSize(node.content.length) : String(node.content.length);
-  return `${fg.dim(permissionString(node.mode, false))} ${fg.dim(size.padStart(6))} ${fg.muted(formatDate(node.mtime))} ${fg.bright(name)}`;
+function ezaRow(name: string, node: Node, ctx: Ctx, showIcons: boolean): string[] {
+  const isDir = node.type === 'dir';
+  const mode = permissionString(node.mode, isDir).replace(/^-(?=r|-)/, '.');
+  const size = isDir ? '-' : humanSize(node.content.length);
+  const icon = showIcons ? iconFor(name, isDir) + ' ' : '';
+  const label = isDir ? fg.green(`${name}/`) : fg.bright(name);
+  return [
+    fg.dim(mode),
+    fg.dim(size),
+    fg.dim(ctx.env.USER ?? 'user'),
+    fg.muted(shortDate(node.mtime)),
+    icon + label,
+  ];
 }
 
 export const cd: Command = {
@@ -87,7 +149,14 @@ export const cd: Command = {
   man: ['Without an argument, goes to $HOME. `cd -` returns to the previous directory.', '', '  cd ~/writing', '  cd ..'],
   run({ argv, fs, cwd, env }: Ctx) {
     const target = argv[0] ?? '~';
-    if (target === '-') return { out: `${cwd}\n`, cwd };
+    if (target === '-') {
+      const previous = env.OLDPWD;
+      if (!previous) return { err: 'cd: OLDPWD not set', code: 1 };
+      const node = fs.get(previous);
+      if (!node || node.type !== 'dir') return { err: `cd: ${previous}: no such directory`, code: 1 };
+      // bash prints the directory it moved to
+      return { out: `${previous}\n`, cwd: previous };
+    }
     const path = normalize(target.replace(/^~/, env.HOME ?? '/home/dandrok'), cwd);
     const node = fs.get(path);
     if (!node) return { err: `cd: no such file or directory: ${target}`, code: 1 };
@@ -263,6 +332,10 @@ export const rm: Command = {
     const force = argv.some((a) => a.startsWith('-') && a.includes('f'));
     const targets = argv.filter((a) => !a.startsWith('-'));
     if (!targets.length) return { err: 'rm: missing operand', code: 1 };
+    // -f does not make / disappear, here least of all
+    if (targets.some((target) => normalize(target, cwd) === '/')) {
+      return { err: 'rm: refusing to remove / — nice try, but this filesystem is a JSON object, not your problems', code: 1 };
+    }
     for (const target of targets) {
       const result = fs.remove(normalize(target, cwd), recursive);
       if (!result.ok && !force) return { err: result.error ?? 'rm failed', code: 1 };

@@ -290,7 +290,7 @@ describe('commands', () => {
   });
 
   it('--help works for any command', () => {
-    expect(newShell().exec('ls --help').out).toContain('ls [-altrh]');
+    expect(newShell().exec('ls --help').out).toContain('ls [-a] [-1] [-t]');
   });
 
   it('mkdir/touch/rm round-trip', () => {
@@ -377,5 +377,102 @@ describe('slugs', () => {
     expect(shell.exec('open ~/writing/hermes-tui-impression.md').effects).toEqual([
       { type: 'navigate', url: '/blog/hermes-tui-impression/' },
     ]);
+  });
+});
+
+describe('cd -', () => {
+  it('returns to the previous directory and prints it', () => {
+    const shell = newShell();
+    shell.exec('cd writing');
+    const back = shell.exec('cd -');
+    expect(back.cwd).toBe('/home/dandrok');
+    expect(back.out.trim()).toBe('/home/dandrok');
+    expect(shell.env.OLDPWD).toBe('/home/dandrok/writing');
+    // and forward again
+    expect(shell.exec('cd -').cwd).toBe('/home/dandrok/writing');
+  });
+
+  it('complains when there is nothing to go back to', () => {
+    const shell = newShell();
+    const result = shell.exec('cd -');
+    expect(result.code).toBe(1);
+    expect(result.err).toContain('OLDPWD not set');
+  });
+});
+
+describe('ls long view', () => {
+  it('shows mode, size, owner, date and name by default', () => {
+    const plain = newShell().exec('ls').out.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(plain).toContain('writing/');
+    expect(plain).toMatch(/\.rw-r--r--/);
+    expect(plain).toContain('dandrok');
+    expect(plain).toMatch(/\d{2} [A-Z][a-z]{2} \d{2}:\d{2}/);
+  });
+
+  it('puts directories first', () => {
+    const lines = newShell().exec('ls').out.replace(/\x1b\[[0-9;]*m/g, '').trim().split('\n');
+    expect(lines[0]).toContain('writing/');
+  });
+
+  it('hides dotfiles unless -a, and -1 drops the long columns', () => {
+    const shell = newShell();
+    expect(shell.exec('ls').out).not.toContain('.config');
+    expect(shell.exec('ls -a').out).toContain('.config');
+    const short = shell.exec('ls -1 ~/writing').out.replace(/\x1b\[[0-9;]*m/g, '').trim().split('\n');
+    expect(short).toContain('vite-in-astro.md');
+    expect(short.join(' ')).not.toContain('dandrok');
+  });
+
+  it('--icons adds glyphs only when asked', () => {
+    const shell = newShell();
+    expect(shell.exec('ls').out).not.toContain('\uf07b');
+    expect(shell.exec('ls --icons').out).toContain('\uf07b');
+  });
+});
+
+describe('typo hints', () => {
+  it('suggests the closest command', () => {
+    const err = (line: string) => newShell().exec(line).err.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(err('gerp vite')).toContain('did you mean grep?');
+    expect(err('lsit')).toContain('did you mean ls?');
+    expect(err('cls')).toContain('did you mean ls?');
+  });
+
+  it('stays quiet when nothing is close', () => {
+    expect(newShell().exec('frobnicate').err).not.toContain('did you mean');
+  });
+});
+
+describe('easter eggs', () => {
+  it('sl is not ls', () => {
+    const out = newShell().exec('sl').out.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(out).toContain('choo choo');
+    expect(out).toContain('_D _|');
+  });
+
+  it('sudo refuses, except for one sandwich', () => {
+    const shell = newShell();
+    const denied = shell.exec('sudo rm -rf /');
+    expect(denied.code).toBe(1);
+    expect(denied.err).toContain('not in the sudoers file');
+    expect(shell.exec('sudo make me a sandwich').out.trim()).toBe('okay.');
+  });
+
+  it('cowsay wraps the text and draws the cow', () => {
+    const out = newShell().exec('cowsay hello there').out.replace(/\x1b\[[0-9;]*m/g, '');
+    expect(out).toContain('(oo)');
+    expect(out).toContain('hello there');
+  });
+
+  it('matrix and fortune say something', () => {
+    expect(newShell().exec('matrix').out).toContain('wake up, neo.');
+    expect(newShell().exec('fortune').out.trim().length).toBeGreaterThan(10);
+  });
+
+  it('refuses to delete the root', () => {
+    const shell = newShell();
+    const result = shell.exec('rm -rf /');
+    expect(result.code).toBe(1);
+    expect(shell.fs.exists('/home/dandrok/README.md')).toBe(true);
   });
 });
