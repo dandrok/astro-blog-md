@@ -345,12 +345,13 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
           const current = editorView() as VimAware | undefined;
           if (!current) return;
           if (!current.hasFocus) current.focus();
-          setTimeout(() => {
-            if (current.cm?.state?.vim?.mode === 'insert') {
-              Vim.handleKey(current.cm as never, '<Esc>', 'user');
-            }
-            syncVimStatus();
-          }, 0);
+          // run before vim's own keymap: one press leaves INSERT even when the
+          // key would otherwise be swallowed (blurred content, a tooltip, an
+          // operator waiting for a motion)
+          if (current.cm?.state?.vim?.mode === 'insert') {
+            Vim.handleKey(current.cm as never, '<Esc>', 'user');
+          }
+          setTimeout(syncVimStatus, 0);
         },
         true,
       );
@@ -470,7 +471,9 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
         historyIndex = -1;
         if (line.trim()) submit(line);
         else write(starterMenu());
-        renderPrompt();
+        // `vim file` opens the overlay — it prints the prompt on close, so
+        // drawing one here would leave two of them stacked
+        if (!editingPath) renderPrompt();
       }
 
       function historyStep(direction: -1 | 1) {
@@ -594,7 +597,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
           fg.green('help') +
           fg.dim(' for everything · ') +
           fg.green('enter') +
-          fg.dim(' on an empty line if you are stuck') +
+          fg.dim(' on an empty line for a menu') +
           '\n\n',
       );
 

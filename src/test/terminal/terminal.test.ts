@@ -323,7 +323,7 @@ describe('commands', () => {
   it('open turns a markdown file into a navigation effect', () => {
     const shell = newShell();
     const result = shell.exec('open ~/writing/vite-in-astro.md');
-    expect(result.effects).toEqual([{ type: 'navigate', url: '/blog/vite-in-astro/' }]);
+    expect(result.effects).toEqual([{ type: 'navigate', url: '/lab/read/vite-in-astro/' }]);
   });
 
   it('vim and nano return edit effects', () => {
@@ -375,7 +375,7 @@ describe('slugs', () => {
     const shell = createShell({ posts: odd, storage: null });
     expect(shell.fs.exists('/home/dandrok/writing/hermes-tui-impression.md')).toBe(true);
     expect(shell.exec('open ~/writing/hermes-tui-impression.md').effects).toEqual([
-      { type: 'navigate', url: '/blog/hermes-tui-impression/' },
+      { type: 'navigate', url: '/lab/read/hermes-tui-impression/' },
     ]);
   });
 });

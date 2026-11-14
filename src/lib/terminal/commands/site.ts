@@ -9,9 +9,9 @@ const slugOf = (path: string) => slugify(path.split('/').pop() ?? '');
 
 export const open: Command = {
   name: 'open',
-  summary: 'Open a file in the site — articles go to their real page.',
+  summary: 'Open a file in the site — articles go to their reading page.',
   usage: 'open <file>',
-  man: ['Articles open the normal reading page (/blog/<slug>/); this is the escape hatch', 'from the terminal back into the rendered site.'],
+  man: ['Articles open the plain reading page; this is the escape hatch from the', 'terminal back into the typeset article.'],
   run(ctx: Ctx) {
     const target = ctx.argv[0];
     if (!target) return { err: 'open: usage: open <file>', code: 1 };
@@ -22,18 +22,9 @@ export const open: Command = {
     if (!/\.mdx?$/.test(path)) return { err: `open: ${target}: not an article`, code: 2 };
     const slug = slugOf(path);
     return {
-      out: fg.dim(`opening /blog/${slug}/ …`) + '\n',
-      effect: { type: 'navigate', url: `/blog/${slug}/` },
+      out: fg.dim(`opening /lab/read/${slug}/ …`) + '\n',
+      effect: { type: 'navigate', url: `/lab/read/${slug}/` },
     };
-  },
-};
-
-export const blog: Command = {
-  name: 'blog',
-  summary: 'Go to the rendered blog index.',
-  usage: 'blog',
-  run() {
-    return { effect: { type: 'navigate', url: '/blog/' } };
   },
 };
 
@@ -90,4 +81,4 @@ export const nano = editorCommand('nano');
 
 export const nvim: Command = { ...vim, name: 'nvim', summary: 'Alias for vim (keybindings, no real nvim binary).' };
 
-export const siteCommands: Command[] = [open, blog, github, mail, vim, nvim, nano];
+export const siteCommands: Command[] = [open, github, mail, vim, nvim, nano];

@@ -1,6 +1,6 @@
 /** Session commands: help man clear history export env echo which exit reset theme date uname whoami neofetch. */
 
-import { humanSize, fg, style, table } from '../format';
+import { columns, humanSize, fg, style, table } from '../format';
 import { THEMES, THEME_NAMES, parseConfig } from '../theme';
 import type { Command, Ctx } from '../shell';
 
@@ -17,9 +17,13 @@ export const help: Command = {
       if (!target) return { err: `help: no such command: ${ctx.argv[0]}`, code: 1 };
       return { out: ctx.shell.helpText(target) };
     }
+    // clip to the terminal: a wrapped summary used to break the table apart
+    const nameWidth = 18;
+    const summaryWidth = Math.max(24, columns() - nameWidth - 4);
+    const clip = (text: string) => (text.length > summaryWidth ? `${text.slice(0, summaryWidth - 1)}…` : text);
     const rows = [[fg.dim('command'), fg.dim('what it does')]];
     for (const command of ctx.shell.allCommands()) {
-      rows.push([` ${fg.green(command.name)}`, command.summary]);
+      rows.push([` ${fg.green(command.name.padEnd(nameWidth))}`, clip(command.summary)]);
     }
     rows.push(['', ''], [fg.dim('pipes, redirection and globs work:'), '']);
     rows.push([` ${fg.green('cat ~/writing/*.md | grep -i vite')}`, '']);
