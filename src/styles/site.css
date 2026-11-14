@@ -1,0 +1,116 @@
+/* Shared tokens and page chrome. Every view imports this; nothing here is view-specific. */
+
+:root {
+  --bg: #050805;
+  --surface: #08130b;
+  --text: #a3f2b0;
+  --bright: #d1fae5;
+  --dim: #2f7a3d;
+  --dim-2: #1d4d27;
+  --accent: #00ff41;
+  --edge: rgba(0, 255, 65, 0.3);
+  --line: rgba(0, 255, 65, 0.14);
+  --line-soft: rgba(0, 255, 65, 0.08);
+  --mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+  /* one width system: chrome and lists fill --page, prose fills --measure */
+  --page: 1080px;
+  --measure: 66ch;
+  --pad: clamp(16px, 4vw, 32px);
+  --gutter: 6.5ch;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(
+    120% 90% at 50% 0%,
+    color-mix(in srgb, var(--bg) 55%, #0b1a0d) 0%,
+    var(--bg) 60%,
+    color-mix(in srgb, var(--bg) 88%, #000) 100%
+  );
+  background-attachment: fixed;
+}
+
+::selection { background: color-mix(in srgb, var(--accent) 22%, transparent); color: #fff; }
+
+/* ------------------------------------------------------------- header */
+
+.site-header {
+  width: 100%;
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 26px var(--pad) 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 13px;
+  color: var(--dim);
+}
+.site-header .brand {
+  color: var(--bright);
+  font-size: 14px;
+  text-decoration: none;
+  border: 0;
+}
+.site-header .brand:hover { color: #fff; }
+.site-header nav { display: flex; gap: 18px; }
+.site-header nav a { color: var(--dim); text-decoration: none; border: 0; }
+.site-header nav a:hover { color: var(--bright); }
+.site-header nav a[aria-current='page'] { color: var(--accent); }
+
+/* --------------------------------------------------------------- main */
+
+main.frame {
+  flex: 1;
+  width: 100%;
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 40px var(--pad) 64px;
+}
+main.frame.is-shell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-top: 20px;
+  padding-bottom: 34px;
+}
+
+/* ------------------------------------------------------------- footer */
+
+.site-footer {
+  width: 100%;
+  max-width: var(--page);
+  margin: 0 auto;
+  padding: 24px var(--pad) 40px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--dim);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.site-footer .prompt { color: var(--dim-2); }
+.site-footer .links { display: flex; flex-wrap: wrap; gap: 18px; }
+.site-footer a { color: var(--dim); text-decoration: none; border: 0; }
+.site-footer a:hover { color: var(--bright); }
+
+/* ----------------------------------------------------- shared prose bits */
+
+.prose { max-width: var(--measure); }
+.prose img { max-width: 100%; height: auto; }

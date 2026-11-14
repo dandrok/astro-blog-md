@@ -1,0 +1,15 @@
+---
+const links = [
+  { href: 'https://github.com/dandrok', label: 'github' },
+  { href: '/rss.xml', label: 'rss' },
+  { href: '/blog/', label: 'blog' },
+  { href: '/lab/', label: 'shell' },
+];
+---
+
+<footer class="site-footer">
+  <div><span class="prompt">$</span> cat ~/.file/links</div>
+  <div class="links">
+    {links.map((link) => <a href={link.href}>{link.label}</a>)}
+  </div>
+</footer>

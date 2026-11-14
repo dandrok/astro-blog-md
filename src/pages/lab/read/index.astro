@@ -14,7 +14,7 @@ const years = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
 <ReadLayout
   title="reading — ~/.file"
   description="Everything written here, as a plain list: no shell required."
-  current="index"
+  section="read"
 >
   <div class="masthead">
     <h1>reading</h1>
@@ -27,18 +27,18 @@ const years = [...byYear.entries()].sort((a, b) => b[0] - a[0]);
         <h2 class="year">{year}</h2>
         <ul class="rows">
           {list.map((post) => (
-            <li class="row">
-              <span class="date">{shortDay(post.entry.data.pubDate)}</span>
-              <div class="row-body">
-                <a class="title" href={`/lab/read/${post.slug}/`}>
-                  {post.entry.data.title}
-                </a>
+            <li>
+              <a class="row" href={`/lab/read/${post.slug}/`}>
+                <span class="date">{shortDay(post.entry.data.pubDate)}</span>
+                <div class="row-body">
+                  <span class="title">{post.entry.data.title}</span>
                 <span class="meta">
                   {post.entry.data.tags?.length ? `${post.entry.data.tags.join(' · ')} · ` : ''}
                   {post.readingMinutes} min read
                 </span>
-                {post.entry.data.description && <p class="desc">{post.entry.data.description}</p>}
-              </div>
+                  {post.entry.data.description && <p class="desc">{post.entry.data.description}</p>}
+                </div>
+              </a>
             </li>
           ))}
         </ul>

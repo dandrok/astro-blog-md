@@ -1,372 +1,64 @@
 ---
 // /lab — the terminal site: a centred terminal window running a real shell
 // over a virtual filesystem generated from the content collection.
-import { getCollection } from 'astro:content';
-import { slugify, type PostSeed } from '../lib/terminal';
+import { readPosts } from '../lib/read';
+import type { PostSeed } from '../lib/terminal';
 
-const posts: PostSeed[] = (await getCollection('blog'))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-  .map((post) => ({
-    slug: slugify(post.id),
-    title: post.data.title,
-    description: post.data.description ?? '',
-    date: post.data.pubDate.toISOString().slice(0, 10),
-    tags: post.data.tags ?? [],
-    body: (post as { body?: string }).body ?? '',
-  }));
-
-const enriched = posts.map((post) => ({
-  ...post,
-  day: new Date(post.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-  year: post.date.slice(0, 4),
-  minutes: Math.max(1, Math.round(post.body.split(/\s+/).filter(Boolean).length / 220)),
+// the same model the reading views use: normalised slugs, one entry per slug
+const posts: PostSeed[] = (await readPosts()).map(({ slug, entry }) => ({
+  slug,
+  title: entry.data.title,
+  description: entry.data.description ?? '',
+  date: entry.data.pubDate.toISOString().slice(0, 10),
+  tags: entry.data.tags ?? [],
+  body: (entry as { body?: string }).body ?? '',
 }));
 
-const yearGroups = [...new Set(enriched.map((post) => post.year))]
-  .sort((a, b) => b.localeCompare(a))
-  .map((year) => ({ year, posts: enriched.filter((post) => post.year === year) }));
-
 const data = JSON.stringify(posts).replace(/</g, '\\u003c');
+import ShellLayout from '../layouts/ShellLayout.astro';
+import TerminalWindow from '../components/features/terminal/TerminalWindow.astro';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark light" />
-    <title>~/.file — terminal</title>
-    <meta name="description" content="A personal site that behaves like a Unix home directory: a working shell, a virtual filesystem and the articles as files you can read and edit." />
-    <style is:global>
-      :root {
-        --bg: #030804;
-        --frame: rgba(0, 255, 65, 0.3);
-        --text: #a3f2b0;
-        --dim: #2f7a3d;
-        --accent: #00ff41;
-      }
-      * { box-sizing: border-box; }
-      html { margin: 0; background: var(--bg); }
-      body { margin: 0; min-height: 100%; }
-      body {
-        background:
-          radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--bg) 60%, #0b1a0d) 0%, var(--bg) 60%, color-mix(in srgb, var(--bg) 85%, #000) 100%);
-        color: var(--text);
-        font-family: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
-        overflow-x: hidden;
-      }
-      .hero {
-        min-height: 100vh;
-        min-height: 100dvh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        width: 100%;
-        padding: clamp(10px, 3vh, 40px) clamp(10px, 3vw, 32px) 26px;
-      }
-      body::after {
-        content: '';
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        background: repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px);
-        opacity: 0;
-        transition: opacity 160ms ease;
-      }
-      body[data-scanlines='on']::after { opacity: 1; }
-      .shell {
-        position: relative;
-        width: 100%;
-        max-width: 1120px;
-        height: min(78vh, 720px);
-        display: flex;
-        flex-direction: column;
-        border: 1px solid var(--frame);
-        border-radius: 8px;
-        background: color-mix(in srgb, var(--bg) 92%, transparent);
-        box-shadow:
-          0 0 0 1px color-mix(in srgb, var(--frame) 40%, transparent),
-          0 30px 90px -24px color-mix(in srgb, var(--accent) 22%, transparent),
-          inset 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
-        overflow: hidden;
-      }
-      .titlebar {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 9px 14px;
-        border-bottom: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
-        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent);
-        font-size: 12px;
-        letter-spacing: 0.06em;
-        color: var(--dim);
-        user-select: none;
-      }
-      .dots { display: flex; gap: 7px; }
-      .dot { width: 10px; height: 10px; border-radius: 50%; opacity: 0.85; }
-      .dot.r { background: #ff5f57; }
-      .dot.y { background: #febc2e; }
-      .dot.g { background: #28c840; }
-      .titlebar .name { flex: 1; text-align: center; color: var(--text); opacity: 0.8; }
-      .titlebar .stat { color: var(--dim); font-variant-numeric: tabular-nums; }
-      #term { flex: 1; min-height: 0; padding: 8px 10px 4px; }
-      #term .xterm { height: 100%; }
-      .hint {
-        margin: 12px auto 0;
-        max-width: 1120px;
-        font-size: 11.5px;
-        letter-spacing: 0.05em;
-        color: var(--dim);
-        text-align: center;
-        display: flex;
-        gap: 18px;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-      .hint kbd {
-        border: 1px solid color-mix(in srgb, var(--frame) 80%, transparent);
-        border-bottom-width: 2px;
-        border-radius: 3px;
-        padding: 1px 5px;
-        font: inherit;
-        color: var(--text);
-      }
-      .hint code { color: var(--text); }
-      .hint a { color: var(--text); text-decoration: none; border-bottom: 1px dashed currentColor; }
+<ShellLayout
+  title="~/.file — terminal"
+  description="A personal site that behaves like a Unix home directory: a working shell, a virtual filesystem, and the articles as files you can read and edit."
+>
+  <TerminalWindow title="dandrok@dotfile: ~" door="/lab/read/">
+    <div id="term" role="application" aria-label="interactive terminal"></div>
 
-      /* editor overlay */
-      .editor-layer { position: absolute; inset: 0; display: none; flex-direction: column; background: color-mix(in srgb, var(--bg) 97%, #000); z-index: 5; }
-      .editor-layer.on { display: flex; }
-      .editor-bar {
-        display: flex; justify-content: space-between; gap: 12px; align-items: center;
-        padding: 8px 14px; font-size: 12px; letter-spacing: 0.06em;
-        border-bottom: 1px solid color-mix(in srgb, var(--frame) 90%, transparent);
-        color: var(--accent);
-        background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent);
-      }
-      .editor-bar .path { color: var(--text); }
-      .editor-bar .flag { color: var(--dim); }
-      #editor { flex: 1; min-height: 0; overflow: auto; }
-      #editor .cm-editor { height: 100%; background: transparent; }
-      #editor .cm-scroller { font-family: ui-monospace, 'JetBrains Mono', Menlo, monospace; font-size: 14px; line-height: 1.5; }
-      #editor .cm-gutters { background: transparent; border-right: 1px solid color-mix(in srgb, var(--frame) 40%, transparent); color: var(--dim); }
-      .cm-vim-panel, .cm-vim-panel input { color: var(--accent) !important; background: transparent !important; font-family: inherit !important; }
-      .editor-foot {
-        display: flex; justify-content: space-between; gap: 12px;
-        padding: 6px 14px; font-size: 11.5px; color: var(--dim);
-        border-top: 1px solid color-mix(in srgb, var(--frame) 50%, transparent);
-      }
-      .editor-foot .save { color: var(--accent); }
+    <div class="suggest" id="suggest">
+      <span class="lead">start here</span>
+      <button type="button" data-run="ls ~/writing">ls ~/writing</button>
+      <button type="button" data-run="cat about.md">cat about.md</button>
+      <button type="button" data-run="help">help</button>
+      <a href="/lab/read/">read the posts →</a>
+      <button type="button" class="dismiss" id="suggest-hide">hide hints</button>
+    </div>
 
-      .titlebar .door {
-        color: var(--dim);
-        border: 0;
-        font-size: 11.5px;
-        letter-spacing: 0.08em;
-        padding: 2px 8px;
-        border: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
-        border-radius: 3px;
-        transition: color 120ms ease, border-color 120ms ease;
-      }
-      .titlebar .door:hover { color: var(--accent); border-color: var(--accent); }
-
-      /* starter chips: the beginner path, inside the window frame */
-      .suggest {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 10px;
-        padding: 9px 12px;
-        border-top: 1px solid color-mix(in srgb, var(--frame) 60%, transparent);
-        background: linear-gradient(0deg, color-mix(in srgb, var(--accent) 6%, transparent), transparent);
-        font-size: 12px;
-        color: var(--dim);
-      }
-      .suggest .lead {
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        font-size: 10.5px;
-        color: color-mix(in srgb, var(--dim) 80%, transparent);
-        margin-right: 2px;
-      }
-      .suggest button,
-      .suggest a {
-        font: inherit;
-        font-size: 12px;
-        color: var(--text);
-        background: transparent;
-        border: 1px solid color-mix(in srgb, var(--frame) 55%, transparent);
-        border-radius: 3px;
-        padding: 3px 9px;
-        cursor: pointer;
-        text-decoration: none;
-        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
-      }
-      .suggest button:hover,
-      .suggest a:hover {
-        color: var(--bg);
-        background: var(--accent);
-        border-color: var(--accent);
-      }
-      .suggest .dismiss {
-        margin-left: auto;
-        border-color: transparent;
-        color: color-mix(in srgb, var(--dim) 70%, transparent);
-        font-size: 11px;
-      }
-      .suggest .dismiss:hover { background: transparent; color: var(--text); }
-      .suggest[hidden] { display: none; }
-
-      /* the reading section the hero scrolls into */
-      .reading {
-        width: 100%;
-        max-width: 1080px;
-        margin: 0 auto;
-        padding: 0 clamp(14px, 4vw, 32px) 96px;
-      }
-      .reading .section-title {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        gap: 16px;
-        border-top: 1px solid color-mix(in srgb, var(--frame) 70%, transparent);
-        padding-top: 14px;
-        margin-bottom: 4px;
-        font-size: 11.5px;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        color: var(--dim);
-      }
-      .reading .section-title a { color: var(--text); border: 0; }
-      .reading .section-title a:hover { color: var(--accent); }
-      .reading .year {
-        margin: 26px 0 2px;
-        font-size: 11px;
-        letter-spacing: 0.24em;
-        color: color-mix(in srgb, var(--dim) 75%, transparent);
-      }
-      .reading .row {
-        display: grid;
-        grid-template-columns: 6.5ch minmax(0, 1fr);
-        gap: 3px 18px;
-        padding: 13px 0;
-        border-bottom: 1px solid color-mix(in srgb, var(--frame) 45%, transparent);
-      }
-      .reading a { color: inherit; text-decoration: none; }
-      .reading .row:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
-      .reading .row:hover .title { color: #fff; }
-      .reading .date { color: var(--dim); font-size: 12.5px; font-variant-numeric: tabular-nums; }
-      .reading .row-main { min-width: 0; }
-      .reading .row .title { color: var(--text); font-size: 15.5px; }
-      .reading .row:hover a.title { color: #fff; }
-      .reading .row .meta { display: block; margin-top: 2px; font-size: 11.5px; color: color-mix(in srgb, var(--dim) 80%, transparent); }
-      .reading .row .desc {
-        margin: 4px 0 0;
-        font-size: 12.5px;
-        color: var(--dim);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .scroll-cue {
-        display: flex;
-        justify-content: center;
-        padding: 0 0 26px;
-        font-size: 11.5px;
-        letter-spacing: 0.16em;
-        color: color-mix(in srgb, var(--dim) 80%, transparent);
-      }
-      .scroll-cue a { color: inherit; border: 0; }
-      .scroll-cue a:hover { color: var(--accent); }
-
-      @media (max-width: 680px) {
-        .hero { padding: 0; min-height: 0; }
-        .shell { height: 100dvh; max-width: none; border: 0; border-radius: 0; }
-        .hint, .scroll-cue { display: none; }
-        #term { padding: 6px; }
-        .suggest { padding: 8px 10px; gap: 6px; }
-        .suggest button, .suggest a { font-size: 11.5px; padding: 3px 7px; }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        body::after { display: none; }
-      }
-    </style>
-  </head>
-  <body>
-    <main class="hero">
-      <div class="shell" id="shell">
-        <div class="titlebar">
-          <div class="dots" aria-hidden="true"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
-          <span class="name" id="win-title">dandrok@dotfile: ~</span>
-          <a class="door" href="/lab/read/">read →</a>
-          <span class="stat" id="win-size">—</span>
-        </div>
-        <div id="term" role="application" aria-label="interactive terminal"></div>
-        <div class="suggest" id="suggest">
-          <span class="lead">start here</span>
-          <button type="button" data-run="ls ~/writing">ls ~/writing</button>
-          <button type="button" data-run="cat about.md">cat about.md</button>
-          <button type="button" data-run="help">help</button>
-          <a href="#reading">read the posts ↓</a>
-          <button type="button" class="dismiss" id="suggest-hide">hide hints</button>
-        </div>
-
-        <div class="editor-layer" id="editor-layer" aria-hidden="true">
-          <div class="editor-bar">
-            <span class="path" id="ed-file">—</span>
-            <span class="flag" id="ed-hint"></span>
-          </div>
-          <div id="editor"></div>
-          <div class="editor-foot">
-            <span id="ed-foot">— NORMAL —</span>
-            <span id="ed-save"></span>
-          </div>
-        </div>
+    <div class="editor-layer" id="editor-layer" aria-hidden="true">
+      <div class="editor-bar">
+        <span class="path" id="ed-file">—</span>
+        <span class="flag" id="ed-hint"></span>
       </div>
-
-      <p class="hint">
-      <span><kbd>tab</kbd> complete</span>
-      <span><kbd>↑</kbd> history</span>
-      <span><kbd>ctrl-l</kbd> clear</span>
-      <span><code>help</code> commands</span>
-      <a href="/lab/read/">plain reading →</a>
-      </p>
-
-      <div class="scroll-cue"><a href="#reading">↓ reading — {posts.length} files</a></div>
-    </main>
-
-    <section class="reading" id="reading" aria-labelledby="reading-title">
-      <div class="section-title">
-        <span id="reading-title">reading · {posts.length} files</span>
-        <a href="/lab/read/">the plain index →</a>
+      <div id="editor"></div>
+      <div class="editor-foot">
+        <span id="ed-foot">— NORMAL —</span>
+        <span id="ed-save"></span>
       </div>
-      {
-        yearGroups.map((group) => (
-          <>
-            <h2 class="year">{group.year}</h2>
-            {group.posts.map((post) => (
-              <a class="row" href={`/lab/read/${post.slug}/`}>
-                <span class="date">{post.day}</span>
-                <span class="row-main">
-                  <span class="title">{post.title}</span>
-                  <span class="meta">
-                    {post.tags.length ? `${post.tags.join(' · ')} · ` : ''}
-                    {post.minutes} min read
-                  </span>
-                  {post.description && <span class="desc">{post.description}</span>}
-                </span>
-              </a>
-            ))}
-          </>
-        ))
-      }
-    </section>
+    </div>
+  </TerminalWindow>
 
-    <script is:inline type="application/json" id="post-data" set:html={data}></script>
+  <p class="hint">
+    <span><kbd>tab</kbd> complete</span>
+    <span><kbd>↑</kbd> history</span>
+    <span><kbd>ctrl-l</kbd> clear</span>
+    <span><code>help</code> commands</span>
+    <a href="/lab/read/">plain reading →</a>
+  </p>
 
-    <script>
+  <script is:inline type="application/json" id="post-data" set:html={data}></script>
+
+  <script>
       import { Terminal } from '@xterm/xterm';
       import { FitAddon } from '@xterm/addon-fit';
       import '@xterm/xterm/css/xterm.css';
@@ -422,7 +114,7 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         const colors = pageColors(config.theme);
         const root = document.documentElement.style;
         root.setProperty('--bg', colors.bg);
-        root.setProperty('--frame', colors.frame);
+        root.setProperty('--edge', colors.frame);
         root.setProperty('--text', colors.text);
         root.setProperty('--dim', colors.dim);
         root.setProperty('--accent', xtermTheme(config.theme).cursor);
@@ -813,7 +505,9 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         const full = `${post.slug}.md`;
         const file = full.length > nameWidth - 1 ? full.slice(0, nameWidth - 2) + '…' : full;
         // narrow terminals get names only: a wrapped title reads like noise
-        const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(post.title);
+        const room = Math.max(18, term.cols - nameWidth - 2);
+        const title = post.title.length > room ? post.title.slice(0, room - 1) + '…' : post.title;
+        const label = term.cols < 70 ? fg.green(file) : fg.green(file.padEnd(nameWidth)) + fg.dim(title);
         write('  ' + label + '\n');
       }
       write(fg.dim('  … ') + fg.green(`${Math.max(0, posts.length - newest.length)} more`) + fg.dim(' — ') + fg.green('ls ~/writing') + '\n\n');
@@ -880,5 +574,4 @@ const data = JSON.stringify(posts).replace(/</g, '\\u003c');
         renderPrompt();
       }
     </script>
-  </body>
-</html>
+</ShellLayout>

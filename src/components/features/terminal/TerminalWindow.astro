@@ -1,0 +1,23 @@
+---
+type Props = {
+  /** Shown in the window title bar; the shell updates it as the cwd changes. */
+  title: string;
+  /** Optional escape hatch rendered on the right of the title bar. */
+  door?: string;
+  doorLabel?: string;
+};
+
+const { title, door, doorLabel = 'read →' } = Astro.props;
+---
+
+<div class="shell" id="shell">
+  <div class="titlebar">
+    <div class="dots" aria-hidden="true">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    </div>
+    <span class="name" id="win-title">{title}</span>
+    {door && <a class="door" href={door}>{doorLabel}</a>}
+    <span class="stat" id="win-size">—</span>
+  </div>
+  <slot />
+</div>

@@ -1,14 +1,18 @@
 ---
+import '../styles/site.css';
 import '../styles/read-views.css';
+import SiteHeader from '../components/site/SiteHeader.astro';
+import SiteFooter from '../components/site/SiteFooter.astro';
 
 type Props = {
   title: string;
   description?: string;
+  /** Layout personality: the quiet editorial view, or the man pages. */
   view?: 'read' | 'man';
-  current?: 'index' | 'article';
+  section?: 'read' | 'man' | 'shell';
 };
 
-const { title, description = '', view = 'read', current = 'index' } = Astro.props;
+const { title, description = '', view = 'read', section = 'read' } = Astro.props;
 ---
 
 <!doctype html>
@@ -22,33 +26,10 @@ const { title, description = '', view = 'read', current = 'index' } = Astro.prop
     <meta name="robots" content="noindex" />
   </head>
   <body class={`view-${view}`}>
-    {
-      view === 'read' && (
-        <div class="topbar">
-          <a class="home" href="/lab/read/">
-            ~/.file
-          </a>
-          <nav aria-label="Reading views">
-            <a href="/lab/read/" aria-current={current === 'index' ? 'page' : undefined}>
-              index
-            </a>
-            <a href="/lab/man/">man</a>
-            <a href="/lab/">shell</a>
-          </nav>
-        </div>
-      )
-    }
-
-    <main><slot /></main>
-
-    <footer class="site">
-      <div><span style="color: var(--dim-2)">$</span> cat ~/.file/links</div>
-      <div class="links">
-        <a href="https://github.com/dandrok">github</a>
-        <a href="/rss.xml">rss</a>
-        <a href="/blog/">blog</a>
-        <a href="/lab/">shell</a>
-      </div>
-    </footer>
+    <SiteHeader section={section} />
+    <main class="frame">
+      <slot />
+    </main>
+    <SiteFooter />
   </body>
 </html>
