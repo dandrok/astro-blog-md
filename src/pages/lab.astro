@@ -200,6 +200,7 @@ import ArticleList from '../components/features/writing/ArticleList.astro';
       function editorExtensions(mode: EditorMode): Extension[] {
         const base: Extension[] = [
           basicSetup,
+          EditorView.lineWrapping,
           markdown(),
           oneDark,
           EditorView.theme({
