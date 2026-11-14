@@ -9,7 +9,7 @@
   margin: 0 0 14px;
 }
 .article-head h1 {
-  font-size: clamp(25px, 3.4vw, 33px);
+  font-size: clamp(27px, 3.2vw, 38px);
   line-height: 1.28;
   letter-spacing: -0.01em;
   font-weight: 500;
@@ -17,7 +17,7 @@
   color: var(--bright);
 }
 .article-head .meta {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--dim);
   display: flex;
   flex-wrap: wrap;
@@ -29,7 +29,7 @@
 
 /* ---------------------------------------------------------------- prose */
 
-.prose { font-size: 17px; line-height: 1.72; }
+.prose { font-size: var(--read-size); line-height: 1.7; }
 .prose > *:first-child { margin-top: 0; }
 
 .prose p { margin: 0 0 1.15em; }
@@ -45,9 +45,9 @@
   margin: 2.2em 0 0.7em;
   scroll-margin-top: 24px;
 }
-.prose h2 { font-size: 19px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 2.6em; }
-.prose h3 { font-size: 17px; }
-.prose h4 { font-size: 15px; color: var(--text); }
+.prose h2 { font-size: 22px; border-top: 1px solid var(--line); padding-top: 20px; margin-top: 2.6em; }
+.prose h3 { font-size: 19px; }
+.prose h4 { font-size: 17px; color: var(--text); }
 
 .prose ul,
 .prose ol { margin: 0 0 1.2em; padding-left: 1.4em; }
@@ -77,7 +77,7 @@
   padding: 16px 18px;
   overflow-x: auto;
   margin: 1.6em 0;
-  font-size: 13.5px;
+  font-size: 14.5px;
   line-height: 1.65;
 }
 .prose pre code { background: none; border: 0; padding: 0; font-size: inherit; }
@@ -116,5 +116,5 @@
 .article-foot a:hover { color: var(--bright); }
 
 @media (max-width: 680px) {
-  .prose { font-size: 16px; }
+  .prose { font-size: 16.5px; }
 }

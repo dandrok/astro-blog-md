@@ -13,8 +13,9 @@
   --line-soft: rgba(0, 255, 65, 0.08);
   --mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
   /* one width system: chrome and lists fill --page, prose fills --measure */
-  --page: 720px;
+  --page: 940px;
   --measure: 100%;
+  --read-size: 19px;
   --pad: clamp(16px, 4vw, 32px);
   --gutter: 6.5ch;
 }
@@ -98,10 +99,11 @@ main.frame {
   padding: 40px var(--pad) 64px;
 }
 main.frame.is-shell {
+  /* no vertical centering: a centred flex column whose content is taller than
+     the viewport clips its own top edge when the page scrolls */
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-top: 20px;
+  padding-top: 22px;
   padding-bottom: 34px;
 }
 
