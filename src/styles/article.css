@@ -1,12 +1,5 @@
 /* Article page. Tokens come from site.css. */
 
-.article-grid {
-  display: grid;
-  grid-template-columns: minmax(0, var(--measure)) minmax(12rem, 1fr);
-  gap: 64px;
-  align-items: start;
-}
-
 .article-head { margin-bottom: 32px; }
 .article-head .kicker {
   font-size: 11px;
@@ -36,7 +29,7 @@
 
 /* ---------------------------------------------------------------- prose */
 
-.prose { font-size: 16px; }
+.prose { font-size: 17px; line-height: 1.72; }
 .prose > *:first-child { margin-top: 0; }
 
 .prose p { margin: 0 0 1.15em; }
@@ -107,39 +100,6 @@
 .prose summary { cursor: pointer; color: var(--bright); }
 .prose kbd { border: 1px solid var(--edge); border-bottom-width: 2px; padding: 1px 5px; font-size: 0.85em; color: var(--bright); }
 
-/* ----------------------------------------------------------------- rail */
-
-.article-rail {
-  position: sticky;
-  top: 28px;
-  display: grid;
-  gap: 24px;
-  font-size: 12.5px;
-  color: var(--dim);
-  justify-self: end;
-  width: 100%;
-  max-width: 16rem;
-}
-.article-rail h3 {
-  margin: 0 0 8px;
-  font-size: 10.5px;
-  font-weight: 400;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--dim-2);
-}
-.article-rail p { margin: 0; }
-.article-rail a { color: var(--text); text-decoration: none; }
-.article-rail a:hover { color: var(--bright); }
-.article-rail .toc-list {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 12px;
-  border-left: 1px solid var(--line);
-  display: grid;
-  gap: 6px;
-}
-
 .article-foot {
   max-width: var(--measure);
   margin-top: 48px;
@@ -155,7 +115,6 @@
 .article-foot a { color: var(--dim); text-decoration: none; border: 0; }
 .article-foot a:hover { color: var(--bright); }
 
-@media (max-width: 940px) {
-  .article-grid { grid-template-columns: minmax(0, 1fr); gap: 34px; }
-  .article-rail { position: static; justify-self: start; max-width: none; order: 2; }
+@media (max-width: 680px) {
+  .prose { font-size: 16px; }
 }

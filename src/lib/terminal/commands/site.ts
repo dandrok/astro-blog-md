@@ -53,7 +53,7 @@ export const mail: Command = {
   run() {
     return {
       out: fg.dim('opening mail client …') + '\n',
-      effect: { type: 'navigate', url: 'mailto:patryk.stusik@gmail.com?subject=hi' },
+      effect: { type: 'navigate', url: 'mailto:contact@thedotfile.com?subject=hi' },
     };
   },
 };

@@ -49,7 +49,7 @@ Based in Poland. Currently freelancing — available immediately, no notice
 period, open to B2B and remote work.
 
   github   github.com/dandrok
-  mail     patryk.stusik@gmail.com
+  mail     contact@thedotfile.com
 `;
 
 const CONFIG = `theme=matrix

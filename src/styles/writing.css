@@ -51,23 +51,34 @@
 [data-hidden] { display: none; }
 
 .more {
-  margin-top: 24px;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 18px 0 0;
+  padding: 14px 16px;
   font: inherit;
   font-size: 12px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--text);
   background: transparent;
-  border: 1px solid var(--line);
-  padding: 8px 14px;
+  border: 1px dashed var(--edge);
   cursor: pointer;
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
 }
-.more:hover { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-.more .more-count { text-transform: none; letter-spacing: 0; opacity: 0.65; }
+.more:hover,
+.more:focus-visible {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  border-style: solid;
+  outline: none;
+}
+.more .more-count { letter-spacing: 0; text-transform: none; opacity: 0.7; }
+/* the class display would otherwise beat the hidden attribute */
+.more[hidden] { display: none; }
 
 @media (max-width: 680px) {
   .writing { margin-top: 40px; }
