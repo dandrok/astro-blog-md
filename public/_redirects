@@ -1,0 +1,9 @@
+# The article URLs moved from /blog/<slug>/ to /<slug>/.
+# Netlify and Cloudflare Pages read this file.
+/blog/*        /:splat        301
+/lab/read/*    /:splat        301
+/lab            /            301
+/lab/           /            301
+/page/*         /            301
+
+# SPA-style fallback is not needed: every route is prerendered.
